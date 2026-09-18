@@ -635,7 +635,7 @@ name the skill, and the status board below moves.
 
 ## Status board
 
-Updated from closed UAT issues. Every cell starts at **not tested**, and that is
+Updated from closed UAT issues; the pinned [status board](https://github.com/houfu/lq-plugin-cowork/issues/18) links every skill issue. Every cell starts at **not tested**, and that is
 an honest description of where this project is.
 
 | Bundle | Skill | Routing | Behaviour |

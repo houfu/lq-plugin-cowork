@@ -69,9 +69,10 @@ through the
 [UAT report form](https://github.com/houfu/lq-plugin-cowork/issues/new?template=uat-report.yml),
 or pick up one of the open
 [help wanted issues](https://github.com/houfu/lq-plugin-cowork/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
-— one per skill, each carrying that skill's routing checklist. A misfire is a
-description problem, and a description is one line in a YAML card, so a good
-report usually turns into a one-line fix.
+— one per skill, each carrying that skill's routing checklist; the pinned
+[status board](https://github.com/houfu/lq-plugin-cowork/issues/18) links all
+seventeen. A misfire is a description problem, and a description is one line in
+a YAML card, so a good report usually turns into a one-line fix.
 
 ## What is inside
 
