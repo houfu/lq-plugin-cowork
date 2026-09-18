@@ -1,0 +1,87 @@
+name: lq-mirror
+upstream: companion/lq-mirror
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Runs a twelve-question conversation about how this lawyer actually works
+  with AI and gives back an honest reading and an archetype, plus one
+  concrete move for the week and, if wanted, a short note to keep. Use when
+  the user asks "where am I with AI", "am I behind on this stuff", "assess
+  me", "what's my archetype", "how do I compare to other lawyers on AI", or
+  "help me work out how I should be using AI in my practice". This is a
+  reflective conversation about the lawyer's own working habits, never legal
+  work. Do not use for drafting, reviewing, checking or organising anything,
+  and do not use for choosing a skill for the task in hand (use the lq-start
+  skill).
+sections:
+- match: '## First run? One marker, once ever'
+  delete: true
+- match: '## The ending — the first skill to try'
+  file: sections/ending.md
+replace:
+- from: '# lq-mirror — where you stand, said kindly and straight'
+  to: '# Where you stand with AI, said kindly and straight'
+  expect: 1
+- from: |-
+    5. **The summary, plainly.** Offer: "Would you like a short summary you can
+       save or share? I can save it here, or you can paste it anywhere." Show
+       the summary first; on their yes, save it where they say. No file-format
+       vocabulary anywhere in user copy. The summary carries the pattern and
+       the week's move in plain words — no score, no rank, no percentile, and
+       no archetype label. The reading is complete even if saving is declined.
+       If they want the Companion to remember the result, follow the store
+       contract (`../lq-reflect/references/store-contract.md`): the `save` door
+       creates the store on the spot when none exists — the same explicit yes
+       covers it. The remembered note carries the pattern and the week's move,
+       never the archetype label.
+  to: |-
+    5. **The summary, plainly.** Offer: "Would you like a short summary you can
+       keep? I'll write it out here and you can save it wherever you keep
+       notes." Show the summary in the reply itself, as a few short paragraphs
+       they can copy; do not put it in a file and do not save anything on their
+       behalf. If they ask for it as a file, hand them the same text as a short
+       note they can save to their own folder. The summary carries the pattern
+       and the week's move in plain words — no score, no rank, no percentile,
+       and no archetype label. The reading is complete even if they want
+       nothing kept. This skill stores nothing itself; the conversation persists
+       like any other Cowork session.
+  expect: 1
+- from: |-
+    6. **The observed assessment: asked, not offered.** Never bring up LQ
+       Assess, and never propose `$lq:assess` by default — that command belongs
+       to the members' plugin and does not ship here. If they ask whether there
+       is a real assessment, answer in one line, once: LQ Assess is a 90-minute
+       observed work session and it is how people join, at
+       https://assess.legalquants.com; `lq-apply` is where to prepare for it.
+       Then back to the reading. Never mentioned twice; never sold. The next step
+       you offer unprompted is a concrete available one — reflect on a chosen
+       project, or connect to a peer.
+  to: |-
+    6. **The observed assessment: asked, not offered.** Never bring up LQ
+       Assess. If they ask whether there is a real assessment, say in one line,
+       once, that there is a formal observed one and that it is not this, and
+       that you cannot take them to it from here. Then back to the reading.
+       Never mentioned twice; never sold. The next step you offer unprompted is
+       a concrete available one: a piece of real work, and the skill here that
+       would carry it.
+  expect: 1
+notes: |
+  Dropped the cold-open onboarding call to a companion skill's script and the
+  save-through-the-reflection-store path; this skill writes nothing, and the
+  summary is offered as text the lawyer copies or saves themselves. Removed every
+  parent-relative reference, the invocation-grammar tokens, the members-only
+  assessment command and the external assessment link and its pitch. The ending
+  picks from the skills offered in the session and falls back to the lq-start skill
+  instead of a catalogue script. Closing sign-off replaced with the vendor-neutral
+  line. The twelve questions, the archetypes and the register are untouched.
+triggers:
+  positive:
+  - Where am I with AI as a lawyer? Am I behind?
+  - Assess me on how I'm using AI in my practice.
+  - I keep hearing about AI at the firm and I don't know what my level is. Can you tell me honestly?
+  - What's my archetype when it comes to working with AI?
+  negative:
+  - Which of these skills should I use to check a contract? -> lq-start
+  - Review how I handled this matter and tell me what I should have done differently. -> none
+  - Save what I learned about AI drafting to my wiki. -> wiki
+  - Write up my time entries for the work I did in this chat. -> timenarratives

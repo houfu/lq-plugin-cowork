@@ -1,0 +1,125 @@
+name: closing-checklist
+upstream: transactional/closing-checklist
+bucket: green
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Drafts an editable Word transaction closing checklist from the share
+  purchase agreement or other anchor agreement, or proposes and applies
+  substantive changes to an existing checklist after revised documents or
+  lawyer instructions, keeping house formatting, source references and timing.
+  Use when the user asks to "draft a closing checklist for this SPA", "build a
+  completion checklist from these documents", "update our closing checklist
+  for the revised agreement", "add the new conditions precedent to the
+  checklist", "what still has to happen before completion on this deal", or
+  "produce a clean copy of the checklist for the other side". Do not use for
+  chasing status, for assembling signature pages, for auditing the signed
+  closing folder, or for formatting or editing a document that needs no legal
+  review (use the Word skill). Do not use to review a draft against
+  negotiation positions; this skill tracks deliverables and conditions to
+  closing.
+exclude:
+- scripts/**
+- references/word-workflow.md
+replace:
+- from: |-
+    - Tool cascade: local open-source document tooling (including the optional
+      standard-library helper below), then available host document capabilities;
+      firm-selected licensed document tools when required and authorised. Do not
+      upload matter documents to a new service or install dependencies by default.
+      For current legal requirements, use available official public sources, then
+      firm-authorised research tools. If neither is available, leave a question.
+    - Scripts, connectors and parallel workers are optional. Without code execution,
+      use host reading/editing capabilities and the same review gates. Without Word
+      output capability, offer an explicitly labelled interim table and disclose the
+      unmet deliverable; never rename Markdown or claim a Word file was created.
+  to: |-
+    - Tool cascade: read and write the documents with the capabilities this host
+      already has; a firm-selected licensed document tool only when it is
+      explicitly available and authorised. Do not upload matter documents to a new
+      service. For current legal requirements, use available official public
+      sources, then firm-authorised research tools. If neither is available, leave
+      a question.
+    - Nothing in this skill is executed. You read the supplied agreements yourself,
+      do the legal work in the conversation, and produce the checklist as a Word
+      document through the built-in Word skill. If a Word document cannot be
+      produced, offer an explicitly labelled interim table in the reply and
+      disclose the unmet deliverable; never rename Markdown or claim a Word file
+      was created.
+  expect: 1
+- from: |-
+    Use [word-workflow.md](references/word-workflow.md) for optional helper commands,
+    supported layouts and safeguards. Generic default, used when no house layout
+    controls, in this order:
+  to: |-
+    Hand the finished content to the built-in Word skill and tell it the exact
+    layout: landscape, the opening sections, the table and its columns, and the
+    footer. Generic default, used when no house layout controls, in this order:
+  expect: 1
+- from: |-
+    sanitised copy cannot be verified, withhold it as circulation-ready and explain
+    the remaining manual review. The helper's external path is deliberately narrow.
+    Never send, file, chase, or certify legal clearance.
+  to: |-
+    sanitised copy cannot be verified, withhold it as circulation-ready and explain
+    the remaining manual review. Build the external copy as a fresh document from
+    the approved public content rather than by editing the internal one.
+    Never send, file, chase, or certify legal clearance.
+  expect: 1
+- from: |-
+    In revision, obtain the
+    latest working checklist and the changed material. The Word file is authoritative
+    over an older sidecar or prior run. Do not request an old SPA unless necessary to
+    resolve a particular change.
+  to: |-
+    In revision, obtain the
+    latest working checklist and the changed material. The Word file the lawyer gives
+    you is the baseline, whatever was said about it earlier in the conversation. Do
+    not request an old SPA unless necessary to resolve a particular change.
+  expect: 1
+- from: |-
+    - Read only confirmed `[closing-checklist]` entries in `lqplaybook.md`, if available.
+      Explicit instructions and the supplied checklist govern. Never read
+      `lqprofile.md` for work product or write journey records. A reusable formatting
+      preference may be proposed verbatim and recorded only after explicit consent;
+      no matter facts in either file.
+  to: |-
+    - Read only confirmed `[closing-checklist]` entries from an `lqplaybook.md` the
+      lawyer has attached or put in the session's Input folder. Explicit instructions
+      and the supplied checklist govern over anything in that file, which may carry
+      formatting and presentation preferences and never matter facts. Read no other
+      preference or profile file, and never write to `lqplaybook.md` yourself: where
+      this run settles a reusable formatting preference, offer it as one exact line
+      the lawyer can paste into their own file, and leave it with them.
+  expect: 1
+- from: |-
+    Record connected-source provenance without
+    credentials or access tokens. Remove temporary extractions on completion, retaining
+    only deliverables or an audit record the user explicitly requests. On interruption,
+    identify the temporary files left for cleanup; never delete original inputs.
+  to: |-
+    Record connected-source provenance without
+    credentials or access tokens. Nothing written here can be deleted afterwards, so
+    write as little as the work needs: when you finish, or if the run is interrupted,
+    name every working file left in the Output folder alongside the checklist so the
+    lawyer can clear them. Never overwrite or alter an original input.
+  expect: 1
+notes: |
+  Green skill, light touch. Dropped the two optional standard-library helpers and
+  references/word-workflow.md, which documents the helper's commands, plan JSON
+  and package-editing limits rather than the checklist itself; the document's own
+  layout, columns, status key and footer rules were already in the body. The tool
+  cascade and the no-code-execution bullet now say plainly that nothing runs and
+  that the Word deliverable goes through the built-in Word skill. The external
+  copy is built as a fresh document instead of through the helper's narrow
+  sanitising path. The review method reference is untouched.
+triggers:
+  positive:
+  - Draft a closing checklist from this share purchase agreement.
+  - Update our completion checklist - here is the revised SPA and two new side letters.
+  - What are the conditions precedent and who has to deliver what before completion?
+  - Add the antitrust clearance steps to the checklist and mark the post-closing items.
+  negative:
+  - Chase the other side for the outstanding signature pages. -> Email
+  - Turn this closing checklist into a nicer looking Word document with our house styles. -> Word
+  - Explain the deal structure to the board in a one-page visual. -> legaldesign
+  - Which skill do I use for a contract review against our standard positions? -> lq-start

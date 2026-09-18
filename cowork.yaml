@@ -1,0 +1,153 @@
+# lq-cowork selection manifest.
+#
+# This file is the only place bundle membership, manifest identity and the
+# global transform defaults live. See docs/CONTRACT.md for the schema and for
+# the pipeline these values drive.
+
+upstream:
+  repo: https://github.com/LegalQuants/lq-plugin-oss
+  sha: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+  path: upstream
+  skills_root: skills
+
+developer:
+  name: LegalQuants
+  websiteUrl: https://legalquants.com
+  privacyUrl: https://www.legalquants.com/privacy
+  termsOfUseUrl: https://www.legalquants.com/terms
+
+package:
+  version: 0.1.0
+  accentColor: "#2D2D2D"
+  icons:
+    color: branding/color.png
+    outline: branding/outline.png
+  root_files:
+    - upstream/LICENSE
+    - NOTICE.md
+
+strip:
+  - LICENSE
+  - "agents/**"
+  - ".*"
+  - "**/.*"
+  - "**/__pycache__/**"
+
+transforms:
+  drop_frontmatter: [disable-model-invocation, argument-hint, allowed-tools]
+  strip_waivers: true
+  skill_tokens: true
+  vendor_words: [Codex, CODEX, ChatGPT, Claude, Cursor, Gemini]
+  # Host machinery that does not exist in Cowork (LQC-W009, case-insensitive).
+  host_words:
+    - lqprofile.md
+    - the scribe
+    - the validator
+    - the renderer
+    - run directory
+    - PyMuPDF
+    - Playwright
+    - pdfplumber
+    - pypdf
+    - "--dry-run"
+    - "--yes"
+    - exit code
+    # 'interpreter' alone is a term of art in deposition logistics
+    - python interpreter
+    - interpreter floor
+    - subprocess
+    - parallel workers
+    - sidecar
+
+# Global literal replacements, applied to every skill before the card's own
+# `replace` rules. Counts are checked across the whole build, not per skill.
+replace: []
+
+bundles:
+  - id: legalquants-litigation-cowork
+    guid: 5d40f9d0-bbfe-5aa7-a4e9-10b4e0b676bf
+    name:
+      short: LQ Litigation Skills
+      full: LegalQuants litigation skills for Copilot Cowork
+    description:
+      short: Litigation drafting, cite-checking, discovery and case organisation
+      full: >-
+        A set of litigation skills for Microsoft 365 Copilot Cowork: drafting
+        and pressure-testing written work, checking citations and quotations
+        against the sources you supply, preparing depositions and client
+        updates, opening a new matter, organising case documents, building
+        time narratives, running a document-discovery review, keeping a
+        personal legal wiki, working a closing checklist, and a short honest
+        reading of where you stand with AI.
+
+        Each skill tells Cowork what it does, when to reach for it and which
+        neighbouring skill to hand off to, so the right one activates from
+        ordinary natural language. The skills contain no code and call no
+        external service; they work from the files in your Cowork Input and
+        Output folders.
+
+        This bundle is an independent adaptation of the LegalQuants open
+        skills at https://github.com/LegalQuants/lq-plugin-oss, used under the
+        Apache License 2.0. It is not an official LegalQuants release and is
+        not supported by the upstream project. Modified files carry an
+        Apache-2.0 section 4(b) notice; the upstream LICENSE and a NOTICE.md
+        describing the changes travel in this package.
+
+        LegalQuants skills are a workflow aid, not legal advice. The
+        judgement stays yours.
+    skills:
+      - lq-start
+      - writing
+      - correspondence
+      - client-update
+      - depositions
+      - new-matter
+      - organize-case-docs
+      - cite-check
+      - pressuretest
+      - document-discovery
+      - legaldesign
+      - timenarratives
+      - wiki
+      - closing-checklist
+      - lq-mirror
+
+  - id: legalquants-transactional-cowork
+    guid: f53d5df8-3b69-55e8-a12b-fdf244f3df55
+    name:
+      short: LQ Transactional Skills
+      full: LegalQuants transactional skills for Copilot Cowork
+    description:
+      short: Deal playbooks, closing checklists, design and time narratives
+      full: >-
+        A set of transactional skills for Microsoft 365 Copilot Cowork:
+        building a negotiation playbook from the deals you have already done,
+        reviewing a draft against that playbook, working a closing checklist
+        to signing and completion, laying out documents so they can be read,
+        building time narratives, keeping a personal legal wiki, and a short
+        honest reading of where you stand with AI.
+
+        Each skill tells Cowork what it does, when to reach for it and which
+        neighbouring skill to hand off to, so the right one activates from
+        ordinary natural language. The skills contain no code and call no
+        external service; they work from the files in your Cowork Input and
+        Output folders.
+
+        This bundle is an independent adaptation of the LegalQuants open
+        skills at https://github.com/LegalQuants/lq-plugin-oss, used under the
+        Apache License 2.0. It is not an official LegalQuants release and is
+        not supported by the upstream project. Modified files carry an
+        Apache-2.0 section 4(b) notice; the upstream LICENSE and a NOTICE.md
+        describing the changes travel in this package.
+
+        LegalQuants skills are a workflow aid, not legal advice. The
+        judgement stays yours.
+    skills:
+      - lq-start
+      - closing-checklist
+      - playbook-builder
+      - playbook-review
+      - legaldesign
+      - timenarratives
+      - wiki
+      - lq-mirror

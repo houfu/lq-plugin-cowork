@@ -1,0 +1,294 @@
+name: legaldesign
+upstream: core/legaldesign
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Turns legal work that is already done into one polished, editable,
+  evidence-grounded HTML page - a complete one-pager or a slide brief with a
+  clickable overview - that opens in the preview pane and can be handed to a
+  client, a board or a colleague. Use when the user asks to "turn this advice
+  into a one-pager", "make a visual summary of these findings", "build a slide
+  brief explaining this deal structure", "explain this to the board", "produce
+  a client-ready explainer from this memo", "make me a reusable template of
+  that page", or "set up our firm's colours for these". Do not use for the
+  underlying legal analysis, for a presentation deck (use the PowerPoint
+  skill), for a formatted report or letter (use the Word skill), or for a data
+  workbook (use the Excel skill). Do not use to write the substance of a
+  status report, memo or advice; this skill lays out content that already
+  exists.
+exclude:
+- schemas/**
+- scripts/**
+- assets/templates/**
+- references/cite-check-adapter.md
+replace:
+- from: Read [references/evidence.md](references/evidence.md) before source presentation; read its cite-check adapter only for that handoff.
+  to: Read [references/evidence.md](references/evidence.md) before source presentation.
+  expect: 1
+- from: 5. Perform [references/qa.md](references/qa.md), correct failures, and open the working artifact. Hand off what it explains, the checks actually performed, and any source or validation gaps.
+  to: 5. Perform [references/qa.md](references/qa.md), correct failures, and open the finished file in the preview pane so the lawyer sees the real thing. Hand off what it explains, the checks actually performed, and any source or verification gaps.
+  expect: 1
+- from: Read each selected instruction file completely before using it. No particular host, account, model SDK, worker, or external service is required; local scripts are optional infrastructure.
+  to: 'Read each selected instruction file completely before using it. Nothing here is executed and no account, service or external tool is required: you write the specification and the finished HTML yourself, in one self-contained file with no remote code, fonts or images, and the preview pane renders it. Save it where the lawyer can reopen it, and say the file name.'
+  expect: 1
+- from: 'Use `schemaVersion: legaldesign.build.v4`, one `composition`, and no `approaches`. Validate against [build-spec.schema.json](../schemas/build-spec.schema.json) and the current component registry. Generate an incomplete skeleton rather than copying a filled example.'
+  to: 'Use `schemaVersion: legaldesign.build.v4`, one `composition`, and no `approaches`. Check the specification against the field contract below and the current component registry in [components.json](components.json). Write an incomplete skeleton first rather than copying a filled example.'
+  expect: 1
+  files:
+  - references/build.md
+- from: |-
+    When local Python and a writable workspace are available, run from the skill directory:
+
+    ```text
+    python3 scripts/scaffold.py init --form one-page --spec-output <workspace>/artifact.skeleton.json
+    python3 scripts/scaffold.py components
+    python3 scripts/scaffold.py compose --plan <workspace>/artifact.plan.json --spec-output <workspace>/artifact.spec.json --output <workspace>/artifact.html --artifact-id <stable-artifact-id>
+    python3 scripts/scaffold.py validate --spec <workspace>/artifact.spec.json
+    ```
+
+    Use `--form slide-brief` for the other form. `init` does not choose the composition or produce a finished client file. Fill the plan, then `compose` validates and writes the canonical spec and self-contained HTML; it refuses existing output paths and leaves neither new output after failed paired writes. Keep a stable artifact ID for recovery. `components --markdown` exposes supported IDs/parameter slots; do not guess components, inject raw SVG, or silently substitute an inadequate generic figure.
+  to: |-
+    Build it yourself, in this order, and do not skip a step because the next one looks close:
+
+    1. Write the empty skeleton for the chosen `form` - the brief, the required overview object and the section shells - before any matter text goes in.
+    2. Fill the plan: claims, units, evidence and layout, each field against its contract in the table above.
+    3. Compose one self-contained HTML file carrying the shared runtime, the composition and the inert state block. Keep a stable artifact ID in it so a later edit can find its way back.
+    4. Check the finished specification and file against this contract before delivery, and write the checks you actually ran into the handoff.
+
+    Read the component registry in [components.json](components.json) for supported component IDs and their parameter slots. Do not guess a component, inject raw SVG, or silently substitute an inadequate generic figure. Write the file once, under a new name; never overwrite an input or an earlier artifact.
+  expect: 1
+  files:
+  - references/build.md
+- from: 'For `style.source: design-md`, reference a configured palette-only authority and apply its complete supported mapping under [../DESIGN.md](../DESIGN.md). `scaffold.py design-check DESIGN.md` checks authority structure. Where script execution is unavailable, host-native tools must provide equivalent safe serialization, validation, and the finished shared runtime; do not claim unperformed checks.'
+  to: 'For `style.source: design-md`, reference a configured palette-only authority and apply its complete supported mapping under the packaged `DESIGN.md` at the root of this skill. Check that authority''s structure by reading it: the required keys, the complete role set, and recorded sources. You are providing the safe serialization, the checking and the finished shared runtime yourself; do not claim an unperformed check.'
+  expect: 1
+  files:
+  - references/build.md
+- from: Serialize the sole inert `#legaldesign-state` block with literal `<` replaced by `\u003c`; `scaffold.py script-json` provides this operation.
+  to: Serialize the sole inert `#legaldesign-state` block with literal `<` replaced by `\u003c`, and check that no raw `<` survives in it before delivery.
+  expect: 1
+  files:
+  - references/build.md
+- from: 'Only a user-named template authorizes exact import. The four shipping v4 templates are `stacked-explainer`, `slide-brief`, `diligence-report`, and `method-map`; imports read `assets/templates/<name>.template.html`, not filled reference assets. Use `scaffold.py init --form <matching-form> --template <name> --output <workspace>/artifact.html --spec-output <workspace>/artifact.spec.json`, choosing `one-page` or `slide-brief` to match the template rather than forcing one page for every import. New explicit imports use v4; record `strategy: template-import` and `templateRef` and fill safely. Separately supplied older files remain subject to the v2/v3 compatibility rules above.'
+  to: 'Only a user-named template file authorizes exact import; blank templates are not packaged with this skill, so the template is one the lawyer supplies or one produced earlier by an Export template. The packaged `assets/` files are filled examples to read for anatomy, never import sources. Match the template''s own `form`, `one-page` or `slide-brief`, rather than forcing one page for every import. New explicit imports use v4; record `strategy: template-import` and `templateRef` and fill safely. Separately supplied older files remain subject to the v2/v3 compatibility rules above.'
+  expect: 1
+  files:
+  - references/build.md
+- from: Run `scaffold.py template-check <workspace>/template.html --asset <matching-name>.html` for the matching asset and the applicable QA checks. Maintainers regenerate shipping templates after runtime/asset changes; ordinary artifact creation does not rebuild them.
+  to: Compare the produced template against the matching packaged example for structure and run the applicable QA checks yourself. Ordinary artifact creation does not rebuild a template.
+  expect: 1
+  files:
+  - references/build.md
+- from: Generated by `scripts/scaffold.py components --markdown` from [`components.json`](components.json). Do not edit this table by hand.
+  to: A readable view of [`components.json`](components.json), which is the registry that governs. Where the two disagree, the JSON wins.
+  expect: 1
+  files:
+  - references/components.md
+- from: For a cite-check v2 aggregate and manifest, read [cite-check-adapter.md](cite-check-adapter.md) before mapping support, coverage, currentness, paths or matched-source images. Its fail-closed provenance rules are required for that handoff; they are not a second general design workflow.
+  to: Where an upstream verification report is supplied, carry its own labels, statuses and coverage limits through unchanged; never restate a partial check as a clean one, and never recompute a verification you did not perform.
+  expect: 1
+  files:
+  - references/evidence.md
+- from: Validate the specification, compare the source record, and inspect the rendered artifact. Schema success or a screenshot file is not proof of fidelity, legibility, or functioning interactions. Correct failures and rerun affected/dependent checks; disclose anything unavailable.
+  to: |-
+    Check the specification, compare the source record, and inspect the rendered artifact in the preview pane. A specification that reads correctly is not proof of fidelity, legibility, or functioning interactions. Correct failures and redo affected checks.
+
+    Some of what follows needs a real browser at several window sizes, with a pointer and a keyboard. You do not have one. Do every check you can do by reading the file and by looking at the preview, and list the rest in the handoff as outstanding, by name. Silence about an unperformed check is a false claim; so is "verified" for anything you only reasoned about.
+  expect: 1
+  files:
+  - references/qa.md
+- from: confirmed `[legaldesign]` lines in `lqplaybook.md`; packaged [DESIGN.md](DESIGN.md). Never read `lqprofile.md` for instructions.
+  to: confirmed `[legaldesign]` lines in an `lqplaybook.md` the lawyer has attached or put in the session's Input folder; packaged [DESIGN.md](DESIGN.md). Read no other preference or profile file.
+  expect: 1
+- from: '- For multiple documents, use one temporary master JSON dataset in the workspace with stable source/claim references; keep substantive extraction separate from presentation copy. Preserve an upstream workflow''s native versioned output. Remove temporary extracted matter after delivery unless retention was requested.'
+  to: '- For multiple documents, keep one working dataset with stable source/claim references; keep substantive extraction separate from presentation copy. Preserve an upstream workflow''s native versioned output. Files written along the way cannot be deleted here: say plainly which intermediate files are in the Output folder alongside the finished page, and name them, so the lawyer can clear them out.'
+  expect: 1
+- from: '- Prefer open-source or host-native tools. A legal-grade or licensed service is an option only when selected by the user or firm; never silently install dependencies. Propose confirmed `[legaldesign]` playbook lines for the authorized writer; do not write the playbook or profile.'
+  to: '- Use what this host can already do. A legal-grade or licensed service is an option only when selected by the user or firm. Never write to `lqplaybook.md` yourself: where this run settles a reusable design preference, offer it as one exact `[legaldesign]` line the lawyer can paste into their own file.'
+  expect: 1
+- from: |-
+    The optional `scripts/exhibit.py` helper locates and highlights a unique passage,
+    crops its real rendering, and writes the PNG plus a provenance sidecar. Run from
+    the installed skill directory, with an available Python environment:
+
+    ```sh
+    python scripts/exhibit.py pdf --pdf source.pdf --page 4 --start "First unique words" --end "Last unique words." --out clip.png --pdf-out clip.pdf
+    python scripts/exhibit.py web --url https://example.org/source --contains "Unique source passage" --out clip.png
+    python scripts/exhibit.py attach --png clip.png --locator "Source p. 4, cited paragraph" --alt "Highlighted source passage" --out clip.exhibit.json
+    ```
+
+    `--pdf-out` is optional. Its PDF contains exactly the PNG's rendered pixels, not
+    hidden surrounding page text: a **highlighted raster excerpt companion**, not
+    the original PDF or a newly typeset quotation. `attach` checks the source, PNG,
+    any companion, and receipt before writing the direct JSON object to assign to
+    `evidence[].exhibit`. It does not change evidence status. Keep companions and
+    their receipts beside the delivered artifact; PDF attachment links are not part
+    of the current popup schema. Do not replace the authoritative-original link
+    with a local PDF path or a PDF data URI.
+
+    For an authorized downloaded HTML source, first print its actual bytes locally:
+
+    ```sh
+    python scripts/exhibit.py html --html source.html --source-url https://example.org/filing --out source.browser.pdf --browser /path/to/chromium
+    python scripts/exhibit.py pdf --pdf source.browser.pdf --page 4 --start "First unique words" --end "Last unique words." --out clip.png --pdf-out clip.pdf
+    python scripts/exhibit.py attach --png clip.png --locator "Printed filing p. 3; browser PDF page 4" --alt "Highlighted filing passage" --out clip.exhibit.json
+    ```
+
+    This is a **browser-rendered PDF of supplied HTML**, never a publisher-original
+    PDF. Scripts and service workers are disabled; only files under the HTML's
+    folder are served, with external/escaping requests blocked. The `.pdf.json`
+    receipt lists loaded local resource hashes and missing/blocked resources.
+    Inspect it and the rendered pages before clipping; missing fonts, images or
+    other material content can make a rendering unsuitable. The helper records but
+    does not fetch `--source-url`. It uses print CSS, Letter paper by default
+    (`--paper A4` is available), source CSS page sizes when present, and no browser
+    headers/footers. Browser page indices need not match printed filing numbers.
+    Keep the HTML, resource files and render receipt: subsequent captures bind the
+    original HTML → browser PDF → PNG/companion PDF hash chain, and `attach` retains
+    the distinction in the popup's capture record.
+
+    PDF capture requires PyMuPDF; web/HTML capture requires Playwright and an installed
+    Chromium (optional `--browser PATH`). Dependencies are optional, never silently
+    installed. Prefer a host's native screenshot/crop capability if those are absent.
+    A licensed source is user/firm-selected; the open-source helper is the default.
+
+    Build a source/locator list once. Reuse one clip wherever the same source passage
+    supports the explanation. PDF/HTML capture reuses output only when the source,
+    request, resource and paired-output checksums match. A different request, missing
+    companion, changed resource or altered existing output requires new output paths,
+    not a silent overwrite. Failed paired writes remove only their own new files.
+    Repeated/ambiguous text fails closed: supply a
+    longer unique passage or use exact host selection. Do not keep retrying a guessed
+    page or start/end string.
+
+    The PDF matcher selects one page and expects each boundary phrase within one
+    printed line. For a passage spanning pages, capture each required page separately
+    and preserve their order and qualifications; do not silently drop the continuation.
+    For an explicitly requested short phrase, add `--tight --context 0`: it crops to
+    that phrase's highlight bounds and refuses multiline selections. Inspect the
+    crop for legibility and sufficient context, and keep the full source available.
+
+    Check each clip visually. Record source identity, locator, captured passage,
+    source/output hashes and sizes where available, renderer, timestamp, crop and
+    highlight coordinates. PDF hashes bind exact input bytes; a web DOM hash is only
+    a capture-integrity marker, not proof that the live page is an authenticated
+    original. Source files are never edited. The client keeps permitted clips;
+    template export removes their bytes and identifying metadata.
+  to: |-
+    There is no capture tool here and no browser to drive, so an authentic image of a
+    source passage exists only where the lawyer supplies one. An image you cannot
+    produce is an honest gap, never a substitute.
+
+    When no authentic image is available, use the exact excerpt path: quote the
+    passage character for character from the source you actually read, carry its
+    citation, locator and status with it, and say plainly that no page image is
+    available. Never typeset a quotation and present it as a picture of the source,
+    never paraphrase inside quotation marks, and never present a picture of your own
+    output as the source.
+
+    Where the lawyer supplies a clip, look at it before using it: check that it is
+    legible, that it carries enough context to be understood, and that it shows the
+    passage it is said to show. Record which document, which page and which passage
+    it came from, and keep that record with the artifact. A clip spanning two pages
+    is two clips, in order; do not silently drop the continuation. Reuse one clip
+    wherever the same passage supports the explanation.
+
+    A supplied clip is supplied: its status stays `supplied-unverified` however
+    convincing it looks, and a working popup proves nothing about authenticity.
+    Preserve the originating evidence status separately. Never edit a source file,
+    and do not replace the authoritative-original link with a file path or a data
+    URI. The client export keeps permitted clips; the template export removes their
+    bytes and identifying metadata.
+  files:
+  - references/evidence.md
+  expect: 1
+- from: In a v4 build plan, attach a permitted clip as `evidence[].exhibit` with a PNG/JPEG base64 `data` URI, image `sha256`, `sourceSha256`, `locator`, `captureMethod`, `capturedAt`, and descriptive `alt`. The decoded image is limited to 4 MiB. `sourceSha256` identifies the immediate capture input (the PDF for PDF capture); the HTML origin remains separately identified in its receipt and capture method. For live web capture, this field carries the explicitly labelled DOM capture-integrity hash, not an authenticated source-file hash. A supplied excerpt remains `supplied-unverified` in the image record even when its bytes and checksum match; neither a hash nor a functioning popup proves authenticity. Preserve the originating evidence status separately. An optional `excerpt` must reproduce exact source words. If a supplied narrative and its attached clip differ, state which source supports which assertion; never silently repair or present a narrative quotation as text visible in the clip.
+  to: In a v4 build plan, attach a permitted clip as `evidence[].exhibit` with a PNG/JPEG base64 `data` URI, `locator`, `capturedAt` where the lawyer can give it, and descriptive `alt`. Keep the decoded image under 4 MiB. A supplied excerpt remains `supplied-unverified` in the image record. An optional `excerpt` must reproduce exact source words. If a supplied narrative and its attached clip differ, state which source supports which assertion; never silently repair one, and never present a narrative quotation as text visible in the clip.
+  files:
+  - references/evidence.md
+  expect: 1
+- from: '## Cite-check handoffs'
+  to: '## Upstream verification handoffs'
+  files:
+  - references/evidence.md
+  expect: 1
+- from: The first topic reserves column 1, span 12; the renderer places all grouped topics into its shared full-width accordion instead of their individual outer-grid cells.
+  to: The first topic reserves column 1, span 12; place all grouped topics into one shared full-width accordion rather than in their individual outer-grid cells.
+  files:
+  - references/build.md
+  expect: 1
+- from: 'The renderer uses `legaldesign.state.v1` with `sourceSchemaVersion: legaldesign.build.v4`, the single composition, overview, and preserved claim/evidence/encoding data.'
+  to: 'The page''s saved state is `legaldesign.state.v1` with `sourceSchemaVersion: legaldesign.build.v4`, carrying the single composition, the overview, and preserved claim/evidence/encoding data.'
+  files:
+  - references/build.md
+  expect: 1
+- from: Keep each `.pop` directly under `#popup-scrim` with `data-evidence-id`; editable presentation fields retain their typed evidence-field mapping. The component runtime owns interaction, editing, navigation, recovery, and exports. Do not rebuild these in each output.
+  to: Keep each `.pop` directly under `#popup-scrim` with `data-evidence-id`; editable presentation fields retain their typed evidence-field mapping. The shared runtime in the page owns interaction, editing, navigation, recovery, and exports. Do not rebuild these in each output.
+  files:
+  - references/build.md
+  expect: 1
+- from: For package/runtime changes, regenerate and reopen every shipping template and run relevant repository validators/browser tests; a showcase screenshot or privacy scan alone is insufficient.
+  to: A single screenshot or a privacy scan alone is not sufficient evidence that serialization and rendering are safe.
+  files:
+  - references/qa.md
+  expect: 1
+- from: |-
+    When an authorized source is available, prefer a clip rendered from that source's
+    actual bytes or live page. It shows typography and context that a retyped quote
+    cannot. Never generate an image to imitate a document. If no source rendering is
+    available, show an exact text excerpt and an honest unavailable-image note.
+    When the user requests source clips, attempt the real capture workflow and
+    include the permitted matched clips in the relevant popups. Do not silently
+    substitute paraphrases or source links. Report any capture or permission gap.
+  to: |-
+    When the lawyer supplies a rendering of the source, prefer it to a retyped quote:
+    it shows typography and context that retyping cannot. Never generate an image to
+    imitate a document. If no source rendering is available, show an exact text
+    excerpt and an honest unavailable-image note, and say so rather than leaving the
+    gap unexplained. Report any permission gap the lawyer needs to close.
+  files:
+  - references/evidence.md
+  expect: 1
+- from: then serialize only safe color formats supported by the builder.
+  to: then use only safe, widely supported color formats in the page.
+  files:
+  - DESIGN.md
+  expect: 1
+- from: '`units[].claim` is reader-facing copy: the builder displays it as the heading of a figure or source preview and uses it for accessible naming. Name the relationship or passage, not the internal unit ID or an instruction to the builder.'
+  to: '`units[].claim` is reader-facing copy: it appears as the heading of a figure or source preview and carries the accessible name. Write the relationship or the passage, not the internal unit ID and not a note to yourself.'
+  files:
+  - references/build.md
+  expect: 1
+- from: Palette values and configuration belong to [../DESIGN.md](../DESIGN.md); typed authoring fields belong to [build.md](build.md).
+  to: Palette values and configuration belong to the packaged `DESIGN.md` at the root of this skill; typed authoring fields belong to [build.md](build.md).
+  files:
+  - references/component-grammar.md
+  expect: 1
+- from: 3. Read [references/component-grammar.md](references/component-grammar.md), the sole UI contract. Inspect relevant packaged examples and supported components, then refine the plan without copying example matter.
+  to: 3. Read [references/component-grammar.md](references/component-grammar.md), the sole UI contract, and [references/diagram-selection.md](references/diagram-selection.md) before choosing any figure. Inspect relevant packaged examples and the supported components in [references/components.md](references/components.md), then refine the plan without copying example matter.
+  expect: 1
+notes: |
+  Dropped the two builders, the JSON schemas, the blank template assets (which
+  duplicate the six packaged examples) and the cite-check handoff adapter, whose
+  neighbouring skill is not in every bundle. The body now says plainly that
+  nothing is executed: the model writes the specification and the single
+  self-contained HTML file itself, and the preview pane is the renderer, so the
+  build reference's four script commands become an ordered authoring procedure
+  and the schema check becomes a read of the field contract and the component
+  registry. Evidence capture loses the clip tool: an authentic image now exists
+  only where the lawyer supplies one, and the exact-excerpt path is the default.
+  QA keeps every check and gains an explicit instruction to name the browser and
+  device checks it cannot run rather than passing over them. The design
+  authority, component grammar, method, copy and the six example pages are
+  untouched.
+triggers:
+  positive:
+  - Turn this advice into a one-page explainer I can send the client.
+  - Build a slide brief explaining the findings, with an overview page that links to each issue.
+  - Make a visual companion for this memo that the board can follow.
+  - Set up our firm's colours for these pages and rebuild this one with them.
+  negative:
+  - Draft the advice itself - I need an analysis of the indemnity position. -> writing
+  - Put this into a PowerPoint deck for Thursday. -> PowerPoint
+  - Save the method we worked out here so I can reuse it. -> wiki
+  - Draft the closing checklist for this transaction. -> closing-checklist

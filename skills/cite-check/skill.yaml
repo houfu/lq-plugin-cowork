@@ -1,0 +1,134 @@
+name: cite-check
+upstream: litigation/cite-check
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Checks the citations in a brief, motion or memorandum against the authorities supplied for the run, one prepared paragraph, footnote and table cell at a time: resolves short forms, tests quotations, pincites and whether each source actually supports the proposition it is cited for, flags citations that cannot be found anywhere and may be fabricated, and produces a color-coded HTML report to open in the preview pane. Use when the user asks to "cite-check this brief before I file it", "verify the quotations in this motion against the cases", "do these cases actually say what the brief says they say", "are any of these citations made up", "check the pincites in this memo", or "review the authorities in this draft opinion letter". Do not use for testing an argument's internal logic, dates and figures (use the pressuretest skill), for drafting or revising the document itself (use the writing skill), or for whether an authority is still good law, which this skill does not determine.
+
+exclude:
+  - "scripts/**"
+  - "schemas/**"
+  - "references/openai-codex-runtime.md"
+  - "references/parent-fanout.md"
+
+replace:
+  - from: "Begin with the short lawyer journey in [lawyer-workflow.md](references/lawyer-workflow.md)."
+    to: "Begin with the short lawyer walkthrough in [lawyer-workflow.md](references/lawyer-workflow.md)."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Follow the same complete-file and source-identity boundaries in the [Westlaw acquisition guidance](../getting-authorities.md#recommended-westlaw-workflow), and use the firm's approved citator when later treatment or current good-law status matters."
+    to: "Follow the same complete-file and source-identity boundaries set out under \"Recommended Westlaw workflow\" in the getting-authorities reference, and use the firm's approved citator when later treatment or current good-law status matters."
+    files: ["references/authority-sources/united-states.md"]
+    expect: 1
+  - from: "Obtaining authorities does not expand the review into citator research. The review's scope is in [SKILL.md](../SKILL.md)."
+    to: "Obtaining authorities does not expand the review into citator research. The review's scope is set out in the skill body."
+    files: ["references/getting-authorities.md"]
+    expect: 1
+  - from: "Read only confirmed `[cite-check]` lines from `lqplaybook.md` if present. Never read or write `lqprofile.md`; never write the journey file. The scribe owns that separation."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[cite-check]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[cite-check]` line the lawyer can add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "| `existence_check_notes` | Optional. Where the worker searched and what it found, or `null`. |"
+    to: "| `existence_check_notes` | Optional. Where you searched for the authority and what you found, or `null`. |"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "If either is missing, retain the worker-authored fields but flag that citation as claimed and unverified in normalized validation."
+    to: "If either is missing, keep the substantive finding as you wrote it but flag that citation as claimed and unverified."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "The model makes the legal call. Small deterministic code only checks that the result has usable evidence fields and that a cited source belongs to the files supplied for this run. It then assigns the display color: incomplete evidence is amber, while the model's substantive red or yellow finding remains intact. This check prevents missing or invalid evidence from appearing green; it does not decide whether a proposition fairly states the law."
+    to: "You make the legal call, and you assign the display color by a fixed rule applied to your own result. A citation whose `source_excerpt` or `source_locator` is missing, or whose `matched_source_id` is not one of the authority files supplied for this run, is amber — claimed but unverified — and never green, however confident the reading felt. A substantive red or yellow finding you reached on the evidence stays as you made it. Apply that color rule to every row before filling the report; it keeps missing or out-of-universe evidence from appearing green, and it does not decide whether a proposition fairly states the law."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Keep raw worker results, normalized validation flags, and later reviewer annotations as separate layers."
+    to: "Keep your per-unit findings, the amber flags the color rule produced, and any later annotations by the reviewing lawyer as separate layers."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Provide a relative reference to the full prepared brief so a worker can resolve `Id.`, `supra`, or short-form antecedents outside the window."
+    to: "Keep a relative reference to the full prepared brief so you can resolve `Id.`, `supra`, or short-form antecedents outside the window."
+    files: ["references/document-context.md"]
+    expect: 1
+  - from: "The same prepared units, authority universe, bounded context, prompt, and result fields apply to scripted fan-out, native workers, and one-at-a-time processing. Logs should record IDs, counts, statuses, retries, and actionable errors rather than substantive brief or authority text. The run directory persists after the report so the lawyer keeps an audit trail and enough material to retry; deleting it is the lawyer's manual decision, and no tool removes it."
+    to: "The same prepared units, authority universe, bounded context, prompt, and result fields apply however many passes the document takes. Record IDs, counts, statuses and retries rather than substantive brief or authority text. Anything you save beside the report — the prepared unit list, the per-unit findings, the authority inventory — stays in the session's Output folder next to it, so the lawyer keeps a record and enough material to re-run a unit. Name those files when you deliver; what happens to them afterwards is the lawyer's own decision."
+    files: ["references/document-context.md"]
+    expect: 1
+  - from: "a citation reported by the worker must appear in the assigned unit."
+    to: "a citation you report must appear in the assigned unit."
+    files: ["references/cite-check-rubric.md"]
+    expect: 1
+  - from: "Use the exact row-level enum values in [unit-review-prompt.md](unit-review-prompt.md), and keep worker output to the defined result object."
+    to: "Use the exact row-level enum values in [unit-review-prompt.md](unit-review-prompt.md), and keep each unit's output to the defined result object."
+    files: ["references/cite-check-rubric.md"]
+    expect: 1
+  - from: "- **[Routing]** tells the worker to collect a missing jurisdiction, tribunal, posture, timing, audience, or local-rule input."
+    to: "- **[Routing]** means collect a missing jurisdiction, tribunal, posture, timing, audience, or local-rule input before deciding."
+    files: ["references/ethics-and-jurisdictions.md"]
+    expect: 1
+  - from: "The worker should not infer a universal preservation duty from a missing fact in a brief alone."
+    to: "Do not infer a universal preservation duty from a missing fact in a brief alone."
+    files: ["references/ethics-and-jurisdictions.md"]
+    expect: 1
+  - from: "The worker should verify the court hierarchy, current status, issue, and directness; then flag the omission with the exact case and pinpoint."
+    to: "Verify the court hierarchy, current status, issue, and directness; then flag the omission with the exact case and pinpoint."
+    files: ["references/ethics-and-jurisdictions.md"]
+    expect: 1
+  - from: "11. `existence_check_notes`: where the worker searched and what it found, or `null`. Optional key."
+    to: "11. `existence_check_notes`: where you searched and what you found, or `null`. Optional key."
+    files: ["references/unit-review-prompt.md"]
+    expect: 1
+  - from: "## 2. Per-unit fan-out"
+    to: "## 2. Per-unit review"
+    files: ["references/lawyer-workflow.md"]
+    expect: 1
+  - from: "Completed receipts and raw attempts remain in the same run directory."
+    to: "Keep the completed result and the earlier attempt together with the rest of the run's material in the Output folder."
+    files: ["references/lawyer-workflow.md"]
+    expect: 1
+  - from: "For United States case law, search CourtListener or another available public source using citation metadata only. For another jurisdiction, use an available public source from the [jurisdiction-specific authority sources](references/getting-authorities.md#jurisdiction-specific-authority-sources). Do not upload the client brief. Report one simple outcome: the environment could not search; the search did not find the case and it may be hallucinated; or the case was found but was not supplied for substantive checking."
+    to: "For United States case law, look for the cited case in a public source such as CourtListener, using citation and case metadata only; the Deep Research skill reaches the public web, and Enterprise Search reaches authorities the firm has already collected. For another jurisdiction, use an available public source from the [jurisdiction-specific authority sources](references/getting-authorities.md#jurisdiction-specific-authority-sources). Do not upload, paste, or search on the text of the client brief. Report one simple outcome: no search capability was available; the search did not find the case and it may be hallucinated; or the case was found but was not supplied for substantive checking. Finding a case this way establishes only that an authority with that citation appears to exist. It never verifies the quotation, pincite, holding, or proposition the brief attributes to it, and it is never source evidence for the accuracy fields. Say that in those words rather than reporting the citation as verified."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "When the packaged scripts are available, use `scripts/aggregate_report.py` to validate the receipts and render the lawyer-facing HTML report from [assets/report-template.html](assets/report-template.html). If local scripts are unavailable, render the same validated report data with the supplied template using host-native capabilities."
+    to: "Fill the supplied [assets/report-template.html](assets/report-template.html) with the validated result data and save it as an HTML file the lawyer can open in the preview pane."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Run the packaged `scripts/cite_check.py`. It starts one fresh Codex session for each prepared unit. If the host cannot run it, keep the same one-unit assignments with native workers or process them one at a time. The environment probe only checks local capability; it makes no model call and reads no matter content."
+    to: "Then review the brief one prepared unit at a time. Every unit gets its own focused pass against the same rubric and the same supplied authorities; no pass covers several paragraphs at once."
+    files: ["references/lawyer-workflow.md"]
+    expect: 1
+  - from: "The parent converts the target to Markdown or plain text, makes one unit per extractable text container, assigns stable `P####`/`F####` IDs, records file paths and line ranges, and does the broad source-set overview above. Run the packaged script; it uses one fresh Codex session per prepared unit. If it cannot run, use native workers or one-at-a-time processing with the same prompt and evidence universe."
+    to: "Convert the target to Markdown or plain text, make one unit per extractable text container, assign stable `P####`/`F####` IDs, record file paths and line ranges, and do the broad source-set overview above. Then work through the units one at a time, each with the same prompt and the same evidence universe."
+    files: ["references/lawyer-workflow.md"]
+    expect: 1
+  - from: "When the packaged scripts are available, use `scripts/aggregate_report.py` to validate the receipts and render `assets/report-template.html`. If local scripts are unavailable, render the same validated report data with the supplied template using host-native capabilities."
+    to: "Fill the supplied `assets/report-template.html` with the validated result data and save it as an HTML file the lawyer can open in the preview pane."
+    files: ["references/lawyer-workflow.md"]
+    expect: 1
+  - from: "If the packaged script cannot run, continue with one-unit native or sequential review. Tell the lawyer only that the fallback may take longer. Do not burden a nontechnical lawyer with runtime setup when the review can continue."
+    to: "A long document simply takes more passes. Tell the lawyer that up front, and say which units have been reviewed if the review has to stop before the end."
+    files: ["references/lawyer-workflow.md"]
+    expect: 1
+
+sections:
+  - match: "## Step 1: prepare, inspect, and recommend"
+    file: sections/step-1.md
+  - match: "## Orchestration"
+    file: sections/orchestration.md
+  - match: "## Method"
+    file: sections/method.md
+
+notes: |
+  Dropped scripts/ and schemas/ (the packaged runner and its JSON contracts), references/openai-codex-runtime.md (a runner contract for a runtime Cowork does not have) and references/parent-fanout.md (the same fan-out procedure again, expressed entirely in script invocations and run directories). The body's own one-unit-at-a-time path is now the only path: the Step 1, Orchestration and Method sections are rewritten so the model works through prepared units itself, and the normalized-evidence check that the packaged validator performed is stated as a rule the model applies before filling the report. The report is still rendered from the packaged assets/report-template.html, saved as an HTML file for the preview pane. Public case search is rewritten to name Deep Research and Enterprise Search and to spell out that finding a case proves existence only, never the quotation, pincite or proposition. references/lawyer-workflow.md carries the same four edits so the lawyer-facing walkthrough matches.
+
+triggers:
+  positive:
+    - "Cite-check this summary judgment brief against the cases in the folder before I file it on Friday."
+    - "Verify every quotation in this motion against the opinions I gave you and flag anything overstated."
+    - "Are any of the citations in this draft made up? I did not write all of it."
+    - "Check the pincites and short-form chains in this appellate brief."
+  negative:
+    - "Pressure-test whether this argument actually holds together on the documents. -> pressuretest"
+    - "Is Kowalski v. Reese still good law in the Ninth Circuit? -> none"
+    - "Draft the argument section of this brief. -> writing"
+    - "Find me cases supporting a stay pending arbitration. -> Deep Research"

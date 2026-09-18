@@ -1,0 +1,133 @@
+name: timenarratives
+upstream: core/timenarratives
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Drafts time-entry narratives for a named lawyer and matter from the work in
+  this conversation and the documents the lawyer supplies, attributing only
+  what the sources actually support, and returns them as an unvalidated
+  preview with no hours, rates or billability decisions. Use when the user
+  asks to "do my time entries", "draft my narratives for the Cedar matter",
+  "write up what I did today for billing", "turn this conversation into time
+  entries", "draft narratives from these documents and my note of the call",
+  or "tidy up the wording of these entries". Do not use to estimate or
+  calculate time, to decide what is billable, to post anything to a billing
+  system, or to summarise a document for its own sake. Do not use for case
+  chronologies, document timelines or fact narratives; this skill only drafts
+  billing and time-entry narratives.
+exclude:
+- scripts/**
+- schemas/**
+- references/cli-contract.md
+- references/user-journey.md
+files: files
+sections:
+- match: '## Select and retrieve context'
+  file: sections/select-sources.md
+- match: '## Internal stages'
+  file: sections/unvalidated.md
+- match: '## Review and output'
+  file: sections/review-output.md
+replace:
+- from: |-
+    Use this skill when the user asks for `timenarratives` or says “do my time entries.” Start from the current work conversation, including ordinary chat and exchanges involving other LQ skills. The lawyer need not upload files, invoke another skill, or repeat an account already established in accessible messages. Return an in-memory, unposted draft with only material factual questions.
+
+    Identify the lawyer and matter from clear current context. If either is missing or ambiguous, ask one compact question for the missing detail. Do not ask again for identity, source access or a scope the user has already supplied. Bind that response to the current map internally; the user never handles digests or implementation commands.
+  to: |-
+    Use this skill when the user says “do my time entries” or asks for narratives for a matter. Start from the current work conversation, including ordinary discussion and exchanges with other LegalQuants skills in it. The lawyer need not upload files or repeat an account already established in the messages in front of you. Return an unvalidated preview of an unposted draft, with only material factual questions.
+
+    Identify the lawyer and matter from clear current context. If either is missing or ambiguous, ask one compact question for the missing detail. Do not ask again for identity, source access or a scope the user has already supplied. Keep the working record of sources and quotes to yourself; the user never handles it.
+  expect: 1
+- from: 'Alongside the first useful draft, offer briefly: “You can add documents or point me to a matter folder for work outside this conversation.” Do not wait for uploads or repeat the offer after the user has supplied their selection.'
+  to: 'Alongside the first useful draft, offer briefly: “You can attach documents, or point me at a folder, for work outside this conversation.” Do not wait for attachments or repeat the offer after the user has supplied their selection.'
+  expect: 1
+- from: A session correction applies immediately to that draft; it is not automatic consent to change future preferences. This version retrieves related chats from the current request's clear scope; automatic recurring scope needs a host-managed, explicit and revocable policy, not an invented preference file.
+  to: 'A session correction applies immediately to that draft; it is not automatic consent to change future preferences. A style preference never widens what may be read: the sources are always this conversation and what the lawyer supplies.'
+  expect: 1
+- from: |-
+    An included event requires support for actor, action, object and matter. An
+    atom references a source unit, exact UTF-8 byte span and span SHA-256; it does
+    not duplicate the quote. The model supplies the quote in the draft map; the
+    anchoring script supplies the span and the hash. The validator proves that the span exists and is
+    bound to the packet, not that the paraphrase is semantically correct.
+  to: |-
+    An included event requires support for actor, action, object and matter. Each
+    supporting atom names its source and carries the exact quote you read there,
+    copied character for character and locatable in that source. Finding the quote
+    proves it is there; it does not prove the paraphrase built on it is
+    semantically correct.
+  expect: 1
+  files:
+  - references/evidence-rules.md
+- from: |-
+    A compiler user note remains `user_attested`, `attested` and
+    `requires_confirmation` through proposal-map validation, bound to the target
+    actor and its user-note root/container. Exact digest-bound confirmation resolves
+    that attestation for rendering; it never changes the source class or unlocks a
+    documentary or divergent-MIME ambiguity.
+  to: |-
+    A lawyer's own note stays `user_attested`, `attested` and
+    `requires_confirmation`, bound to the actor it is about. Their explicit
+    confirmation of that exact wording resolves the attestation for the draft; it
+    never changes the source class and never cures an unreadable or ambiguous
+    document.
+  expect: 1
+  files:
+  - references/evidence-rules.md
+- from: |-
+    - Use local standard-library adapters first. Host-native access or extraction is the next optional capability; use a firm-selected legal document integration only where explicitly available and authorised. Do not upload client files elsewhere to make the workflow run.
+    - With a local runtime, use `start_run.py --folder <relative folder>` alongside selected file paths, conversation snapshots and notes. Repeat the option for multiple selected folders; `--folder .` expressly selects the source root. The host supplies these options internally.
+    - Expansion includes all ordinary files, including hidden files and unsupported formats, in deterministic path order. No symlink, junction or other reparse point is followed, even if it points inside the folder. An unreadable directory or non-ordinary entry stops expansion with a reason; select ordinary files or a narrower folder to continue.
+    - The packet limit is 30 selected sources in total, including conversations and notes. Enumeration also stops above 1,000 directory entries or 20 nested levels. Do not silently take the first files or increase limits to make a folder fit. Explain the limit and identify a narrower matter subfolder or explicit selection with the lawyer.
+  to: |-
+    - Read the files with the capabilities this host already has. Use a firm-selected legal document integration only where explicitly available and authorised. Do not upload client files elsewhere to make the workflow run.
+    - Naming a folder selects its ordinary files and its ordinary subfolders, in a stable order, and nothing else. List what you actually read back to the lawyer. An unreadable file stays visible as unread; it is not dropped.
+    - Keep the selection small enough to read properly: about thirty sources in total, including the lawyer's own notes. Do not silently take the first files or stretch the limit to make a folder fit. Explain the limit and settle a narrower matter subfolder or an explicit selection with the lawyer.
+  expect: 1
+  files:
+  - references/document-context.md
+- from: |-
+    The schema proves linkage and declared state, not semantic entailment.
+    Check that each final verb and claimed outcome stays within the supported
+    activity. Display material factual additions or changed wording before final
+    approval, and retain the digest of that displayed map.
+  to: |-
+    A quote that is genuinely there proves linkage, not semantic entailment.
+    Check that each final verb and claimed outcome stays within the supported
+    activity. Display material factual additions or changed wording before the
+    entries are treated as settled.
+  expect: 1
+  files:
+  - references/evidence-rules.md
+- from: For attachments or remote material exposed by the host, preserve original bytes and source identifiers in a private staging area, then run the same compiler. Do not copy a whole folder just to stage a few selected files. A local path that the host cannot access is not evidence; ask for accessible selected files or a short account instead.
+  to: For attachments, keep the original file name and source identifier with whatever you read out of it, and read it the same way as any other selected source. A path this host cannot open is not evidence; ask for accessible files or a short account instead.
+  expect: 1
+  files:
+  - references/document-context.md
+- from: Read only confirmed `[timenarratives]` entries in `lqplaybook.md`, if available. Never read the journey profile for work product. Use a concise neutral default when no style is configured; do not delay the draft for setup. Offer a one-time style choice alongside the first useful draft, or when the user requests it. Show the exact proposed preference and persist it only after explicit agreement.
+  to: 'Read only confirmed `[timenarratives]` entries from an `lqplaybook.md` the lawyer has attached or put in the session''s Input folder; they carry style preferences only. Read no other preference or profile file. Use a concise neutral default when no style is configured; do not delay the draft for setup. Offer a one-time style choice alongside the first useful draft, or when the user requests it. Never write to `lqplaybook.md` yourself: once the lawyer agrees a preference, give them one exact line they can paste into their own file.'
+  expect: 1
+notes: |
+  Dropped the forty-module script layer, the schemas and references/cli-contract.md
+  (a script-invocation contract with no host-native meaning). The skill is now
+  scoped to the current conversation plus what the lawyer supplies or attaches:
+  the related-chat retrieval step is gone, and references/conversation-context.md
+  is replaced with a Cowork version that keeps its evidence rules and drops the
+  snapshot adapter and retrieval scope. Every deliverable is labelled
+  "Unvalidated preview" - upstream's own documented fallback - and the packet,
+  anchoring, map-digest and publication machinery is replaced by reading the
+  sources and quoting them exactly. Output is shown in the reply first and written
+  out, only on request, as Markdown or a Word document through the built-in Word
+  skill. The attribution rules, evidence rules and the scope sentence are
+  unchanged.
+triggers:
+  positive:
+  - Do my time entries for the work we just did on the Cedar matter.
+  - Draft time narratives for today for Priya Raman on the Halcyon acquisition.
+  - Turn this conversation into time entry narratives I can review.
+  - I had a call with the client and revised the disclosure schedules - draft the narratives, here are the documents.
+  negative:
+  - How many hours should I bill for this? -> none
+  - Summarise what this agreement says about termination. -> none
+  - Save what I learned about earn-out drafting for next time. -> wiki
+  - Build a client-ready page explaining the work we did. -> legaldesign

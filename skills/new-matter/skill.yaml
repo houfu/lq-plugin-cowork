@@ -1,0 +1,46 @@
+name: new-matter
+upstream: litigation/new-matter
+bucket: green
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Opens a litigation matter through a human-confirmed intake and produces one reviewable matter record: parties and roles, our side, forum, engagement and authority, the conflicts posture as a human asserts it, emergency dates, preservation posture at intake, and field-level provenance. Shows the record and its destination for approval before anything is saved. Use when the user asks to "open a new matter for this dispute", "we have just been served — set up the file", "log this subpoena as a new matter", "start an intake record for a regulatory inquiry", or "open a matter for this pre-suit demand letter". Do not use for organizing an existing matter's files and chronology (use the organize-case-docs skill), for legal holds or preservation work during a discovery response, which this skill only flags at intake (use the document-discovery skill), for a conflicts clearance or merits opinion, or for calendaring the dates it captures (use the Calendar Management skill).
+
+replace:
+  - from: "Do not read `lqprofile.md` or `lqplaybook.md` to discover paths or workspace defaults."
+    to: "Do not read a playbook or any profile file to discover paths or workspace defaults."
+    files: ["references/first-matter-setup.md"]
+    expect: 1
+  - from: "Only confirmed `[new-matter]` entries in `lqplaybook.md` may shape this work. Never read `lqprofile.md` during intake and never write either file; the scribe owns journey updates. A preference revealed during intake may be proposed as an exact `[new-matter]` line, but it affects future work only after the user explicitly confirms it. Never put client-confidential facts into a playbook or journey record."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[new-matter]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[new-matter]` line the lawyer can add to their own file; it shapes future work only once they have added it. Never put client-confidential facts into a playbook line."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Use the host's available local file and document-reading capability first."
+    to: "Use the documents the user has supplied or made available in this session first."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "After explicit approval, write only the approved record to the user-designated matter workspace."
+    to: "After explicit approval, write only the approved record to the destination the user named — the session output folder, or a matter folder they identify in OneDrive."
+    files: ["SKILL.md"]
+    expect: 1
+
+  - from: "For another forum, offer forum-specific preservation research and planning, using `regulatory` to retrieve controlling official text when appropriate; do not treat the federal workflow as controlling."
+    to: "For another forum, offer forum-specific preservation research and planning, retrieving the controlling official text from that forum's own published rules, orders and instruments; do not treat the federal workflow as controlling."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "offer research and planning under the controlling forum and use `regulatory` to retrieve official instruments when appropriate; the federal reference may be a comparison but is not controlling."
+    to: "offer research and planning under the controlling forum, retrieving official instruments from that forum's own published sources; the federal reference may be a comparison but is not controlling."
+    files: ["references/preservation-at-intake.md"]
+    expect: 1
+
+triggers:
+  positive:
+    - "We were served with a complaint this morning — open a matter for it."
+    - "Set up a new matter record for the DOL investigation letter attached here."
+    - "Open a matter for this pre-suit demand; the client is the recipient, not the sender."
+    - "Start an intake for a subpoena we received as a non-party in the Bergman case."
+  negative:
+    - "Organize the documents in the Bergman matter and build me a chronology. -> organize-case-docs"
+    - "Draft the response letter to that demand. -> correspondence"
+    - "Put all the deadlines from this scheduling order in my calendar. -> Calendar Management"
+    - "Write the client an update on where the new case stands. -> client-update"

@@ -1,0 +1,62 @@
+name: organize-case-docs
+upstream: litigation/organize-case-docs
+bucket: green
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Turns a litigation matter's documents and metadata into a provenance-backed case workspace: a source manifest covering every file examined, a chronology with exact page, Bates or line locators, a claim-and-defense proof chart, an issue-and-evidence matrix, witness, exhibit and deadline trackers, and an internal matter briefing. Use when the user asks to "organize the documents in this case", "build me a chronology from these files", "map the evidence to the elements of each claim", "set up witness and exhibit trackers", "restructure this matter's file so I can find things", or "close out this matter's records". Do not use for creating the initial matter record (use the new-matter skill), an audience-filtered report to the client (use the client-update skill), drafting or responding to discovery requests and objections (use the document-discovery skill), billing narratives or time entries (use the timenarratives skill), or document-by-document responsiveness and privilege review, which is out of scope.
+
+exclude:
+  - "templates/docreview-handoff.md"
+
+files: files
+
+replace:
+  - from: "Read only confirmed `[organize-case-docs]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[organize-case-docs]` line, but it affects future work only after the user explicitly confirms it."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[organize-case-docs]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[organize-case-docs]` line the lawyer can add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Start with host-native document reading and local, open-source inventory or extraction. If a source cannot be read, preserve it, mark it unreadable, and ask for a readable export or user-selected tool. Legal-grade e-discovery, records, or document-management systems are optional user-selected rungs; disclose scope, retention, access, and transformations. Never require a connector, package, network service, hook, or particular model."
+    to: "Read the documents the lawyer supplies or places in the session's Input folder directly, and build the inventory from what you can actually read. If a source cannot be read, preserve it, mark it unreadable, and ask for a readable export. Legal-grade e-discovery, records, or document-management systems are optional user-selected rungs; disclose scope, retention, access, and transformations."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Use `client-update` for an audience-filtered report and an available legal-design or visualization capability for a polished visual companion"
+    to: "Use `client-update` for an audience-filtered report and `legaldesign` for a polished visual companion"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "### 9. Make an explicit docreview handoff"
+    to: "### 9. Make an explicit document-review handoff"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "create an explicit handoff to [docreview](../docreview/SKILL.md). Do not silently perform or imply a privilege ruling during organization."
+    to: "that review is out of scope for this skill: build an explicit handoff package for whoever performs it, using the template below. Do not silently perform or imply a privilege ruling during organization."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Align machine fields with the sibling docreview manifest, review-plan, and privilege-ruling contracts; do not copy its scripts or invent a parallel schema."
+    to: "Keep the handoff's machine fields aligned with the manifest, review-plan, and privilege-ruling vocabulary already in use on this matter rather than inventing a parallel schema."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- Explicit `docreview-handoff.json` or a recorded `no-handoff` decision using the [handoff template](templates/docreview-handoff.md)."
+    to: "- Explicit `document-review-handoff.json` or a recorded `no-handoff` decision using the [handoff template](templates/document-review-handoff.md)."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- A docreview handoff is explicit, digest-bound, scope-complete, and blocked on drift or unreadable required material."
+    to: "- The document-review handoff is explicit, digest-bound, scope-complete, and blocked on drift or unreadable required material."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "| DOCREVIEW | [Sibling docreview skill](../../docreview/SKILL.md) | Manifest, review-plan, privilege-hold, gap, and reconciliation interface for document-level review | Repository-local contract; use its current schemas and do not make an autonomous privilege ruling. |"
+    to: "| REVIEW | Document-level review handoff (out of scope for this skill) | Manifest, review-plan, privilege-hold, gap, and reconciliation fields to hand to whoever performs document-level review | Record the handoff and the lawyer decisions it needs; never make an autonomous privilege ruling. |"
+    files: ["references/sources.md"]
+    expect: 1
+
+triggers:
+  positive:
+    - "Organize the documents in the Alvarez matter and build a chronology with sources."
+    - "Map every element of our breach claim to the evidence we actually have and show me the gaps."
+    - "Set up a witness tracker and an exhibit index for this case from these productions."
+    - "We just settled — walk me through closing out the file, holds and retention."
+  negative:
+    - "Open a new matter record for this dispute. -> new-matter"
+    - "Write the client a status update on where the case stands. -> client-update"
+    - "Draft our objections to their requests for production. -> document-discovery"
+    - "Go through these 400 documents and mark which ones are privileged. -> none"

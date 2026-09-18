@@ -1,0 +1,43 @@
+name: correspondence
+upstream: litigation/correspondence
+bucket: green
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Triages inbound litigation correspondence and drafts source-grounded outbound letters and emails for U.S. litigation: meet-and-confer letters, settlement demands and counteroffers, scheduling and conduct letters to opposing counsel, and substantive pre-suit or case communications. Returns a routing decision, a reviewer note, a source ledger, the draft, and an explicit no-send gate. Use when the user asks to "draft a meet-and-confer letter about their deficient responses", "reply to opposing counsel's letter", "write to opposing counsel proposing new deposition dates", "draft a settlement demand for this claim", "counter their offer", or "triage this email from the other side and tell me what it asks for". Do not use for court or regulator filings and legal memoranda (use the writing skill), client status reporting (use the client-update skill), the underlying discovery request, objection or subpoena analysis (use the document-discovery skill), or transmitting an approved draft (use the Email skill).
+
+replace:
+  - from: "Read only confirmed `[correspondence]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[correspondence]` line, but it affects future work only after the user explicitly confirms it."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[correspondence]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[correspondence]` line the lawyer can add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Keep matter information within the supplied evidence universe and the host's approved local tools."
+    to: "Keep matter information within the supplied evidence universe and the files the user has made available in this session."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "For a multi-document run, use one temporary, matter-scoped JSON dataset for extracted facts, source IDs, and drafts. Delete it on completion and do not place client-confidential material in a skill reference, eval fixture, public URL, or durable log."
+    to: "For a multi-document run, keep one matter-scoped working table of extracted facts, source IDs, and drafts inside this session. Do not place client-confidential material in a skill reference, a public URL, or a durable log."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Always finish with `NO SEND — lawyer approval and a separate sending step required`."
+    to: "Always finish with `NO SEND — lawyer approval and a separate sending step required`. Sending is the lawyer's own step, taken with the Email skill or their mail client after they approve the draft; never treat producing the draft as having sent it."
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## Professional and evidentiary guardrails"
+    file: sections/guardrails.md
+
+files: files
+
+triggers:
+  positive:
+    - "Draft a meet-and-confer letter on their responses to requests 4, 9 and 17."
+    - "Here's the letter opposing counsel sent this morning — triage it and tell me what it wants and by when."
+    - "Write a settlement demand for the wage claim; the client has authorized up to 180,000."
+    - "They countered at 60,000 — draft our response going through each term."
+  negative:
+    - "Draft the reply brief in support of our motion to compel. -> writing"
+    - "Analyze their requests for production and draft our objections request by request. -> document-discovery"
+    - "Prepare the quarterly report to the client on all open matters. -> client-update"
+    - "Send that letter to opposing counsel now. -> Email"

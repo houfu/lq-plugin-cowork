@@ -1,0 +1,29 @@
+name: depositions
+upstream: litigation/depositions
+bucket: green
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Plans, prepares for and closes the loop on a deposition in U.S. litigation: maps objectives to claims, defenses and elements, builds a source-backed chronology and witness map, sequences exhibits and foundation questions, drafts examination outlines and Rule 30(b)(6) topic lists, prepares a witness on process and ethics, and extracts admissions, impeachment and follow-up from a transcript. Use when the user asks to "plan the deposition of their CFO", "build an outline that locks in these admissions", "prepare our witness for her deposition next week", "draft 30(b)(6) topics for the company", "pull the admissions and impeachment out of this transcript", or "what follow-up does this deposition open up". Do not use for written discovery requests, responses or document subpoenas (use the document-discovery skill), letters to opposing counsel about scheduling or conduct (use the correspondence skill), or the matter-wide chronology and trackers (use the organize-case-docs skill).
+
+replace:
+  - from: "Read only confirmed `[depositions]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[depositions]` line, but it affects future work only after the user explicitly confirms it."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[depositions]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[depositions]` line the lawyer can add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Start with host-native document reading and local, open-source extraction. If that is unavailable, ask the user for readable text or exports. A legal-grade comparison, transcript, or e-discovery platform is an optional user-selected rung; disclose what it receives, preserve originals, and keep the same source and provenance contract. Never require a connector, package, network service, hook, or particular model."
+    to: "Read the documents the lawyer supplies or places in the session's Input folder directly. If a source cannot be read, say so and ask for readable text or an export rather than working from its filename. A legal-grade comparison, transcript, or e-discovery platform is an optional user-selected rung; disclose what it receives, preserve originals, and keep the same source and provenance contract."
+    files: ["SKILL.md"]
+    expect: 1
+
+triggers:
+  positive:
+    - "Plan the deposition of their finance director — I need to lock in when they knew about the defect."
+    - "Draft 30(b)(6) topics for the company's document retention practices."
+    - "Prepare our client for her deposition on Thursday; she has never been deposed."
+    - "Go through this transcript and pull out the admissions and anything I can impeach him with later."
+  negative:
+    - "Draft requests for production covering their retention policies. -> document-discovery"
+    - "Write to opposing counsel proposing new deposition dates. -> correspondence"
+    - "Build the witness and exhibit trackers for the whole case file. -> organize-case-docs"
+    - "Draft the advice itself — I need an analysis of whether his testimony sinks our indemnity position. -> writing"

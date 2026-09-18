@@ -1,0 +1,44 @@
+name: lq-start
+upstream: core/lq-start
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Names the one LegalQuants skill that fits the work in front of the lawyer,
+  with the sentence to type, or lays out the whole map of the LegalQuants
+  skills for both bundles.
+  Use when the user asks "which skill should I use for this", "what
+  LegalQuants skills do I have here", "what can you do with these skills",
+  "is there something for checking a contract against our house positions",
+  "I'm an M&A associate, where do I start", or "I don't know what to type".
+  Do not use for the legal work itself: this only routes, and it names the
+  skill that does the work instead. Do not use for finding files or research
+  across the tenant (use the Enterprise Search skill) or for a briefing on
+  outside material (use the Deep Research skill).
+exclude:
+- scripts/**
+files: files
+notes: |
+  Full-file overlay. Upstream reads a live catalogue with a bundled script and
+  splits references/map.md by its output; neither is possible here, so the overlay
+  is a static router and ships its own Cowork map.md. Dropped the script, the
+  catalogue step, the invocation grammar, the not-installed-plugin block and the
+  other-plugin sales line. The map carries both Cowork bundles in full, every entry
+  labelled with the bundle it ships in, and the overlay adds one neutral sentence
+  that a skill responds only if its bundle is available in the tenant and that
+  plugin availability is managed by the Microsoft 365 administrator. The skill does
+  not claim to know which bundle is installed and does not claim a typed skill
+  menu; deliberate selection is the conversation's Sources picker. The map omits
+  every LegalQuants skill that is not in a Cowork bundle rather than naming it as
+  unavailable, and each entry is written against that skill's own description
+  limits. The closing sign-off is the vendor-neutral line from the contract.
+triggers:
+  positive:
+  - Which of these skills should I use for a contract I just got back from the other side?
+  - What can you actually do here? Give me the map.
+  - I'm a corporate associate doing mostly M&A. Where should I start with these?
+  - I don't know what to type. What are my options?
+  negative:
+  - Draft the closing checklist for this share purchase agreement. -> closing-checklist
+  - Add what we learned about limitation periods to my wiki. -> wiki
+  - Where do I stand with AI compared to other lawyers? -> lq-mirror
+  - Summarise the key dates in this bundle of emails into a table. -> organize-case-docs

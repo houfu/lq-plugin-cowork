@@ -1,0 +1,73 @@
+name: pressuretest
+upstream: litigation/pressuretest
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Pressure-tests a legal position against the documents supplied for it. Reconstructs the strongest route through the bundle, mounts every attack the documents support, and adjudicates each one on its own — producing either ranked, source-anchored pressure points or a resilience brief recording each attack and why it failed, as a short chat summary plus an HTML report to open in the preview pane. Tests logic, dates, figures and cross-document consistency, not the law. Use when the user asks to "pressure-test this argument", "stress-test our position before we file", "red-team the other side's case", "does this advice hold together on these documents", "find the holes in this pleading", or "check these agreements against each other for inconsistencies". Do not use for verifying citations, quotations or whether a case is good law (use the cite-check skill), for drafting or rewriting the document (use the writing skill), or for legal research or reading a redline.
+
+exclude:
+  - "scripts/**"
+  - "schemas/**"
+
+files: files
+
+replace:
+  - from: "Point; the validator faults the duplicate."
+    to: "Point; treat the second as a duplicate and drop it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "mechanically, and the validator re-derives it."
+    to: "mechanically, and you re-derive it from the table before delivering."
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## Modes"
+    file: sections/modes.md
+  - match: "## Execution"
+    delete: true
+  - match: "## Step 7 — Deliver in three transmissions"
+    file: sections/step-7.md
+  - match: "## Step 8 — Validate deterministically"
+    file: sections/step-8.md
+  - match: "## Deadline discipline"
+    file: sections/deadline-discipline.md
+  - match: "## Honest limits"
+    file: sections/honest-limits.md
+
+patches:
+  - patches/native-paths.patch
+
+notes: |
+  Dropped scripts/ and schemas/: the renderer, chat/handoff formatters, period
+  calculator and deliverable validator, plus the JSON schema they enforce.
+  Everything they did now has a native path. Modes loses the worker/harness and
+  reasoning-effort material and keeps the staged-read distinction; Execution is
+  deleted (it only forbade nested model clients for parallelism); Transmission 3
+  is rewritten to fill the packaged assets/report-template.html and save an HTML
+  file for the preview pane, with the complete reading view in chat as the
+  fallback and the Word skill for an exported document; Step 8 becomes a
+  substantive self-check that keeps the quote-verification honesty (normalised
+  occurrence only, pinpoints and entailment explicitly unverified) and drops the
+  exit codes and interpreter floor; Deadline discipline drops "if the helpers
+  cannot run". A patch removes the Step 0 line telling the user to change a
+  reasoning-effort setting, replaces the packaged date calculator with an
+  explicit shown-count discipline that keeps the period/clear and
+  due-by/not-before conventions and the date-only limitation, and moves Step 5's
+  nine binding calibration examples verbatim into references/calibration-examples.md
+  with a pointer in the body. Body still runs to about 5,000 words because
+  Steps 1-6 and the Transmission 1 checkpoint are legal method, not mechanics;
+  cutting further would mean moving method out of the body.
+
+triggers:
+  positive:
+    - "Pressure-test our position that the termination was lawful, against these six documents."
+    - "Red-team the other side's case from their pleading and the correspondence bundle."
+    - "Stress-test this advice note before it goes to the client — do the dates and figures hang together?"
+    - "Check this SPA, the side letter and the disclosure letter against each other for inconsistencies."
+  negative:
+    - "Verify the cases cited in this brief against the authorities. -> cite-check"
+    - "Draft our response to their summary judgment motion. -> writing"
+    - "Research whether economic duress is available on these facts. -> Deep Research"
+    - "Build the chronology and proof chart for this matter. -> organize-case-docs"

@@ -1,0 +1,37 @@
+name: client-update
+upstream: litigation/client-update
+bucket: green
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Prepares evidence-first litigation status reporting: single-matter updates, event-triggered decision addenda, outside-counsel reports, and portfolio views. Keeps verified developments, analysis, recommendations and decisions in separate layers, and makes deadlines, budgets, exposure, risks and owners explicit. It drafts; it never sends. Use when the user asks to "write a status update for the client on this case", "prepare this month's outside-counsel report", "give the board a view of our open litigation", "the court just ruled — draft a note telling the client what it means", or "summarize where each matter stands and what decisions are needed". Do not use for advocacy or a legal-analysis memorandum (use the writing skill), letters to opposing counsel (use the correspondence skill), the internal matter-team evidence record (use the organize-case-docs skill), laying an existing analysis out as a designed page (use the legaldesign skill), or sending an approved report (use the Email skill).
+
+replace:
+  - from: "Read only confirmed `[client-update]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[client-update]` line, but it affects future work only after the user explicitly confirms it."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[client-update]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[client-update]` line the lawyer can add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- Use one temporary working dataset for multi-document extraction and delete it on completion. Do not put client facts, names, amounts, paths, or privileged analysis in reusable knowledge stores."
+    to: "- Keep one working table for multi-document extraction inside this session. Anything you save stays in the session's Output folder: name it when you deliver, and never describe it as removed. Do not put client facts, names, amounts, paths, or privileged analysis in reusable knowledge stores."
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## Tool cascade (optional)"
+    file: sections/tool-cascade.md
+  - match: "## Reference shelf"
+    file: sections/reference-shelf.md
+
+files: files
+
+triggers:
+  positive:
+    - "Draft this quarter's status update to the client on the Henderson litigation."
+    - "The judge denied our motion yesterday — write the client a note on what it means and the decisions we need."
+    - "Prepare an outside-counsel report for the insurer covering the last reporting period, with budget and exposure."
+    - "Give the GC a portfolio view of all eleven open matters with deadlines and owners."
+  negative:
+    - "Draft a settlement demand letter to opposing counsel. -> correspondence"
+    - "Write a memo analyzing whether we can recover consequential damages. -> writing"
+    - "Build the chronology and exhibit tracker for this matter's file. -> organize-case-docs"
+    - "Email this report to the client. -> Email"

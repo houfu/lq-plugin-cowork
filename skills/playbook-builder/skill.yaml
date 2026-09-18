@@ -1,0 +1,237 @@
+name: playbook-builder
+upstream: transactional/playbook-builder
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Builds or updates an approved contract playbook in Markdown from one to five
+  templates, precedents, negotiated agreements or knowledge notes the lawyer
+  selects, or imports the playbook table a team already keeps, with every
+  preferred position, fallback, red line and approved wording linked to the
+  exact source text behind it. Use when the user asks to "build a playbook
+  from these precedents", "turn our standard MSA into a playbook", "import our
+  existing playbook spreadsheet", "what are our standard positions across
+  these agreements", "add a matter lens for regulated clients", or "update our
+  playbook with this newly negotiated agreement". Do not use to review a
+  counterparty draft against an existing playbook (use the playbook-review
+  skill), and do not use it to draft a contract.
+exclude:
+- scripts/**
+- schemas/**
+- references/playbook-engine-contract.md
+files: files
+sections:
+- match: '## Output contract'
+  file: sections/output-contract.md
+- match: '## Capability fallback'
+  file: sections/capability.md
+replace:
+- from: '- Read [the shared artifact contract](references/playbook-engine-contract.md).'
+  to: '- Read [the playbook format](references/playbook-format.md). It is the shape both this skill and a later review depend on.'
+  expect: 1
+- from: |-
+    - Put contract playbooks in a user-selected matter or knowledge-management
+      folder. Never put them under `~/.lq/`.
+  to: |-
+    - Put contract playbooks in a folder the lawyer chooses and can find again,
+      with their other knowledge-management material. Never hide one away.
+  expect: 1
+- from: |-
+    When the team already keeps its playbook as a table in Word, Excel or CSV,
+    import it rather than rebuilding it from precedents:
+
+    ```text
+    python3 scripts/playbook_builder.py import-playbook <table-file> \
+      --title "<Title>" --playbook-id "<slug>" \
+      --perspective <represented party> --family "<agreement family>" \
+      [--governing-law "<jurisdiction>"] --out-dir <package-folder> \
+      [--approve-all "<the lawyer's confirmation>" [--seal]]
+    ```
+
+    Ask the lawyer for the perspective and agreement family if the message does
+    not state them; the importer takes no defaults. It finds the header row
+    wherever it sits, maps headers by alias (Clause or Topic, House Standard or
+    Preferred, Wording, Fallback, Condition, Red Line, Priority, Guidance) and
+    reports the mapping it used in `import-receipt.json`; check that against the
+    table before going further and stop if a column was missed.
+
+    Every row becomes an issue anchored to that row in `source-manifest.json`.
+    Cells are position summaries, not approved clause wording: `text` stays null
+    unless the table has a wording column. Priority comes only from a priority
+    column. Rows land as `candidate` in a `draft` playbook by default. When the
+    lawyer confirms the table is approved firm policy, pass their words in
+    `--approve-all`; only then can `--seal` produce `build-receipt.json`,
+    `playbook.md` and the registry entry that `playbook-review` discovers.
+  to: |-
+    When the team already keeps its playbook as a table in a Word document, a
+    workbook or a CSV, import it rather than rebuilding it from precedents. Read
+    the table yourself and convert it row by row.
+
+    Ask the lawyer for the represented perspective and the agreement family if
+    their message does not state them; take no defaults. Find the header row
+    wherever it sits and map the columns you actually see onto the playbook's
+    fields — Clause or Topic to the issue heading, House Standard or Preferred to
+    the preferred position, then Wording, Fallback, Condition, Red Line, Priority
+    and Guidance. Show the lawyer the column mapping you used before going
+    further, and stop and ask if a column has no home or a field has no column.
+
+    Every row becomes one issue, with a source line naming the table and that
+    row. Cells are position summaries, not approved clause wording: leave
+    `Approved wording` as `none` unless the table has a wording column. Priority
+    comes only from a priority column. Rows land as `candidate` in a `draft`
+    playbook. Only when the lawyer confirms in their own words that the table is
+    approved firm policy do the issues become `approved` and the playbook's
+    status change; quote their confirmation in the curation report.
+  expect: 1
+- from: |-
+    Probe local Python and document-reading capabilities. When the bundled script
+    can run, create the manifest:
+
+    ```text
+    python3 scripts/playbook_builder.py manifest <sources...> --boundary <folder> \
+      --role <file>=<role> --out <package>/source-manifest.json
+    ```
+
+    Show the lawyer the file list, assigned roles, readability, warnings, missing
+    schedules, and any pages awaiting visual reading.
+  to: |-
+    Read every selected source and settle the census before any substantive
+    analysis. Record, for each file: the name, the assigned source role, whether
+    you could read it in full, any warning, any schedule referenced but not
+    supplied, and any page you could not read. That list is the Sources section of
+    the playbook and it does not change afterwards without a fresh gate.
+
+    Show the lawyer the file list, assigned roles, readability, warnings, missing
+    schedules, and any page you could not read.
+  expect: 1
+- from: |-
+    Render `playbook.md` and `coherence-report.md`. Show the approved count,
+    candidate count, unresolved conflicts, source warnings, and version change.
+    Do not generate static HTML files (`playbook.html` or `curation-report.html`)
+    during playbook building; the canonical JSON and Markdown outputs provide complete
+    clarity without browser rendering overhead.
+
+    To seal the approved package, use the deterministic `seal` workflow:
+
+    ```text
+    python3 scripts/playbook_builder.py seal <package>/playbook.json \
+      --manifest <package>/source-manifest.json \
+      --out-receipt <package>/build-receipt.json \
+      --out-markdown <package>/playbook.md
+    ```
+
+    The `seal` command validates all invariants, verifies source quotations against
+    the source manifest, binds operative approved wording, updates the build receipt,
+    renders `playbook.md`, and automatically registers the playbook in
+    `playbook-registry.json` for one-click discovery by `playbook-review`. You can also
+    run individual verification steps manually if needed:
+
+    ```text
+    python3 scripts/playbook_builder.py validate <package>/playbook.json
+    python3 scripts/playbook_builder.py render-md <package>/playbook.json \
+      --manifest <package>/source-manifest.json --out <package>/playbook.md
+    python3 scripts/playbook_builder.py receipt <package>/source-manifest.json \
+      <package>/playbook.json --out <package>/build-receipt.json
+    python3 scripts/playbook_builder.py register <package>/playbook.json
+    ```
+
+    Set the playbook status to `approved` only after the lawyer explicitly approves
+    the complete package and validation has no errors. An approved playbook may keep
+    candidate evidence and candidate lenses, but candidate entries remain non-operative.
+
+    Upon sealing, provide a clear persistence confirmation and next-steps menu:
+
+    ```markdown
+    ✅ **Playbook Sealed Successfully: [playbook-name] (v[version])**
+
+    This playbook is now registered in your library and ready for use. You do not need to upload or configure this playbook again.
+
+    **Playbook Highlights:**
+    - Operative Baseline Positions: [X] approved rules
+    - Contextual Matter Lenses: [Y] candidate lenses available ([Lens 1], [Lens 2])
+    - Provenance: 100% source-linked with SHA-256 build receipt
+
+    **Next Steps:**
+    1. **Review Counterparty Paper:** Run `playbook-review` on an inbound contract package against this playbook.
+    ```
+  to: |-
+    Write `playbook.md` and `coherence-report.md`. Show the approved count,
+    candidate count, unresolved conflicts, source warnings, and the version change.
+    Do not generate HTML; the Markdown files are the deliverable and the preview
+    pane reads them.
+
+    Before you ask for approval, check the package yourself and say you did it:
+
+    - every operative position and every approved wording item carries a source
+      line whose quote appears, character for character, in the source it names;
+    - every issue has a status, and no candidate is presented as operative;
+      every lens is a definition and none is active;
+    - the issue IDs are stable, unique and unchanged from the prior version where
+      they describe the same position;
+    - the sources section accounts for every file read, and for every file or page
+      that could not be read.
+
+    Set the playbook status to `approved` only after the lawyer explicitly approves
+    the complete package and those checks come back clean. An approved playbook may
+    keep candidate evidence and candidate lenses, but candidate entries remain
+    non-operative.
+
+    Then confirm in plain words, without inventing a guarantee:
+
+    ```markdown
+    **<Playbook name> (v<version>) is approved and saved.**
+
+    It is at `<folder>/playbook-package/playbook.md`. Point a review at that file.
+
+    - Operative baseline positions: <X> approved
+    - Matter Lenses: <Y> defined, none active ([Lens 1], [Lens 2])
+    - Every operative position is linked to a quoted source passage, checked by reading.
+
+    **Next:** ask for a review of an inbound contract against this playbook.
+    ```
+  expect: 1
+- from: If the sources span unrelated agreement families, stop and ask the lawyer to split the run. If the request is to review live counterparty drafting against an approved playbook, route to `playbook-review`.
+  to: If the sources span unrelated agreement families, stop and ask the lawyer to split the run. If the request is to review live counterparty drafting against an approved playbook, that is the playbook-review skill.
+  expect: 1
+- from: The deterministic script hashes the PDF and extracts native text if a text layer or reader is available. If native text cannot be read deterministically, it marks the document for host reading. The host then records the page count, applies native text where available, and renders/inspects only scanned or uncertain pages, adding source elements with stable IDs. If that capability is not available, keep the document pending and do not claim complete coverage.
+  to: Read the PDF's text layer where it has one. Record the page count, apply native text where it is available, and look at only the scanned or uncertain pages, giving each source passage a stable identifier. Where a page cannot be read at all, keep it pending and do not claim complete coverage.
+  expect: 1
+  files:
+  - references/pdf-intake.md
+- from: |-
+    - Read only confirmed `[playbook-builder]` lines in `lqplaybook.md`, if present.
+      They may control workflow preferences such as issue grouping or report voice.
+      They must never contain or supply legal positions, client facts, precedent
+      text, or matter instructions. Read nothing from `lqprofile.md` at work time.
+  to: |-
+    - Read only confirmed `[playbook-builder]` lines from an `lqplaybook.md` the
+      lawyer has attached or put in the session's Input folder. They may control
+      workflow preferences such as issue grouping or report voice. They must never
+      contain or supply legal positions, client facts, precedent text, or matter
+      instructions. Read no other preference or profile file, and never write to
+      `lqplaybook.md` yourself: offer a preference this run turns up as one exact
+      line the lawyer can paste into their own file.
+  expect: 1
+notes: |
+  Dropped the deterministic builder, its runtime module and the JSON schema. The
+  engine's artifact contract is replaced by references/playbook-format.md, a
+  Cowork reference that specifies the same playbook as one Markdown file and
+  keeps the parts of the engine semantics that carry legal meaning: issue fields,
+  lens adjustments and stance blocking, source roles and the evidence hierarchy,
+  the five defined-term mapping outcomes, drafting provenance and the three
+  coverage equations. The import, census and seal steps become host-native
+  reading and writing. There are no hashes, receipts or registry, so the package
+  drops build-receipt.json, source-manifest.json and playbook.json and the seal
+  becomes a read-through check the model performs and reports; the playbook is
+  found by file name in the folder the lawyer chose. Curation, lens, coherence
+  and gate logic are unchanged.
+triggers:
+  positive:
+  - Build a contract playbook from our standard MSA and these two negotiated agreements.
+  - We keep our playbook as a spreadsheet - import it and turn it into something usable.
+  - What are our standard positions on liability and indemnities across these precedents?
+  - Add a matter lens for regulated financial services clients to our playbook.
+  negative:
+  - Review this counterparty MSA against our playbook. -> playbook-review
+  - Draft a services agreement for this deal. -> none
+  - Save this drafting lesson for future reference. -> wiki
+  - Build the closing checklist for this acquisition. -> closing-checklist

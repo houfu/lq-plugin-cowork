@@ -1,0 +1,86 @@
+name: upstream-drift
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays, 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install the build tooling
+        run: uv sync --project tools
+
+      # `make drift` exits 2 when a card no longer applies, which is exactly
+      # the case we want an issue for, so its exit code is captured, not fatal.
+      - name: Report the drift
+        id: drift
+        run: |
+          set +e
+          mkdir -p dist
+          make drift > dist/drift-output.txt 2>&1
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+          cat dist/drift-output.txt
+
+      # A missing report means the check itself broke (a failed fetch, say).
+      # That must be visible rather than silently passing.
+      - name: Open or update the drift issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CODE: ${{ steps.drift.outputs.code }}
+        run: |
+          set -euo pipefail
+          report=dist/upstream-drift.md
+          broken=0
+          if [ ! -f "$report" ]; then
+            broken=1
+            title="Upstream drift check failed"
+            body=dist/issue-body.md
+            {
+              echo "\`make drift\` exited $CODE without writing a report."
+              echo
+              echo "Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+              echo
+              echo '```'
+              cat dist/drift-output.txt 2>/dev/null || echo "(no output captured)"
+              echo '```'
+            } > "$body"
+          elif [ "$CODE" = "2" ] || grep -q '^- changed: yes$' "$report"; then
+            title="Upstream drift: the vendored LegalQuants skills moved"
+            body="$report"
+          else
+            echo "upstream has not moved and every card still applies"
+            exit 0
+          fi
+
+          gh label create upstream-drift \
+            --color BFD4F2 \
+            --description "The vendored LegalQuants skills moved" \
+            --force
+          existing=$(gh issue list \
+            --label upstream-drift --state open \
+            --json number --jq '.[0].number // empty')
+          if [ -n "$existing" ]; then
+            gh issue edit "$existing" --title "$title" --body-file "$body"
+            echo "updated issue #$existing"
+          else
+            gh issue create \
+              --title "$title" \
+              --label upstream-drift \
+              --body-file "$body"
+          fi
+
+          exit "$broken"

@@ -1,0 +1,97 @@
+name: document-discovery
+upstream: litigation/document-discovery
+bucket: amber
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Plans, drafts and analyzes U.S. federal civil preservation and document-discovery work: preservation assessments and legal holds, request sets, itemized responses and objections under Rules 34, 33 and 36, meet-and-confer agendas, subpoena triage, privilege-log queues, and editable response shells to finish in Word. Use when the user asks to "draft requests for production on this issue", "go through their requests and draft our objections", "what should our legal hold cover", "prepare a meet-and-confer agenda", "triage this third-party subpoena", or "build a privilege log queue". Do not use for the letter carrying a discovery position (use the correspondence skill), deposition notices and examination plans (use the depositions skill), organizing or indexing a matter's existing files (use the organize-case-docs skill), preservation posture recorded when a matter is opened (use the new-matter skill), or reviewing an incoming production document by document, which is out of scope.
+
+exclude:
+  - "scripts/**"
+  - "schemas/**"
+  - "assets/objection-library/**"
+  - "assets/objection-review/**"
+  - "references/objection-libraries.md"
+  - "references/objection-library-builder.md"
+  - "references/objection-review.md"
+
+replace:
+  - from: "Keep test evidence and working extraction records outside the response document; remove temporary working records when done."
+    to: "Keep test evidence and working extraction records outside the response document; they stay in the session's Output folder, so name them when you deliver rather than describing them as cleared away."
+    files: ["references/response-shells.md"]
+    expect: 1
+  - from: "Otherwise start with [the bundled RFP shell](../assets/rfp-response-shell.docx): a neutral, editable pleading-paper default, not a court-approved form or a universal jurisdictional generator."
+    to: "Otherwise start with the bundled RFP shell packaged with this skill at `assets/rfp-response-shell.docx`: a neutral, editable pleading-paper default, not a court-approved form or a universal jurisdictional generator."
+    files: ["references/response-shells.md"]
+    expect: 1
+  - from: "Read only confirmed `[document-discovery]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[document-discovery]` line, but it affects future work only after the user explicitly confirms it."
+    to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[document-discovery]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[document-discovery]` line the lawyer can add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Encode a transparent drafting method; do not treat the plugin's defaults or a library entry as immutable firm policy."
+    to: "Encode a transparent drafting method; do not treat these defaults or a supplied library entry as immutable firm policy."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Route an incoming production and its substantive review to `docreview`."
+    to: "Reviewing an incoming production document by document is out of scope for this skill."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "A reasonably apparent connection to the current request can justify surfacing approved starting language with an unchecked box and a specific factual or authority limitation."
+    to: "A reasonably apparent connection to the current request can justify surfacing approved starting language as an unchosen option with a specific factual or authority limitation."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "A surfaced library candidate is an earlier consideration step, not an assertion that those facts are established or that the position will be taken; use its connection, conditions and missing inputs in the HTML workflow."
+    to: "A surfaced candidate from an approved bank of wording is an earlier consideration step, not an assertion that those facts are established or that the position will be taken; state its connection, conditions and missing inputs when you surface it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Nonparty production and any incoming production review go to `docreview` after the appropriate human authorization."
+    to: "Nonparty production, and any review of an incoming production, are out of scope for this skill and need separate human authorization."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "The incoming-production boundary is explicit: substantive review, responsiveness mapping, and production-derived privilege review belong to `docreview`."
+    to: "The incoming-production boundary is explicit: substantive review, responsiveness mapping, and production-derived privilege review are out of scope for this skill."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "A nonparty's production review, once authorized and received, belongs in `docreview`; this skill can hand off the card and the unresolved questions."
+    to: "A nonparty's production review, once authorized and received, is out of scope for this skill; hand off the card and the unresolved questions."
+    files: ["references/drafting-patterns.md"]
+    expect: 1
+  - from: "The handoff says that any received production and substantive responsiveness or privilege review go to `docreview` after counsel authorization."
+    to: "The handoff says that any received production and substantive responsiveness or privilege review are out of scope for this skill and need counsel authorization."
+    files: ["references/synthetic-samples.md"]
+    expect: 1
+
+sections:
+  - match: "## Response documents and objection libraries"
+    file: sections/response-routes.md
+
+notes: |
+  Dropped scripts/ and schemas/ (the objection source-capture, library,
+  review and Word-binding tools and their JSON contracts) and the two local
+  HTML applications under assets/objection-library/ and assets/objection-review/,
+  which cannot run here. The three references that exist only to drive those
+  applications — objection-review.md, objection-library-builder.md and
+  objection-libraries.md — went with them; every one of their steps is a python
+  invocation against an excluded schema. The routes the body already says need
+  neither application are what remains: response shells, direct drafting, and
+  reuse of a lawyer-approved bank of objection wording. The rewritten section
+  keeps the substance those references carried that still applies natively —
+  splitting combined responses into individual grounds, consolidating equivalents,
+  keeping scope variants, surfacing candidates unchosen with their conditions,
+  and the rule that supplying precedent is not approval — and routes the editable
+  .docx to the Word skill. assets/rfp-response-shell.docx and the six substantive
+  references are kept. docreview is not in this bundle, so the four hand-offs to
+  it in the body and two in the references become an explicit out-of-scope
+  boundary instead.
+
+triggers:
+  positive:
+    - "Draft requests for production covering their vendor communications from 2023 to 2025."
+    - "Go through their 42 requests and draft our objections and responses request by request."
+    - "Has our preservation duty been triggered here, and what should the hold cover?"
+    - "Triage this Rule 45 subpoena we received as a non-party and tell me the deadlines and defects."
+  negative:
+    - "Draft the meet-and-confer letter itself to opposing counsel. -> correspondence"
+    - "Plan the 30(b)(6) deposition on their retention practices. -> depositions"
+    - "Go through this production and mark what is responsive and privileged. -> none"
+    - "Organize the case file and build a chronology from these documents. -> organize-case-docs"
