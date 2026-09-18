@@ -1,0 +1,15 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions about the skills themselves (upstream)
+    url: https://github.com/LegalQuants/lq-plugin-oss
+    about: >-
+      The legal content of these skills is LegalQuants' work, adapted here under
+      Apache-2.0. Questions or problems with the method a skill teaches belong
+      upstream. Bring the adaptation — what this repository changed, and how a
+      skill behaves inside Cowork — back here.
+  - name: How to install, test and report
+    url: https://github.com/houfu/lq-plugin-cowork/blob/main/docs/TESTING.md
+    about: >-
+      docs/INSTALL.md covers installing a bundle; docs/TESTING.md is the tester
+      programme, including what a pass looks like for each of the seventeen
+      skills. Read the relevant part before filing, if you have a moment.

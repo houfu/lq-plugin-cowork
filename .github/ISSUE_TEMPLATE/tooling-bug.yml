@@ -1,0 +1,83 @@
+name: Tooling bug (the build, the CLI, the packages)
+description: Something in this repository misbehaves — a build failure, a bad zip, a wrong validation result, a broken Make target or CI job.
+title: "Tooling: "
+labels: ["bug", "tooling"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This form is for the build tooling and the packages it produces. If a
+        skill activated in Cowork and then misbehaved, use the **UAT report**
+        form instead — that is a content problem, not a tooling one.
+
+        Do not paste client or confidential material anywhere in this issue.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where is it?
+      options:
+        - Build or package (lqcowork build / package / validate)
+        - Validation result (a warning or error that looks wrong)
+        - Trigger tests or build report output
+        - bump-upstream / drift / anchor
+        - release-check, tagging or the release workflow
+        - Make targets or repository setup
+        - The shipped zip itself (structure, manifest, icons, reproducibility)
+        - Documentation (README, INSTALL, TESTING, CONTRIBUTING)
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you ran, and what it did.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected instead
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: How to reproduce it
+      description: The exact commands, in order, starting from a fresh clone if you can.
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The error, traceback or surprising output. Trim to the relevant part.
+      render: text
+    validations:
+      required: false
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or release
+      description: The commit SHA you are on, or the release you downloaded.
+      placeholder: main @ abc1234, or v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, uv version. `uv run --project tools python -V` is enough for the second.
+      placeholder: macOS 15, Python 3.12, uv 0.5.x
+    validations:
+      required: false
+  - type: checkboxes
+    id: checked
+    attributes:
+      label: Before you file
+      options:
+        - label: I ran `git submodule update --init` and `make setup` first.
+          required: false
+        - label: This issue contains no client or confidential material.
+          required: true

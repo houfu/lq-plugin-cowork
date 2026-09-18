@@ -1,0 +1,202 @@
+name: release
+
+# Pushing a tag is the whole release trigger: `make release TAG=vX.Y.Z` checks
+# the tag against the tree and pushes it, and everything below is what turns
+# that tag into downloadable packages. Re-publishing an existing tag (a fixed
+# build, notes that were wrong) is the workflow_dispatch input, which rebuilds
+# from the same commit and overwrites the assets in place.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: An existing tag to publish or re-publish, e.g. v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+          ref: ${{ inputs.tag || github.ref_name }}
+
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: auto
+
+      - name: Install the build tooling
+        run: uv sync --project tools
+
+      - name: Tests
+        run: make test
+
+      - name: Formatting
+        run: make fmt-check
+
+      - name: Package the bundles
+        run: make package
+
+      - name: Check the tag against the tree
+        run: make release-check TAG="$TAG"
+
+      # A second build into a different directory must produce the same bytes.
+      # If it does not, something in the build is reading the clock, the path
+      # or the filesystem order, and the published zip stops being verifiable.
+      - name: The build is reproducible
+        run: |
+          set -euo pipefail
+          uv run --project tools lqcowork package --out "$RUNNER_TEMP/recheck"
+          for archive in dist/*.zip; do
+            name="$(basename "$archive")"
+            first="$(sha256sum "$archive" | cut -d ' ' -f 1)"
+            second="$(sha256sum "$RUNNER_TEMP/recheck/$name" | cut -d ' ' -f 1)"
+            if [ "$first" != "$second" ]; then
+              echo "::error::$name is not byte-reproducible: $first != $second"
+              exit 1
+            fi
+            echo "$name $first"
+          done
+
+      - name: Checksum the assets
+        run: |
+          set -euo pipefail
+          cd dist
+          sha256sum *.zip *-trigger-tests.md build-report.md > SHA256SUMS
+          cat SHA256SUMS
+
+      - name: Compose the release notes
+        env:
+          NOTES: ${{ runner.temp }}/release-notes.md
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          uv run --project tools python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          from lqcowork.config import find_repo_root, load_config
+
+          root = find_repo_root(Path.cwd())
+          config = load_config(root)
+          # DIST exists so this script can be run against a scratch build.
+          dist = Path(os.environ.get("DIST") or root / "dist")
+
+          tag = os.environ["TAG"]
+          version = tag[1:] if tag.startswith("v") else tag
+          core = re.split(r"[-+]", version, maxsplit=1)[0]
+
+          # This version's CHANGELOG section, without its heading and without
+          # the link-reference definitions that sit at the foot of the file.
+          sections = re.split(r"^## ", (root / "CHANGELOG.md").read_text(), flags=re.M)
+          body = ""
+          for wanted in (version, core):
+              for section in sections:
+                  if section.startswith(f"[{wanted}]"):
+                      body = section.partition("\n")[2]
+                      break
+              if body:
+                  break
+          body = "\n".join(
+              line for line in body.splitlines() if not re.match(r"^\[[^\]]+\]:\s", line)
+          ).strip()
+          if not body:
+              raise SystemExit(f"no CHANGELOG.md section for {version}")
+
+          # A release page is not the repository, so the changelog's relative
+          # links have to become absolute ones, pinned to this tag.
+          blob = f"{os.environ['SERVER_URL']}/{os.environ['REPOSITORY']}/blob/{tag}"
+          body = re.sub(
+              r"\]\((?!https?://|#|mailto:)([^)]+)\)", rf"]({blob}/\1)", body
+          )
+
+          rows = []
+          for bundle in config.bundles:
+              archive = dist / f"{bundle.id}.zip"
+              skills = ", ".join(f"`{name}`" for name in bundle.skills)
+              rows.append(
+                  f"| `{archive.name}` | {len(bundle.skills)} | {skills} "
+                  f"| {archive.stat().st_size:,} bytes |"
+              )
+
+          sums = (dist / "SHA256SUMS").read_text().strip()
+          notes = f"""{body}
+
+          ## What is in each package
+
+          | Package | Skills | Contents | Size |
+          | --- | ---: | --- | ---: |
+          {chr(10).join(rows)}
+
+          Adapted from the LegalQuants open skills pinned at
+          [`{config.sha7}`]({config.repo}/commit/{config.sha}).
+
+          Installing a package: [docs/INSTALL.md]({blob}/docs/INSTALL.md). Trying it and
+          reporting what happened: [docs/TESTING.md]({blob}/docs/TESTING.md).
+
+          These bundles are an independent adaptation of the LegalQuants open skills
+          under the Apache License 2.0. They are not an official LegalQuants release.
+
+          ## SHA256SUMS
+
+          ```
+          {sums}
+          ```
+          """
+          Path(os.environ["NOTES"]).write_text(notes.strip() + "\n", encoding="utf-8")
+          print(notes)
+          PY
+
+      - name: Create or update the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          NOTES: ${{ runner.temp }}/release-notes.md
+        run: |
+          set -euo pipefail
+          assets=(
+            dist/*.zip
+            dist/*-trigger-tests.md
+            dist/build-report.md
+            dist/SHA256SUMS
+          )
+          for asset in "${assets[@]}"; do
+            test -f "$asset" || { echo "::error::missing release asset $asset"; exit 1; }
+          done
+
+          # Pre-release while the major version is 0 (nothing here has been
+          # exercised in a live tenant yet), and for any tag with a suffix.
+          version="${TAG#v}"
+          prerelease=false
+          case "$version" in
+            *-*) prerelease=true ;;
+            0.*) prerelease=true ;;
+          esac
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "updating the existing release $TAG"
+            gh release upload "$TAG" "${assets[@]}" --clobber
+            gh release edit "$TAG" \
+              --title "$TAG" \
+              --notes-file "$NOTES" \
+              --prerelease="$prerelease"
+          else
+            echo "creating release $TAG"
+            gh release create "$TAG" "${assets[@]}" \
+              --title "$TAG" \
+              --notes-file "$NOTES" \
+              --prerelease="$prerelease" \
+              --verify-tag
+          fi

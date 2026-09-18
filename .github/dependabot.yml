@@ -1,0 +1,15 @@
+# The workflows pin actions by major tag where the publisher offers one, and
+# exactly where they do not (astral-sh/setup-uv stopped moving its major tags
+# at v8). An exact pin goes stale silently, so Dependabot owns keeping every
+# action pin current and opens one pull request per update.
+
+version: 2
+
+updates:
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: ci

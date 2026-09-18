@@ -15,6 +15,7 @@ the code that implements it.
 | `validate.py` | every error and warning code from contract section 6, run against `dist/` |
 | `package.py` | zip assembly, the trigger-test checklist, the build report |
 | `bump.py` | `bump-upstream` (fetch, temporary worktree, drift report, pin) and `anchor` |
+| `release.py` | `release-check`: a tag against `cowork.yaml`, `CHANGELOG.md` and any built manifest |
 | `icons.py` | PNG signature + IHDR parsing, for the 192x192 / 32x32 check |
 | `cli.py` | argparse; maps exceptions to exit codes 0 / 1 / 2 |
 
@@ -35,7 +36,8 @@ test directly.
 ```sh
 make test                                   # pytest
 uv run --project tools pytest               # the same thing
-uv run --project tools black --check tools  # formatting, line length 88
+make fmt-check                              # formatting, line length 88
+uv run --project tools black --check tools  # the same thing
 ```
 
 The root `pytest.ini` sets `testpaths = tools/tests`, which is what keeps a
@@ -87,3 +89,17 @@ suite stays green while skills are still being written.
 `tools/tests/test_bump.py` also stands up a bare clone as `origin`, which lets
 `bump-upstream --dry-run` run end to end — fetch, worktree, report, cleanup —
 with no network.
+
+## Releasing
+
+[docs/RELEASING.md](RELEASING.md) is the maintainer's procedure — bump
+`package.version`, move the `CHANGELOG.md` entries into a dated section,
+`make package`, commit, then `make release TAG=vX.Y.Z`, which refuses a dirty
+tree or a tag that already exists, runs `release-check` and pushes the tag.
+`.github/workflows/release.yml` takes it from there: it tests, packages, builds
+a second time to prove the zips are byte-identical, and publishes them with the
+trigger-test checklists, the build report and `SHA256SUMS`.
+
+`release-check` itself is specified in contract section 7 and lives in
+`release.py`; `tools/tests/test_release.py` drives it through `main()` the way
+the Makefile does, over a fixture repository with a changelog written into it.

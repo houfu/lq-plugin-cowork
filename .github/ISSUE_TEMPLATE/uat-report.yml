@@ -1,0 +1,137 @@
+name: UAT report (a skill in a real tenant)
+description: Report what happened when you ran a routing test or a behaviour test in Microsoft 365 Copilot Cowork.
+title: "UAT: "
+labels: ["uat"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you — this is the thing the project most needs. The programme is
+        [docs/TESTING.md](https://github.com/houfu/lq-plugin-cowork/blob/main/docs/TESTING.md).
+
+        **Sanitise everything before you post.** No client material, no matter
+        or party names, no file names from a real matter, nothing from a live
+        system — not in the text, not in a screenshot, not in an attachment. If
+        you tested with something real, retype the finding with invented facts.
+        Passes are as welcome as failures.
+  - type: dropdown
+    id: report-type
+    attributes:
+      label: What are you reporting?
+      options:
+        - Routing — pass (the expected skill activated)
+        - Routing — misfire (wrong skill, no skill, or two skills)
+        - Behaviour — pass (the skill did what it promises)
+        - Behaviour — defect (it activated, then went wrong)
+    validations:
+      required: true
+  - type: dropdown
+    id: bundle
+    attributes:
+      label: Bundle
+      options:
+        - legalquants-litigation-cowork
+        - legalquants-transactional-cowork
+        - both installed at once
+    validations:
+      required: true
+  - type: dropdown
+    id: skill
+    attributes:
+      label: Skill
+      description: The skill the test was about. For a misfire, pick the skill that *should* have taken the prompt, and name what actually answered under "What actually happened".
+      options:
+        - cite-check
+        - client-update
+        - closing-checklist
+        - correspondence
+        - depositions
+        - document-discovery
+        - legaldesign
+        - lq-mirror
+        - lq-start
+        - new-matter
+        - organize-case-docs
+        - playbook-builder
+        - playbook-review
+        - pressuretest
+        - timenarratives
+        - wiki
+        - writing
+        - "not sure / nothing activated"
+    validations:
+      required: true
+  - type: input
+    id: package-version
+    attributes:
+      label: Package version
+      description: From the release name, from `build-report.md`, or from `version` in the zip's `manifest.json`.
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: date-tested
+    attributes:
+      label: Date tested
+      placeholder: 2026-09-18
+    validations:
+      required: true
+  - type: input
+    id: client
+    attributes:
+      label: Cowork client and version, if you know it
+      description: Web or desktop, and any build number you can see. Leave blank if you cannot tell.
+      placeholder: Cowork on web, desktop app 1.2.3, …
+    validations:
+      required: false
+  - type: textarea
+    id: prompt
+    attributes:
+      label: The prompt you typed, exactly
+      description: Copy it verbatim — spacing, punctuation and all. This is what gets added to the card's triggers.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Files attached or in the Input folder
+      description: Describe them — kind, length, what they contained. Do not paste their contents. "One invented 2-page SPA extract, three CPs" is ideal. Write "none" if you attached nothing.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: For routing, the skill named in the trigger-tests table. For behaviour, the pass criteria from docs/TESTING.md Part B.
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What actually happened
+      description: Include how you could tell which skill ran — the Skills chip in the side panel, the shape of the reply, the closing line, or that you could not tell.
+    validations:
+      required: true
+  - type: textarea
+    id: excerpt
+    attributes:
+      label: Excerpt of the reply
+      description: A few lines that show the problem. Trim hard; do not paste a whole generated report.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Tenant quirks, admin settings, whether the plugin was admin-deployed or self-uploaded, anything that might matter.
+    validations:
+      required: false
+  - type: checkboxes
+    id: sanitised
+    attributes:
+      label: Confidentiality
+      options:
+        - label: This report contains no client, matter or confidential material. Every document I describe was synthetic, and any excerpt and screenshot has been checked and trimmed.
+          required: true

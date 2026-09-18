@@ -51,13 +51,16 @@ lq-cowork/
   branding/color.png           # 192x192 full-colour icon
   branding/outline.png         # 32x32 single-colour outline icon
   NOTICE.md                    # attribution + modification notice (zip root)
+  CHANGELOG.md                 # Keep a Changelog; a release's notes are read from it
   tools/                       # uv-managed Python project (package: lqcowork)
     pyproject.toml
     src/lqcowork/...
     tests/...
   docs/CONTRACT.md             # this file
+  docs/RELEASING.md            # how a release is cut (contract section 7)
   dist/                        # generated, gitignored
-  .github/workflows/           # build.yml, upstream-drift.yml
+  .github/workflows/           # build.yml, release.yml, upstream-drift.yml
+  .github/dependabot.yml       # keeps the pinned action versions current
   Makefile                     # thin wrappers around `uv run --project tools lqcowork ...`
 ```
 
@@ -340,17 +343,21 @@ Package `lqcowork` in `tools/`, Python ≥ 3.11, runtime dependency PyYAML only,
 dev dependencies pytest and black (black-formatted, line length 88).
 
 ```
-uv run --project tools lqcowork build      [--bundle ID] [--report-anchors] [--upstream-path P]
-uv run --project tools lqcowork validate   [--bundle ID]            # validates dist/<bundle>/ without rebuilding
-uv run --project tools lqcowork package    [--bundle ID]            # build + validate + zip + trigger tests + report
+uv run --project tools lqcowork build      [--bundle ID] [--report-anchors] [--upstream-path P] [--out DIR]
+uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/ without rebuilding
+uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + trigger tests + report
 uv run --project tools lqcowork bump-upstream [--to REF] [--dry-run] [--report PATH]
-uv run --project tools lqcowork anchor     [--skill NAME]           # set anchored_to = current pin after review
-uv run --project tools lqcowork triggers   [--bundle ID]            # write dist/<bundle>-trigger-tests.md only
+uv run --project tools lqcowork anchor     [--skill NAME]              # set anchored_to = current pin after review
+uv run --project tools lqcowork triggers   [--bundle ID] [--out DIR]   # write dist/<bundle>-trigger-tests.md only
+uv run --project tools lqcowork release-check --tag vX.Y.Z [--out DIR] # does a tag agree with the tree?
 ```
 
-Exit codes: 0 ok, 1 error, 2 validation/anchor failure. Every command prints
-a one-line summary per bundle. `--upstream-path` lets bump-upstream build
-against a temporary checkout without moving the pinned submodule.
+Exit codes: 0 ok, 1 error, 2 validation/anchor/release-check failure. Every
+command prints a one-line summary per bundle. `--upstream-path` lets
+bump-upstream build against a temporary checkout without moving the pinned
+submodule. `--out DIR` sends a build, and everything read back from it,
+somewhere other than `dist/`, which is what lets two people — or a
+reproducibility check that builds twice — work at once.
 
 `bump-upstream`:
 
@@ -370,6 +377,36 @@ against a temporary checkout without moving the pinned submodule.
    report, fix cards, run `anchor`).
 6. Exit 0 if nothing broke (informational changes only), 2 if any anchor or
    validation error, 1 on failure.
+
+`release-check` is what a tag is held against before it is pushed, and again in
+CI before the release is published. It only reads; it never builds and never
+writes. `--tag` is required (omitting it is a usage error, exit 1). Four ways a
+tag and the tree can disagree, each of them exit 2:
+
+1. `--tag` is not `v` followed by a semver version — `v0.1.0`, `v1.2.0-rc.1`,
+   `v1.2.0+20260918` all parse; `0.1.0`, `v1.2` and `v01.2.0` do not.
+2. The tag's **release version** — the `MAJOR.MINOR.PATCH` core, with any
+   pre-release or build metadata dropped — is not `package.version` in
+   `cowork.yaml`. The core is what the comparison uses because the manifest
+   version can be nothing else (LQC-M002), so `v1.2.0-rc.1` pairs with
+   `version: 1.2.0`.
+3. `CHANGELOG.md` is missing, or has no `## [X.Y.Z]` heading for this tag. The
+   heading sought is the tag without its `v` (`## [1.2.0-rc.1]`); when the tag
+   carries a pre-release or build suffix the core heading (`## [1.2.0]`) is
+   accepted as well, so a release candidate may be described by the section it
+   is a candidate for. Anything may follow the bracketed version on the heading
+   line, which is where Keep a Changelog puts the date.
+4. A built manifest disagrees. For every bundle, `dist/<bundle>/manifest.json`
+   (or `<DIR>/<bundle>/manifest.json` under `--out`) is read **when it exists**
+   and its `version` must equal the release version. A bundle that has not been
+   built is reported as unbuilt and is not a failure — the check is as useful
+   before `make package` as after it. A manifest that exists but is not JSON,
+   like a missing `cowork.yaml`, is exit 1: the tree cannot be read, which is
+   not the same as a tag being wrong.
+
+Every check is printed, one line each, passes included, so a green run still
+says what it looked at. Exit 0 when they all pass, 2 when any fails, 1 when the
+repository could not be read.
 
 ## 8. Cowork facts the cards are written against
 

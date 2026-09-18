@@ -1,4 +1,4 @@
-"""``lqcowork`` command line: build, validate, package, bump-upstream, anchor."""
+"""``lqcowork`` command line: build, validate, package, bump, anchor, release."""
 
 from __future__ import annotations
 
@@ -17,6 +17,7 @@ from .config import (
     load_config,
     upstream_skill_names,
 )
+from .release import ReleaseCheckError, check_release
 from .validate import validate_bundle
 
 EXIT_OK = 0
@@ -192,6 +193,17 @@ def cmd_triggers(args: argparse.Namespace) -> int:
     return EXIT_OK
 
 
+def cmd_release_check(args: argparse.Namespace) -> int:
+    config = _load(args)
+    tag = (args.tag or "").strip()
+    if not tag:
+        raise ConfigError("release-check: --tag vX.Y.Z is required")
+    result = check_release(config, tag, out_dir=_out_dir(args))
+    for line in result.lines():
+        _echo(line)
+    return EXIT_INVALID if result.failures else EXIT_OK
+
+
 def cmd_bump(args: argparse.Namespace) -> int:
     config = _load(args)
     report_path = Path(args.report).resolve() if args.report else None
@@ -292,6 +304,16 @@ def build_parser() -> argparse.ArgumentParser:
     triggers.add_argument("--out", help="output directory (default: dist)")
     triggers.set_defaults(func=cmd_triggers)
 
+    release_check = subparsers.add_parser(
+        "release-check",
+        help="check a release tag against cowork.yaml, CHANGELOG.md and dist/",
+    )
+    # Not argparse-required: a missing tag is a usage error, which this CLI
+    # reports as exit 1, and argparse would exit 2 (a check failure).
+    release_check.add_argument("--tag", help="the release tag, e.g. v0.1.0")
+    release_check.add_argument("--out", help="output directory (default: dist)")
+    release_check.set_defaults(func=cmd_release_check)
+
     return parser
 
 
@@ -303,7 +325,7 @@ def main(argv: list[str] | None = None) -> int:
     except AnchorFailure as exc:
         print(f"anchor failure: {exc}", file=sys.stderr)
         return EXIT_INVALID
-    except (ConfigError, BuildError, BumpError) as exc:
+    except (ConfigError, BuildError, BumpError, ReleaseCheckError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return EXIT_ERROR
 
