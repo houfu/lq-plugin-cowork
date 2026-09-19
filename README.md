@@ -23,12 +23,63 @@ anyone can do for this repo right now. Start at
 [UAT issue](https://github.com/houfu/lq-plugin-cowork/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 waiting for a result.
 
-## Get the packages
+## Install
 
-Built packages are attached to each release:
 **[Releases](https://github.com/houfu/lq-plugin-cowork/releases)** ·
 [latest](https://github.com/houfu/lq-plugin-cowork/releases/latest). You do not
-need to clone this repository to install one.
+need to clone this repository to install anything — and a GitHub **Code >
+Download ZIP** of this repository, or of a `skills/<name>/` folder, is **not**
+installable: those are build inputs (see [skills/README.md](skills/README.md)),
+not a working skill.
+
+### Which do I want?
+
+| I want to... | Get | Good for |
+| --- | --- | --- |
+| Try one skill | one `<name>.skill` file, e.g. `pressuretest.skill` | A lawyer testing a single skill: no admin, no terminal |
+| Install the whole plugin | one bundle `.zip` (table below) | A tester or team wanting the full set |
+| Work on the adaptation | clone the repo | `skills/<name>/` folders are build inputs, not skills |
+
+**Note:** v0.1.0, the current published release, predates the `<name>.skill`
+archives, so single-skill downloads appear from the next release onward.
+
+### Upload one skill
+
+No admin rights and no terminal needed.
+
+1. Open the [latest
+   release](https://github.com/houfu/lq-plugin-cowork/releases/latest) page.
+2. Under **Assets**, download `<name>.skill` — for example
+   `pressuretest.skill`. Do not unzip it.
+3. In Cowork, select the **+** button, then **Customize**.
+4. Select the **Skills** tab.
+5. Select the arrow next to **Add**, then **Upload skill**, and pick the file
+   you downloaded.
+6. Cowork validates it and saves it to your OneDrive
+   `/Documents/Cowork/skills/`; it appears under **Your skills** after the
+   next sync.
+
+**Check it worked.** Start a **new conversation** and attach three short
+made-up documents that disagree with each other — say, an agreement dated
+3 March and a letter that calls it dated 3 May. Never use client material.
+Then, for `pressuretest`, type:
+
+> Pressure-test our position that the termination was lawful, against these
+> documents.
+
+A pass looks like an early **Transmission 1** map in chat, headed "Untested —
+questions I am about to test, not findings", with every planned attack
+phrased as a question and no verdict yet — that shape is the skill talking,
+not base Cowork. See [docs/TESTING.md](docs/TESTING.md#pressuretest) for the
+full pass criteria, or pick another skill's prompt from the same file.
+
+If the upload is refused or the skill never shows up, work through the
+[upload troubleshooting checklist](docs/INSTALL.md#upload-troubleshooting-checklist).
+
+Full detail, limits and sources: [docs/INSTALL.md, Route
+0](docs/INSTALL.md#route-0-upload-a-single-skill).
+
+### Install the full plugin
 
 | Bundle | Who it suits |
 | --- | --- |
@@ -38,26 +89,32 @@ need to clone this repository to install one.
 Six skills are in both bundles. Install one to start: the two can coexist, but a
 duplicated skill name across two enabled plugins is worth reporting.
 
-Each release carries the two zips; `<bundle>-trigger-tests.md` for each, the
-routing acceptance tests generated from the cards; `build-report.md` — skills,
-buckets, file counts, adaptation notes and warnings; and `SHA256SUMS`. v0.1.0 is
-marked a GitHub pre-release. See [CHANGELOG.md](CHANGELOG.md) for what changed
-and [docs/RELEASING.md](docs/RELEASING.md) for how a release is cut.
+The common route, for yourself, in Cowork:
 
-## Install
+1. Download the bundle `.zip` from the
+   [latest release](https://github.com/houfu/lq-plugin-cowork/releases/latest).
+   Do not unzip it.
+2. In Cowork, select the **+** button, then **Customize**.
+3. Select the **Plugins** tab, select **Upload plugin**, and choose the `.zip`.
+4. In the **Share** dialog, choose **Only you** while you are testing.
+5. Select **Apply** to publish it.
 
-Three routes, in full in [docs/INSTALL.md](docs/INSTALL.md):
+Two other routes exist for a wider rollout: an administrator can deploy the
+`.zip` tenant-wide from the Microsoft 365 admin center, or you can sideload it
+from a terminal with the `atk` CLI. Both are covered in full in
+[docs/INSTALL.md](docs/INSTALL.md#who-can-install).
 
-- **Yourself, in Cowork** — Customize page → Plugins tab → upload the `.zip`,
-  shared with **Only you**.
-- **Your whole tenant** — an administrator uploads it as a custom app in the
-  Microsoft 365 admin center and assigns it to users or groups.
-- **From a terminal** —
-  `npm install -g @microsoft/m365agentstoolkit-cli`, `atk auth login m365`,
-  then `atk install --file-path <zip> --scope Personal`.
+Whether you can upload it yourself, rather than needing an administrator,
+depends on your tenant's custom-app policy. Read
+[docs/INSTALL.md](docs/INSTALL.md) before promising anyone a demo.
 
-Whether you can do the first and third depends on your tenant's custom-app
-policy. Read [docs/INSTALL.md](docs/INSTALL.md) before promising anyone a demo.
+Each release carries: the two bundle zips; one `<name>.skill` upload-ready
+archive per skill (17, contract section 5b) for the single-skill route above;
+`<bundle>-trigger-tests.md` for each bundle, the routing acceptance tests
+generated from the cards; `build-report.md` — skills, buckets, file counts,
+adaptation notes and warnings; and `SHA256SUMS`. v0.1.0 is marked a GitHub
+pre-release. See [CHANGELOG.md](CHANGELOG.md) for what changed and
+[docs/RELEASING.md](docs/RELEASING.md) for how a release is cut.
 
 ## Test it and report
 

@@ -65,6 +65,15 @@ class TestFrontmatter:
         assert fm["metadata"]["adapted-for"] == "Microsoft 365 Copilot Cowork"
         assert fm["metadata"]["legalquants.python-requires"] == ">=3.12"
 
+    def test_metadata_version_is_the_package_version_as_a_string(
+        self, fixture_repo, built
+    ):
+        config, _, _ = built
+        fm = transforms.parse_document(read_skill(fixture_repo, "alpha")).frontmatter
+        version = fm["metadata"]["version"]
+        assert isinstance(version, str)
+        assert version == config.version == "0.1.0"
+
     def test_key_order_and_block_scalar(self, fixture_repo, built):
         lines = read_skill(fixture_repo, "alpha").split("\n")
         assert lines[0] == "---"

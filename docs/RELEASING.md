@@ -48,7 +48,11 @@ the packages are for. While the major is 0, everything is a pre-release
 
 3. **Build it.** `make package`. It must end with zero errors; read the warnings
    and decide about each one. `dist/` now carries manifests at the new version,
-   which is what `release-check` compares against.
+   which is what `release-check` compares against. `validate` already enforces
+   `SKILL.md` at the root of every `dist/skills/<name>.skill` (`LQC-U001`), but
+   open one by hand anyway (`unzip -l dist/skills/<name>.skill`, or a zip
+   viewer) as a last human check before anyone downloads it — this is exactly
+   the thing UAT issue 19 found missing when a folder was zipped by hand.
 
 4. **Commit.** The version bump and the changelog belong in one commit on the
    default branch, pushed, green in CI. `make release` refuses to tag a dirty
@@ -84,21 +88,26 @@ The `release` workflow runs on any pushed tag matching `v*`:
 2. `make test`, `make fmt-check`, `make package`;
 3. `make release-check TAG=<tag>` — the same check again, on a clean checkout,
    so a tag that was pushed some other way cannot skip it;
-4. packages a **second** time into another directory and fails unless every zip
-   has the same SHA-256 as the first. The zips are byte-reproducible by
-   construction; this is what keeps that true;
-5. writes `dist/SHA256SUMS` over the zips and the Markdown assets;
+4. packages a **second** time into another directory and fails unless every
+   zip *and* every single-skill archive under `dist/skills/*.skill` has the
+   same SHA-256 as the first. The zips and the archives are byte-reproducible
+   by construction; this is what keeps that true;
+5. writes `dist/SHA256SUMS` over the zips, the single-skill archives and the
+   Markdown assets;
 6. composes the notes: this version's `CHANGELOG.md` section, a table of the
-   bundles with their skills and zip sizes, the upstream pin as a link to the
-   exact commit, pointers to `docs/INSTALL.md` and `docs/TESTING.md`, the
-   sentence that these bundles are an independent adaptation under Apache-2.0
-   and not an official LegalQuants release, and the checksums;
+   bundles with their skills and zip sizes, an "Upload one skill" table listing
+   every `<name>.skill` archive with its size and a pointer to Route 0 in
+   `docs/INSTALL.md`, the upstream pin as a link to the exact commit, pointers
+   to `docs/INSTALL.md` and `docs/TESTING.md`, the sentence that these bundles
+   are an independent adaptation under Apache-2.0 and not an official
+   LegalQuants release, and the checksums;
 7. creates the release, titled with the tag, carrying:
 
    | Asset | What it is |
    | --- | --- |
    | `legalquants-litigation-cowork.zip` | the litigation package |
    | `legalquants-transactional-cowork.zip` | the transactional package |
+   | `<name>.skill` (17 files) | one skill's `SKILL.md`, companions, `LICENSE` and `NOTICE.md` — upload-ready via Cowork's Upload skill control (contract section 5b) |
    | `legalquants-litigation-cowork-trigger-tests.md` | its routing checklist |
    | `legalquants-transactional-cowork-trigger-tests.md` | its routing checklist |
    | `build-report.md` | what went into the build: skills, buckets, files, bytes, warnings, suppressed warnings |

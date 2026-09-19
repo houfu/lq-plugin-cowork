@@ -10,6 +10,7 @@ from . import package as pkg
 from .build import AnchorFailure, Builder, BuildError, Issue, Suppression
 from .bump import BumpError, anchor, bump_upstream
 from .config import (
+    Bundle,
     Config,
     ConfigError,
     find_repo_root,
@@ -151,7 +152,6 @@ def cmd_package(args: argparse.Namespace) -> int:
         )
         archive = pkg.write_zip(config, bundle, out)
         errors += pkg.validate_zip_entries(config, bundle, archive)
-        triggers = pkg.write_trigger_tests(config, bundle, cards, out)
         all_errors += errors
         all_warnings += warnings
         _echo(
@@ -159,6 +159,13 @@ def cmd_package(args: argparse.Namespace) -> int:
             f"{len(errors)} errors, {len(warnings)} warnings"
         )
         _echo(f"  {_rel(config, archive)}")
+
+    bundles = [built.bundle for built in result.bundles]
+    archives, archive_errors = _write_archives(config, bundles, out)
+    all_errors += archive_errors
+
+    for built in result.bundles:
+        triggers = pkg.write_trigger_tests(config, built.bundle, cards, out)
         _echo(f"  {_rel(config, triggers)}")
 
     report = pkg.write_build_report(
@@ -167,6 +174,7 @@ def cmd_package(args: argparse.Namespace) -> int:
         errors=all_errors,
         warnings=all_warnings,
         suppressed=all_suppressed,
+        archives=archives,
         out_dir=out,
     )
     _echo(f"  {_rel(config, report)}")
@@ -175,6 +183,34 @@ def cmd_package(args: argparse.Namespace) -> int:
     if all_suppressed:
         _echo(f"{len(all_suppressed)} warning(s) suppressed by card decisions")
     return EXIT_INVALID if (all_errors or result.anchors) else EXIT_OK
+
+
+# Printing every path helps a two-bundle fixture and buries a 17-skill run,
+# so the list is only echoed when it is short enough to read.
+ARCHIVE_ECHO_LIMIT = 10
+
+
+def _write_archives(
+    config: Config, bundles: list[Bundle], out: Path | None
+) -> tuple[list[Path], list[Issue]]:
+    """Write and validate ``dist/skills/<name>.skill``; print what landed."""
+    archives = pkg.write_skill_archives(config, bundles, out)
+    issues = pkg.validate_skill_archives(config, bundles, archives, out)
+    directory = pkg.skill_archive_dir(config, out)
+    _echo(f"{_rel(config, directory)}/: {len(archives)} archives")
+    if len(archives) <= ARCHIVE_ECHO_LIMIT:
+        for archive in archives:
+            _echo(f"  {_rel(config, archive)}")
+    return archives, issues
+
+
+def cmd_archives(args: argparse.Namespace) -> int:
+    config = _load(args)
+    out = _out_dir(args)
+    bundles = config.select(args.bundle)
+    _, errors = _write_archives(config, bundles, out)
+    _report_issues("errors", errors)
+    return EXIT_INVALID if errors else EXIT_OK
 
 
 def cmd_triggers(args: argparse.Namespace) -> int:
@@ -273,7 +309,8 @@ def build_parser() -> argparse.ArgumentParser:
     validate.set_defaults(func=cmd_validate)
 
     package = subparsers.add_parser(
-        "package", help="build + validate + zip + trigger tests + report"
+        "package",
+        help="build + validate + zip + archives + trigger tests + report",
     )
     package.add_argument("--bundle", help="package only this bundle id")
     package.add_argument("--out", help="output directory (default: dist)")
@@ -296,6 +333,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     anchor_cmd.add_argument("--skill", help="anchor only this skill's card")
     anchor_cmd.set_defaults(func=cmd_anchor)
+
+    archives = subparsers.add_parser(
+        "archives",
+        help="write and validate dist/skills/<name>.skill from an existing build",
+    )
+    archives.add_argument("--bundle", help="only this bundle id")
+    archives.add_argument("--out", help="output directory (default: dist)")
+    archives.set_defaults(func=cmd_archives)
 
     triggers = subparsers.add_parser(
         "triggers", help="write dist/<bundle>-trigger-tests.md only"

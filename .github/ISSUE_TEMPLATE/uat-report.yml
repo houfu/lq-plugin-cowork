@@ -29,10 +29,16 @@ body:
     id: bundle
     attributes:
       label: Bundle
+      description: >-
+        If you used Route 0 (Upload skill) to upload a single `<name>.skill`
+        archive rather than installing a plugin, pick the single-skill option
+        — routing tests need a bundle, but a behaviour test can be run either
+        way.
       options:
         - legalquants-litigation-cowork
         - legalquants-transactional-cowork
         - both installed at once
+        - "single skill upload: `<name>.skill` from the release (no bundle installed)"
     validations:
       required: true
   - type: dropdown
@@ -65,8 +71,16 @@ body:
     id: package-version
     attributes:
       label: Package version
-      description: From the release name, from `build-report.md`, or from `version` in the zip's `manifest.json`.
+      description: From the release name, from `build-report.md`, or from `version` in the zip's `manifest.json` (or `metadata.version` in a single skill's `SKILL.md`).
       placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: artifact-filename
+    attributes:
+      label: Exact filename of what you uploaded
+      description: The release asset you installed for this test — a bundle zip or a single-skill archive.
+      placeholder: pressuretest.skill, or legalquants-litigation-cowork.zip
     validations:
       required: true
   - type: input

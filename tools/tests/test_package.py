@@ -251,3 +251,175 @@ class TestSummary:
         line = pkg.summarise(result.bundles[0])
         assert line.startswith("test-bundle: 2 skills,")
         load_cards(config, ["alpha", "beta"])
+
+
+def second_bundle(root: Path) -> None:
+    """Give the fixture a second bundle that shares both skills."""
+    path = root / "cowork.yaml"
+    text = path.read_text()
+    extra = (
+        text.split("bundles:\n")[1]
+        .replace("id: test-bundle", "id: other-bundle")
+        .replace(
+            "guid: 5d40f9d0-bbfe-5aa7-a4e9-10b4e0b676bf",
+            "guid: f53d5df8-3b69-55e8-a12b-fdf244f3df55",
+        )
+    )
+    path.write_text(text + extra, encoding="utf-8")
+
+
+class TestSkillArchives:
+    def test_one_archive_per_distinct_skill(self, packaged):
+        names = sorted(p.name for p in (packaged / "dist/skills").iterdir())
+        assert names == ["alpha.skill", "beta.skill"]
+
+    def test_a_shared_skill_is_archived_once(self, fixture_repo, monkeypatch):
+        second_bundle(fixture_repo)
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        names = sorted(p.name for p in (fixture_repo / "dist/skills").iterdir())
+        assert names == ["alpha.skill", "beta.skill"]
+
+    def test_entries_are_sorted_at_the_root_and_carry_the_notices(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            names = archive.namelist()
+        assert names == sorted(names)
+        assert "SKILL.md" in names
+        assert "LICENSE" in names
+        assert "NOTICE.md" in names
+        assert "references/notes.md" in names
+        assert not any(name.startswith("skills/") for name in names)
+        assert not any(name.startswith("alpha/") for name in names)
+
+    def test_skill_md_is_the_built_one_byte_for_byte(self, packaged):
+        built = packaged / "dist/test-bundle/skills/alpha/SKILL.md"
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            assert archive.read("SKILL.md") == built.read_bytes()
+
+    def test_licence_and_notice_come_from_the_repository_root(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            assert (
+                archive.read("LICENSE") == (packaged / "upstream/LICENSE").read_bytes()
+            )
+            assert archive.read("NOTICE.md") == (packaged / "NOTICE.md").read_bytes()
+
+    def test_a_skill_with_no_companions_still_ships(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/beta.skill") as archive:
+            assert archive.namelist() == ["LICENSE", "NOTICE.md", "SKILL.md"]
+
+    def test_two_builds_produce_byte_identical_archives(self, fixture_repo, tmp_path):
+        config = load_config(fixture_repo)
+        runs = []
+        for run in ("first", "second"):
+            out = tmp_path / run
+            Builder(config, out_dir=out).build()
+            written = pkg.write_skill_archives(config, list(config.bundles), out)
+            runs.append([path.read_bytes() for path in written])
+        assert runs[0] == runs[1]
+
+    def test_entries_are_dated_1980_by_default(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            stamps = {info.date_time for info in archive.infolist()}
+        assert stamps == {(1980, 1, 1, 0, 0, 0)}
+
+    def test_source_date_epoch_is_honoured(self, fixture_repo, tmp_path, monkeypatch):
+        monkeypatch.setenv("SOURCE_DATE_EPOCH", "1234567890")
+        config = load_config(fixture_repo)
+        out = tmp_path / "dated"
+        Builder(config, out_dir=out).build()
+        written = pkg.write_skill_archives(config, list(config.bundles), out)
+        with zipfile.ZipFile(written[0]) as archive:
+            assert archive.infolist()[0].date_time == (2009, 2, 13, 23, 31, 30)
+
+    def test_package_prints_the_archive_summary(
+        self, fixture_repo, monkeypatch, capsys
+    ):
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        out = capsys.readouterr().out
+        assert "dist/skills/: 2 archives" in out
+        assert "  dist/skills/alpha.skill" in out
+
+    def test_package_exits_two_when_an_archive_is_invalid(
+        self, fixture_repo, monkeypatch
+    ):
+        from lqcowork import validate as V
+
+        monkeypatch.setattr(V, "MAX_ARCHIVE_COMPANIONS", 0)
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 2
+
+
+class TestArchivesCommand:
+    def test_writes_from_an_existing_build(self, fixture_repo, monkeypatch):
+        monkeypatch.chdir(fixture_repo)
+        assert main(["build"]) == 0
+        assert not (fixture_repo / "dist/skills").exists()
+        assert main(["archives"]) == 0
+        assert (fixture_repo / "dist/skills/alpha.skill").is_file()
+
+    def test_bundle_filter(self, fixture_repo, monkeypatch):
+        second_bundle(fixture_repo)
+        monkeypatch.chdir(fixture_repo)
+        assert main(["build"]) == 0
+        assert main(["archives", "--bundle", "other-bundle"]) == 0
+        assert (fixture_repo / "dist/skills/alpha.skill").is_file()
+
+    def test_without_a_build_it_says_to_build_first(
+        self, fixture_repo, monkeypatch, capsys
+    ):
+        monkeypatch.chdir(fixture_repo)
+        assert main(["archives"]) == 1
+        assert "run build first" in capsys.readouterr().err
+
+    def test_out_dir_is_honoured(self, fixture_repo, tmp_path, monkeypatch):
+        monkeypatch.chdir(fixture_repo)
+        out = tmp_path / "elsewhere"
+        assert main(["build", "--out", str(out)]) == 0
+        assert main(["archives", "--out", str(out)]) == 0
+        assert (out / "skills/alpha.skill").is_file()
+
+    def test_returns_two_when_an_archive_is_invalid(self, fixture_repo, monkeypatch):
+        from lqcowork import validate as V
+
+        monkeypatch.chdir(fixture_repo)
+        assert main(["build"]) == 0
+        monkeypatch.setattr(V, "MAX_ARCHIVE_ENTRIES", 1)
+        assert main(["archives"]) == 2
+
+
+class TestArchiveReport:
+    def test_section_lists_every_archive(self, packaged):
+        text = (packaged / "dist/build-report.md").read_text()
+        assert "## Single-skill archives" in text
+        assert "| Archive | Entries | Compressed | Uncompressed | Bundles |" in text
+        assert "| `skills/alpha.skill` |" in text
+        assert "| `skills/beta.skill` |" in text
+
+    def test_a_shared_skill_names_both_bundles(self, fixture_repo, monkeypatch):
+        second_bundle(fixture_repo)
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        text = (fixture_repo / "dist/build-report.md").read_text()
+        assert "| test-bundle, other-bundle |" in text
+
+
+class TestStrayReadme:
+    def test_a_readme_in_skills_changes_nothing(self, fixture_repo, monkeypatch):
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        before = {
+            path.relative_to(fixture_repo).as_posix(): path.read_bytes()
+            for path in sorted((fixture_repo / "dist").rglob("*"))
+            if path.is_file()
+        }
+        (fixture_repo / "skills/README.md").write_text(
+            "These folders are build inputs, not skills.\n", encoding="utf-8"
+        )
+        assert main(["package"]) == 0
+        after = {
+            path.relative_to(fixture_repo).as_posix(): path.read_bytes()
+            for path in sorted((fixture_repo / "dist").rglob("*"))
+            if path.is_file()
+        }
+        assert after == before

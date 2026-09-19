@@ -531,3 +531,97 @@ class TestZip:
         archive = self._zip(tmp_path, ["manifest.json", "__MACOSX/x", ".DS_Store"])
         codes = [i.code for i in V.validate_zip(archive, "b", {"manifest.json"})]
         assert len(codes) >= 3
+
+
+class TestSkillArchive:
+    """LQC-U001..U005, one provoked at a time against a written archive."""
+
+    def archive(self, root: Path, name: str = "alpha") -> Path:
+        from lqcowork.package import write_skill_archives
+
+        config = load_config(root)
+        written = write_skill_archives(config, list(config.bundles))
+        return next(path for path in written if path.stem == name)
+
+    def skill_dir(self, root: Path, name: str = "alpha") -> Path:
+        return root / "dist/test-bundle/skills" / name
+
+    def check(self, root: Path, archive: Path, name: str = "alpha") -> list[str]:
+        issues = V.validate_skill_archive(archive, name, self.skill_dir(root, name))
+        return [issue.code for issue in issues]
+
+    def rewrite(self, archive: Path, entries: dict[str, bytes]) -> Path:
+        """Replace the archive's contents, the way a tamperer would."""
+        with zipfile.ZipFile(archive, "w") as opened:
+            for name, payload in entries.items():
+                opened.writestr(name, payload)
+        return archive
+
+    def contents(self, archive: Path) -> dict[str, bytes]:
+        with zipfile.ZipFile(archive) as opened:
+            return {name: opened.read(name) for name in opened.namelist()}
+
+    def test_a_written_archive_is_clean(self, built_repo):
+        archive = self.archive(built_repo)
+        assert self.check(built_repo, archive) == []
+        assert self.check(built_repo, self.archive(built_repo, "beta"), "beta") == []
+
+    def test_u001_nested_top_level_folder(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = {f"alpha/{k}": v for k, v in self.contents(archive).items()}
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes.count("LQC-U001") == len(entries) + 1  # + no SKILL.md at root
+
+    def test_u001_dotfile_entry(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {".DS_Store": b"junk"}
+        assert "LQC-U001" in self.check(built_repo, self.rewrite(archive, entries))
+
+    def test_u001_macosx_entry(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {"__MACOSX/alpha": b"junk"}
+        assert "LQC-U001" in self.check(built_repo, self.rewrite(archive, entries))
+
+    def test_u002_skill_md_must_match_the_built_one(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {"SKILL.md": b"---\nname: alpha\n---\n"}
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes == ["LQC-U002"]
+
+    def test_u002_licence_and_notice_must_travel(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = {
+            k: v
+            for k, v in self.contents(archive).items()
+            if k not in {"LICENSE", "NOTICE.md"}
+        }
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes.count("LQC-U002") == 2
+
+    def test_u003_entry_count(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_ENTRIES", 2)
+        assert "LQC-U003" in self.check(built_repo, self.archive(built_repo))
+
+    def test_u004_compressed_limit(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_COMPRESSED_BYTES", 10)
+        assert "LQC-U004" in self.check(built_repo, self.archive(built_repo))
+
+    def test_u004_uncompressed_limit(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_UNCOMPRESSED_BYTES", 10)
+        assert "LQC-U004" in self.check(built_repo, self.archive(built_repo))
+
+    def test_u004_markdown_limit(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_MD_BYTES", 10)
+        codes = self.check(built_repo, self.archive(built_repo))
+        assert codes.count("LQC-U004") >= 2  # SKILL.md and its companions
+
+    def test_u005_companion_budget(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_COMPANIONS", 1)
+        codes = self.check(built_repo, self.archive(built_repo))
+        assert codes == ["LQC-U005"]
+
+    def test_u005_nothing_the_bundle_folder_does_not_have(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {"references/smuggled.md": b"# No\n"}
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes == ["LQC-U005"]
