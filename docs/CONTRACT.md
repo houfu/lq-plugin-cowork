@@ -42,6 +42,7 @@ upstream's `LICENSE` travels at the zip root.
 lq-cowork/
   upstream/                    # git submodule, read-only, pinned SHA
   cowork.yaml                  # bundles, developer block, global transforms, pin
+  skills/README.md             # says these folders are build inputs, not skills (section 5b)
   skills/<name>/               # one adaptation folder per shipped skill
     skill.yaml                 #   the card (required)
     SKILL.md                   #   full-file overlay (optional)
@@ -58,7 +59,7 @@ lq-cowork/
     tests/...
   docs/CONTRACT.md             # this file
   docs/RELEASING.md            # how a release is cut (contract section 7)
-  dist/                        # generated, gitignored
+  dist/                        # generated, gitignored: bundles, zips, dist/skills/<name>.skill, reports
   .github/workflows/           # build.yml, release.yml, upstream-drift.yml
   .github/dependabot.yml       # keeps the pinned action versions current
   Makefile                     # thin wrappers around `uv run --project tools lqcowork ...`
@@ -249,8 +250,10 @@ Rules for cards:
 10. Stamp: set `name` from the card, `description` from the card (stripped),
     `license: Apache-2.0`, and
     `metadata.adapted-from: "LegalQuants/lq-plugin-oss@<sha7> skills/<upstream>"`,
-    `metadata.adapted-for: "Microsoft 365 Copilot Cowork"`. Existing
-    `metadata` keys are preserved. Insert as the first body line, right after
+    `metadata.adapted-for: "Microsoft 365 Copilot Cowork"`,
+    `metadata.version: "<package.version>"` (a string; the same value as the
+    manifest version, so a skill uploaded on its own still says which release
+    it came from). Existing `metadata` keys are preserved. Insert as the first body line, right after
     the closing `---`:
     `<!-- Modified from LegalQuants/lq-plugin-oss@<sha7> (skills/<upstream>) for Microsoft 365 Copilot Cowork. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->`
 10b. Companion notices: after every transform, compare each `*.md` companion
@@ -280,7 +283,36 @@ rendered, print `must not activate; expect none (<target> is not in this
 bundle)`, and when it names a Cowork built-in from §8, case-insensitively,
 print `must not activate; expect built-in <Name>`) and
 `dist/build-report.md` (per skill: bucket, files, bytes, warnings; per bundle:
-skill count, manifest summary).
+skill count, manifest summary; the single-skill archives of section 5b).
+
+## 5b. Single-skill archives: `dist/skills/<name>.skill`
+
+Cowork's **Customize** page has an **Upload skill** control that takes one
+skill at a time, without a plugin package, an administrator or `atk`: a `.md`
+holding a single SKILL.md, or a `.zip`/`.skill` archive with `SKILL.md` at its
+root plus the skill's companion files. That is the route a lawyer with no
+developer tooling will use, and it is the route UAT issue 19 asked for after a
+tester zipped `skills/pressuretest/` from this repository, found no SKILL.md in
+it, and rebuilt the skill by hand. Every `package` run therefore also writes
+one upload-ready archive per distinct skill, from the same built tree the
+bundles are made from.
+
+- Path `dist/skills/<name>.skill`, one per skill name across all selected
+  bundles (a shared skill is built once and archived once; the two bundle
+  copies are byte-identical by construction).
+- Contents, all at the archive root, no top-level folder: the built skill
+  folder (`SKILL.md` and its companions, exactly as in `dist/<bundle>/skills/<name>/`),
+  plus `LICENSE` (upstream's) and `NOTICE.md`, because Apache-2.0 §4 travels
+  with every distribution, and a single skill uploaded on its own is one.
+- Written with the bundle zip writer: sorted entries, 1980 timestamps (or
+  `SOURCE_DATE_EPOCH`), deflate, no `__MACOSX`, no dotfiles; byte-reproducible.
+- There is no bare `.md` edition. A lone SKILL.md drops the companion files the
+  body tells the agent to read, so it would upload cleanly and then misbehave.
+  If a skill has no companions the archive still ships, for one download shape.
+
+Each archive is validated (section 6, `LQC-U` codes) after it is written, the
+same way bundle zips are, and the release publishes them all next to the
+bundles with their checksums (section 7 of RELEASING.md).
 
 ## 6. Validation rules
 
@@ -318,6 +350,11 @@ Errors (fail the build):
 | LQC-I001 | `color.png` is a PNG of exactly 192×192; `outline.png` exactly 32×32 (read the IHDR chunk) |
 | LQC-Z001 | zip entries are at the root (`manifest.json`, icons, `skills/...`), no `__MACOSX`, no dotfiles |
 | LQC-A001 | anchor failure (replace count mismatch, section heading missing, patch failed, overlay base missing) |
+| LQC-U001 | a single-skill archive has `SKILL.md` at its root, and no entry starts with `./`, `/`, a top-level folder other than the skill's own subfolders, `__MACOSX`, or a dot |
+| LQC-U002 | the archive's `SKILL.md` is byte-identical to `dist/<bundle>/skills/<name>/SKILL.md`, and its `LICENSE` and `NOTICE.md` are present |
+| LQC-U003 | ≤ 100 entries (Cowork's archive upload limit) |
+| LQC-U004 | ≤ 10 MB compressed and ≤ 50 MB uncompressed (Cowork's archive upload limits); each `.md` inside ≤ 1 MB |
+| LQC-U005 | ≤ 20 files other than `SKILL.md`, `LICENSE` and `NOTICE.md`, and the two root notices themselves are the only extra files — the archive carries nothing the bundle folder does not |
 
 Warnings (printed, and listed in the build report):
 
@@ -345,10 +382,11 @@ dev dependencies pytest and black (black-formatted, line length 88).
 ```
 uv run --project tools lqcowork build      [--bundle ID] [--report-anchors] [--upstream-path P] [--out DIR]
 uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/ without rebuilding
-uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + trigger tests + report
+uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + single-skill archives + trigger tests + report
 uv run --project tools lqcowork bump-upstream [--to REF] [--dry-run] [--report PATH]
 uv run --project tools lqcowork anchor     [--skill NAME]              # set anchored_to = current pin after review
 uv run --project tools lqcowork triggers   [--bundle ID] [--out DIR]   # write dist/<bundle>-trigger-tests.md only
+uv run --project tools lqcowork archives   [--bundle ID] [--out DIR]   # write and validate dist/skills/<name>.skill from an existing build
 uv run --project tools lqcowork release-check --tag vX.Y.Z [--out DIR] # does a tag agree with the tree?
 ```
 
@@ -432,6 +470,15 @@ repository could not be read.
   between competing skills resolve conflicts.
 - Cowork cannot delete files. Never instruct deletion or claim clean-up; say
   that any intermediate file remains in the Output folder and name it.
+- **Upload skill** (Customize page > Skills tab > arrow next to **Add**):
+  accepts a `.md` with a single SKILL.md, or a `.zip`/`.skill` with `SKILL.md`
+  at the root plus companions. Frontmatter must have `name` and `description`.
+  A `.md` may be up to 1 MB; an archive up to 10 MB compressed, 50 MB
+  uncompressed, 100 files. A skill whose name already exists is kept alongside
+  the old one with a number appended, so re-uploads do not replace. Cowork
+  shows a "only upload skills from sources you trust" reminder on first use.
+  Uploaded skills land in `/Documents/Cowork/skills/` and appear after sync.
+  Custom skills are not supported on mobile.
 - Skill selection: Cowork activates a skill from its description, and the
   conversation's **Sources** picker lets the user choose plugins and skills
   for a request. Do not claim a `/` skill menu in chat, and do not claim a

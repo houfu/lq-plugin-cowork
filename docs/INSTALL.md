@@ -1,10 +1,13 @@
-# Installing a bundle in Microsoft 365 Copilot Cowork
+# Installing a skill or a bundle in Microsoft 365 Copilot Cowork
 
-How to get `legalquants-litigation-cowork.zip` or
-`legalquants-transactional-cowork.zip` from a
+How to get a single `<name>.skill` archive, or a whole bundle
+(`legalquants-litigation-cowork.zip` or
+`legalquants-transactional-cowork.zip`), from a
 [release](https://github.com/houfu/lq-plugin-cowork/releases/latest) into
-Copilot Cowork. Every Microsoft page this is built on is listed, with the date
-it was checked, in [Sources](#sources) at the end. Anything that could not be
+Copilot Cowork. If you only want to try one skill, [Route
+0](#route-0-upload-a-single-skill) needs no admin and no terminal — start
+there. Every Microsoft page this is built on is listed, with the date it was
+checked, in [Sources](#sources) at the end. Anything that could not be
 confirmed from Microsoft's documentation is marked **unverified** rather than
 guessed at.
 
@@ -40,10 +43,13 @@ upload to fail and talk to your admin first.
 
 ## Who can install
 
-Three routes. Pick the first one your tenant allows.
+Four routes. If you only want one skill, Route 0 needs nothing else on this
+page — it is not a plugin install at all. For a whole bundle, pick the first
+of A/B/C that your tenant allows.
 
 | Route | Who does it | Good for |
 | --- | --- | --- |
+| [Route 0. Upload a single skill](#route-0-upload-a-single-skill) | Any user — no admin, no terminal | Testing or using one skill, without installing a plugin |
 | [A. Upload it yourself in Cowork](#a-upload-it-yourself-in-cowork) | Any user, if tenant policy allows uploading a plugin package | One tester, one laptop, today |
 | [B. Admin deployment](#b-admin-deployment) | Tenant administrator or Copilot administrator | A pilot group, a firm, a controlled rollout |
 | [C. The `atk` CLI](#c-the-atk-cli) | A developer with a work account | Scripted installs, repeatable test cycles |
@@ -60,6 +66,67 @@ package mechanism as Teams apps, so that policy is the obvious candidate and is
 certainly what gates the Teams and `atk` paths — but treat the link as an
 assumption. If your upload is refused, that policy is the first thing for an
 admin to check.
+
+## Route 0. Upload a single skill
+
+The fastest way to try one skill: no plugin package, no administrator, no
+`atk`. This is the route
+[UAT issue 19](https://github.com/houfu/lq-plugin-cowork/issues/19) asked for.
+
+1. Download `<name>.skill` (for example `pressuretest.skill`) from the
+   [latest release](https://github.com/houfu/lq-plugin-cowork/releases/latest).
+   It is a small `.skill` archive — `SKILL.md` at its root plus that skill's
+   companion files, `LICENSE` and `NOTICE.md` — not a folder from this
+   repository's `skills/` directory (see [skills/README.md](../skills/README.md)).
+2. In Cowork, select the **+** button and then **Customize**.
+3. Select the **Skills** tab.
+4. Select the arrow next to **Add**, then **Upload skill**, and pick the file
+   in the file picker.
+5. Cowork validates the archive and saves it to your OneDrive
+   `/Documents/Cowork/skills/`. It appears under **Your skills** after the
+   next sync.
+6. Test it in a **new conversation** — the same one-fresh-conversation
+   discipline as [docs/TESTING.md](TESTING.md) Part A.
+
+Re-uploading a skill with the same name does **not** replace the old copy:
+Cowork keeps both, with a number appended to the new one's name. If you are
+re-testing a fixed version, open the old skill's detail page and delete it
+first, then upload the new archive.
+
+**Limits** (contract section 8): the archive must be ≤ 10 MB compressed and
+≤ 50 MB uncompressed, ≤ 100 files total, with each `.md` inside ≤ 1 MB.
+Frontmatter must have both `name` and `description`. Custom skills — uploaded
+singly or as part of a plugin — are not supported on mobile.
+
+**Verified** (Microsoft's cowork-customize page, checked 19 September 2026):
+the Skills tab, the arrow-next-to-Add path to **Upload skill**, the accepted
+formats, the size and file-count limits, the OneDrive save path, and the
+same-name-keeps-both re-upload behaviour.
+
+**Unverified:** whether the "only upload skills from sources you trust"
+reminder Cowork shows on first use looks exactly as Microsoft describes it,
+and how long the OneDrive sync into **Your skills** typically takes.
+
+### Upload troubleshooting checklist
+
+Work through these in order before filing a report:
+
+- **Is it the release asset, not a GitHub folder?** The file must be
+  `<name>.skill` downloaded from the release page, never a "Download ZIP" of
+  `skills/<name>/` from this repository — that folder is a build input with no
+  `SKILL.md` in it (see [skills/README.md](../skills/README.md)).
+- **Does `SKILL.md` sit at the archive root?** List the entries —
+  `unzip -l <name>.skill` on a terminal, or open the archive in any zip viewer
+  — and confirm `SKILL.md` is a top-level entry, not nested inside a folder.
+- **Size and file-count limits.** ≤ 10 MB compressed, ≤ 50 MB uncompressed,
+  ≤ 100 files, each `.md` ≤ 1 MB.
+- **Frontmatter present.** `SKILL.md` must open with a `---`-delimited block
+  containing `name` and `description`.
+- **Microsoft Purview Information Barriers.** IB tenants block embedded
+  knowledge file uploads at the tenant level, single-skill archives included —
+  ask your admin.
+- **Mobile.** Custom skills are not supported in Cowork on mobile; try a
+  desktop or web client.
 
 ## A. Upload it yourself in Cowork
 
@@ -233,6 +300,11 @@ a correction here is welcome.
 - Use plugins with Copilot Cowork — Sources & Skills panel, enabling and disabling, uploading a package from the Customize page, admin-deployed behaviour, removing a plugin, how plugin skills activate: <https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-plugins>
 - Manage plugins for Copilot Cowork — admin prerequisites and roles, deploying to users and groups, blocking, org-wide publication approval, tenant distribution, author self-test: <https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-manage-plugins>
 - Customize Copilot Cowork — the Customize page, Plugins tab, **Upload plugin**, the Share dialog, the conversation Sources picker: <https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-customize>
+- Customize Copilot Cowork — the **Skills** tab, the arrow next to **Add**,
+  **Upload skill**, accepted `.md`/`.zip`/`.skill` formats, size and
+  file-count limits, the OneDrive save path, same-name re-upload behaviour,
+  the trust reminder, the mobile restriction (checked 19 September 2026):
+  <https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-customize>
 - Use Copilot Cowork — the session side panel: Progress, Input folder, Output folder, **Skills** (chips), Schedule, Permissions: <https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/use-cowork>
 - Manage Copilot Cowork for your organization — Cowork in the admin center, usage-based billing as an access control: <https://learn.microsoft.com/en-us/microsoft-365/copilot/cowork/cowork-admin-governance>
 - Introduction to Microsoft 365 Agents Toolkit CLI — `atk auth`, `atk install` (`--file-path`, `--scope Personal`/`Shared`), `atk uninstall` (`--mode title-id` / `manifest-id`), `atk launchinfo`: <https://learn.microsoft.com/en-us/microsoftteams/platform/toolkit/microsoft-365-agents-toolkit-cli>
@@ -255,3 +327,6 @@ a correction here is welcome.
    name — relevant only if you install both bundles, which share six skill
    names. Microsoft documents only that plugin skills cannot override built-in
    skills of the same name.
+6. Whether the "only upload skills from sources you trust" reminder on a
+   single-skill upload looks exactly as Microsoft describes it, and how long
+   the OneDrive sync into **Your skills** typically takes.

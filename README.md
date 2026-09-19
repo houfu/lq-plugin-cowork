@@ -23,12 +23,20 @@ anyone can do for this repo right now. Start at
 [UAT issue](https://github.com/houfu/lq-plugin-cowork/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 waiting for a result.
 
-## Get the packages
+## Get the skills
 
-Built packages are attached to each release:
 **[Releases](https://github.com/houfu/lq-plugin-cowork/releases)** ·
 [latest](https://github.com/houfu/lq-plugin-cowork/releases/latest). You do not
-need to clone this repository to install one.
+need to clone this repository to install anything — and a GitHub **Code >
+Download ZIP** of this repository, or of a `skills/<name>/` folder, is **not**
+installable: those are build inputs (see [skills/README.md](skills/README.md)),
+not a working skill.
+
+| Route | Download | How | Good for |
+| --- | --- | --- | --- |
+| Upload one skill | `<name>.skill` from the release | Cowork **Customize** > **Skills** tab > arrow next to **Add** > **Upload skill** | A lawyer testing a single skill: no admin, no terminal |
+| Install the full plugin | one of the two bundle `.zip` files below | see [docs/INSTALL.md](docs/INSTALL.md) | A tester or team wanting the whole bundle |
+| Developer source | clone the repo | `skills/<name>/` folders are build inputs, not skills; `make package` builds everything | Working on the adaptation itself |
 
 | Bundle | Who it suits |
 | --- | --- |
@@ -38,11 +46,13 @@ need to clone this repository to install one.
 Six skills are in both bundles. Install one to start: the two can coexist, but a
 duplicated skill name across two enabled plugins is worth reporting.
 
-Each release carries the two zips; `<bundle>-trigger-tests.md` for each, the
-routing acceptance tests generated from the cards; `build-report.md` — skills,
-buckets, file counts, adaptation notes and warnings; and `SHA256SUMS`. v0.1.0 is
-marked a GitHub pre-release. See [CHANGELOG.md](CHANGELOG.md) for what changed
-and [docs/RELEASING.md](docs/RELEASING.md) for how a release is cut.
+Each release carries: the two bundle zips; one `<name>.skill` upload-ready
+archive per skill (17, contract section 5b) for the single-skill route above;
+`<bundle>-trigger-tests.md` for each bundle, the routing acceptance tests
+generated from the cards; `build-report.md` — skills, buckets, file counts,
+adaptation notes and warnings; and `SHA256SUMS`. v0.1.0 is marked a GitHub
+pre-release. See [CHANGELOG.md](CHANGELOG.md) for what changed and
+[docs/RELEASING.md](docs/RELEASING.md) for how a release is cut.
 
 ## Install
 

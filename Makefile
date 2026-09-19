@@ -1,14 +1,15 @@
 # Thin wrappers around `uv run --project tools lqcowork ...`.
 #
 #   make setup          install the build tooling
-#   make package        build + validate + zip + trigger tests + report
+#   make package        build + validate + zip + archives + trigger tests + report
+#   make archives       upload-ready dist/skills/<name>.skill from a build
 #   make drift          report what moved upstream, without moving the pin
 #   make fmt-check      black --check, the formatting gate CI runs
 #   make release-check  does TAG agree with cowork.yaml, CHANGELOG.md and dist/?
 #   make release        check TAG, tag this commit, push the tag; CI publishes
 #
 # Optional variables:
-#   BUNDLE=legalquants-litigation-cowork   restrict build/validate/package/triggers
+#   BUNDLE=legalquants-litigation-cowork   restrict build/validate/package/archives/triggers
 #   TO=origin/main                         the ref bump/drift resolve
 #   SKILL=wiki                             restrict anchor
 #   REPORT=dist/upstream-drift.md          where drift/bump write the report
@@ -31,8 +32,8 @@ BUNDLE_ARG := $(if $(BUNDLE),--bundle $(BUNDLE),)
 SKILL_ARG := $(if $(SKILL),--skill $(SKILL),)
 REPORT_ARG := $(if $(REPORT),--report $(REPORT),)
 
-.PHONY: setup build validate package triggers drift bump anchor test fmt \
-        fmt-check release-check release clean help
+.PHONY: setup build validate package archives triggers drift bump anchor test \
+        fmt fmt-check release-check release clean help
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | grep -v '^help$$' | sort
@@ -48,6 +49,9 @@ validate:
 
 package:
 	$(LQ) package $(BUNDLE_ARG)
+
+archives:
+	$(LQ) archives $(BUNDLE_ARG)
 
 triggers:
 	$(LQ) triggers $(BUNDLE_ARG)

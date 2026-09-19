@@ -529,6 +529,8 @@ class Builder:
             f"LegalQuants/lq-plugin-oss@{self.config.sha7} skills/{card.upstream}"
         )
         metadata["adapted-for"] = "Microsoft 365 Copilot Cowork"
+        # A skill uploaded on its own still says which release it came from.
+        metadata["version"] = str(self.config.version)
         frontmatter["metadata"] = metadata
 
         notice = NOTICE_TEMPLATE.format(sha7=self.config.sha7, upstream=card.upstream)

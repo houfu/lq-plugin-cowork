@@ -24,12 +24,17 @@ per skill to claim.
 ## What testers need
 
 - **A Microsoft 365 Copilot tenant with Cowork**, on desktop or web. Custom
-  plugins are not supported in Cowork on mobile.
-- **A bundle installed** — see [docs/INSTALL.md](INSTALL.md). Personal scope,
-  shared with **Only you**, is enough.
-- **The release assets**: the bundle zip, its `<bundle>-trigger-tests.md`, and
-  `build-report.md` (which tells you the package version and, per skill, what
-  the adaptation changed).
+  skills and plugins are not supported in Cowork on mobile.
+- **A bundle installed, or one skill uploaded** — see
+  [docs/INSTALL.md](INSTALL.md). Testing only one skill? [Route
+  0](INSTALL.md#route-0-upload-a-single-skill) — uploading its `<name>.skill`
+  archive — is the fastest way in: no plugin, no admin, no bundle choice to
+  make. Testing routing (Part A below) or more than one skill still needs a
+  bundle installed. Personal scope, shared with **Only you**, is enough for
+  either route.
+- **The release assets**: the bundle zip or the `<name>.skill` archive you are
+  testing, its `<bundle>-trigger-tests.md`, and `build-report.md` (which tells
+  you the package version and, per skill, what the adaptation changed).
 - **Synthetic documents only.** Every test below says what to prepare. Invent the
   parties, the numbers and the facts. Never use a real matter, a real client
   name or anything you would not publish. This is not a caution about the
@@ -54,6 +59,13 @@ once, in whichever bundle you installed, and say which bundle in the report.
 If you install both at once, say so in every report: two enabled plugins
 contributing six identically-named skills is untested ground, and how Cowork
 handles it is itself a finding.
+
+Only here for one skill's behaviour test (Part B), not the routing tests?
+Skip the bundle question entirely and upload that skill's `<name>.skill`
+archive instead — **Upload skill (.skill)** is the install route in
+[docs/INSTALL.md, Route 0](INSTALL.md#route-0-upload-a-single-skill). Part A's
+routing tests still need a bundle installed, because routing is about which
+skill a plugin's own description wins against its neighbours.
 
 ## Part A — routing tests
 
@@ -575,9 +587,17 @@ reporting.
 **One report per result.** Use the
 [UAT report form](https://github.com/houfu/lq-plugin-cowork/issues/new?template=uat-report.yml):
 it asks for the report type (routing pass, routing misfire, behaviour pass,
-behaviour defect), the bundle, the skill, the package version, the date, your
-Cowork client if you know it, the prompt you typed, the files you attached, what
-you expected, what happened, and an excerpt of the reply.
+behaviour defect), the bundle, the skill, the package version, **the exact
+filename of what you uploaded** (a bundle zip such as
+`legalquants-litigation-cowork.zip`, or a single-skill archive such as
+`pressuretest.skill`), the date, your Cowork client if you know it, the prompt
+you typed, the files you attached, what you expected, what happened, and an
+excerpt of the reply. The `SKILL.md` a single-skill archive carries is
+byte-identical to the one in its bundle, so a behaviour defect reads the same
+either way — but naming the exact artifact still matters, because a routing
+misfire is only possible with a bundle installed, and because a defect
+specific to Cowork's single-skill upload path (rather than the skill content
+itself) would only show up that way.
 
 Passes are worth reporting too. A skill with four routing passes and a clean
 behaviour run is a skill that can come off the status board, and that is the
@@ -606,7 +626,9 @@ exact prompt attached.
   pasting it, and say that is what you did.
 
 The package version is in the release name, in `build-report.md`, and in the
-`version` field of `manifest.json` inside the zip. For v0.1.0 it is `0.1.0`.
+`version` field of `manifest.json` inside a bundle zip. If you only uploaded a
+single-skill archive, the same value is in its `SKILL.md` frontmatter, under
+`metadata.version`. For v0.1.0 it is `0.1.0`.
 
 ## Part D — what happens to your report
 

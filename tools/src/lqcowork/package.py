@@ -8,6 +8,7 @@ import zipfile
 from pathlib import Path
 
 from .build import (
+    BuildError,
     BuildResult,
     BundleBuild,
     Issue,
@@ -16,7 +17,7 @@ from .build import (
     dist_root,
 )
 from .config import Bundle, Card, Config, builtin_name, split_negative
-from .validate import validate_zip
+from .validate import validate_skill_archive, validate_zip
 
 
 def zip_path(config: Config, bundle: Bundle, out_dir: Path | None = None) -> Path:
@@ -31,6 +32,14 @@ def report_path(config: Config, out_dir: Path | None = None) -> Path:
     return dist_root(config, out_dir) / "build-report.md"
 
 
+def skill_archive_dir(config: Config, out_dir: Path | None = None) -> Path:
+    return dist_root(config, out_dir) / "skills"
+
+
+def skill_archive_path(config: Config, name: str, out_dir: Path | None = None) -> Path:
+    return skill_archive_dir(config, out_dir) / f"{name}.skill"
+
+
 def allowed_roots(config: Config) -> set[str]:
     roots = {"manifest.json", "color.png", "outline.png", "skills"}
     roots |= {Path(rel).name for rel in config.root_files}
@@ -40,15 +49,28 @@ def allowed_roots(config: Config) -> set[str]:
 def write_zip(config: Config, bundle: Bundle, out_dir: Path | None = None) -> Path:
     """Zip ``<out>/<bundle>/`` with everything at the archive root."""
     source = dist_root(config, out_dir) / bundle.id
-    target = zip_path(config, bundle, out_dir)
+    return _write_archive(
+        zip_path(config, bundle, out_dir),
+        [
+            (p.relative_to(source).as_posix(), p)
+            for p in source.rglob("*")
+            if p.is_file()
+        ],
+    )
+
+
+def _write_archive(target: Path, entries: list[tuple[str, Path]]) -> Path:
+    """The one zip writer: sorted entries, fixed stamps, deflate, no dotfiles.
+
+    Bundle packages and single-skill archives share it so both are
+    byte-reproducible in the same way.
+    """
     if target.exists():
         target.unlink()
-    entries = sorted(
-        (p.relative_to(source).as_posix(), p) for p in source.rglob("*") if p.is_file()
-    )
+    target.parent.mkdir(parents=True, exist_ok=True)
     stamp = _zip_timestamp()
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for rel, path in entries:
+        for rel, path in sorted(entries):
             if any(part.startswith(".") for part in rel.split("/")):
                 continue
             if rel.split("/", 1)[0] == "__MACOSX":
@@ -78,6 +100,79 @@ def _zip_timestamp() -> tuple[int, int, int, int, int, int]:
 def validate_zip_entries(config: Config, bundle: Bundle, archive: Path) -> list[Issue]:
     """LQC-Z001 against the archive we just wrote."""
     return validate_zip(archive, bundle.id, allowed_roots(config))
+
+
+def skill_bundles(bundles: list[Bundle]) -> dict[str, list[str]]:
+    """Every distinct skill in ``bundles``, mapped to the ids that ship it.
+
+    A skill in two bundles is built once and archived once, so this is what
+    decides both the archive list and the report's "Bundles" column.
+    """
+    shipped: dict[str, list[str]] = {}
+    for bundle in bundles:
+        for name in bundle.skills:
+            shipped.setdefault(name, []).append(bundle.id)
+    return dict(sorted(shipped.items()))
+
+
+def _built_skill_dir(
+    config: Config, bundle_id: str, name: str, out_dir: Path | None
+) -> Path:
+    """The built folder an archive is made from; the bundle must exist."""
+    bundle_dir = dist_root(config, out_dir) / bundle_id
+    if not bundle_dir.is_dir():
+        raise BuildError(f"{bundle_dir} does not exist; run build first")
+    skill_dir = bundle_dir / "skills" / name
+    if not skill_dir.is_dir():
+        raise BuildError(f"{skill_dir} does not exist; run build first")
+    return skill_dir
+
+
+def write_skill_archives(
+    config: Config, bundles: list[Bundle], out_dir: Path | None = None
+) -> list[Path]:
+    """One upload-ready ``dist/skills/<name>.skill`` per distinct skill.
+
+    Contract section 5b: the built skill folder at the archive root, plus the
+    licence and the notice, because Apache-2.0 travels with every
+    distribution and a skill uploaded on its own is one.
+    """
+    root_files = [(Path(rel).name, config.root / rel) for rel in config.root_files]
+    for rel, source in root_files:
+        if not source.is_file():
+            raise BuildError(f"{rel}: root file not found")
+    written: list[Path] = []
+    for name, bundle_ids in skill_bundles(bundles).items():
+        source = _built_skill_dir(config, bundle_ids[0], name, out_dir)
+        entries = [
+            (path.relative_to(source).as_posix(), path)
+            for path in source.rglob("*")
+            if path.is_file()
+        ]
+        entries += root_files
+        written.append(
+            _write_archive(skill_archive_path(config, name, out_dir), entries)
+        )
+    return written
+
+
+def validate_skill_archives(
+    config: Config,
+    bundles: list[Bundle],
+    archives: list[Path],
+    out_dir: Path | None = None,
+) -> list[Issue]:
+    """LQC-U001..U005 against the single-skill archives we just wrote."""
+    shipped = skill_bundles(bundles)
+    issues: list[Issue] = []
+    for archive in archives:
+        name = archive.stem
+        bundle_ids = shipped.get(name)
+        if not bundle_ids:
+            continue
+        skill_dir = _built_skill_dir(config, bundle_ids[0], name, out_dir)
+        issues += validate_skill_archive(archive, name, skill_dir)
+    return issues
 
 
 def _escape(text: str) -> str:
@@ -183,6 +278,34 @@ def _suppressed_table(suppressed: list[Suppression]) -> list[str]:
     return lines
 
 
+def _archive_table(result: BuildResult, archives: list[Path]) -> list[str]:
+    """What each ``dist/skills/<name>.skill`` holds, and who ships that skill."""
+    if not archives:
+        return []
+    shipped = skill_bundles([built.bundle for built in result.bundles])
+    lines = [
+        "## Single-skill archives",
+        "",
+        "Upload-ready, one per skill, for Cowork's Upload skill control",
+        "(contract section 5b).",
+        "",
+        "| Archive | Entries | Compressed | Uncompressed | Bundles |",
+        "| --- | ---: | ---: | ---: | --- |",
+    ]
+    for archive in archives:
+        name = archive.stem
+        with zipfile.ZipFile(archive) as opened:
+            infos = opened.infolist()
+        bundles = ", ".join(shipped.get(name, []))
+        lines.append(
+            f"| `skills/{archive.name}` | {len(infos)} | "
+            f"{archive.stat().st_size:,} | "
+            f"{sum(info.file_size for info in infos):,} | {bundles} |"
+        )
+    lines.append("")
+    return lines
+
+
 def write_build_report(
     config: Config,
     result: BuildResult,
@@ -190,6 +313,7 @@ def write_build_report(
     errors: list[Issue] | None = None,
     warnings: list[Issue] | None = None,
     suppressed: list[Suppression] | None = None,
+    archives: list[Path] | None = None,
     out_dir: Path | None = None,
 ) -> Path:
     """dist/build-report.md — per skill and per bundle, plus every issue."""
@@ -251,6 +375,7 @@ def write_build_report(
                 lines.append(f"- **{skill.name}** — {note}")
             lines.append("")
 
+    lines += _archive_table(result, list(archives or []))
     lines += _suppressed_table(suppressed or [])
     lines += _issue_table("## Errors", errors)
     lines += _issue_table("## Anchor failures", result.anchors)

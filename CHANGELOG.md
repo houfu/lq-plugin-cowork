@@ -11,6 +11,30 @@ undocumented, so every published change gets its own version.
 
 ## [Unreleased]
 
+### Added
+
+- Single-skill upload archives: every `package` run now also writes
+  `dist/skills/<name>.skill` (`SKILL.md`, companions, `LICENSE` and
+  `NOTICE.md`, one per shipped skill) alongside the two bundle zips, so a
+  tester or lawyer can install one skill through Cowork's **Upload skill**
+  control instead of a whole plugin. Built by the new `lqcowork archives`
+  command, validated with five new rules, `LQC-U001`-`LQC-U005` (contract
+  section 5b and section 6), and published as release assets next to the
+  bundles, with their own checksums in `SHA256SUMS`.
+- `metadata.version` stamped into every shipped `SKILL.md`, so a skill
+  uploaded on its own still says which release it came from.
+- "Route 0 — Upload a single skill" in [docs/INSTALL.md](docs/INSTALL.md): the
+  fastest install path, needing no plugin, no administrator and no `atk`.
+
+### Changed
+
+- Labelled `skills/<name>/` as build inputs, not shippable skills, with a new
+  [skills/README.md](skills/README.md) and a matching section in
+  [README.md](README.md#get-the-skills): closes the confusion in
+  [UAT issue 19](https://github.com/houfu/lq-plugin-cowork/issues/19), where a
+  tester zipped `skills/pressuretest/` from this repository, found no
+  `SKILL.md` in it, and rebuilt the skill by hand.
+
 ## [0.1.0] - 2026-09-18
 
 The first release: two Microsoft 365 Copilot Cowork plugin packages built from
