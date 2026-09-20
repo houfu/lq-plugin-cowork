@@ -4,9 +4,14 @@
 
     upstream/skills/core/{alpha,beta}/...   two adapted skills
     upstream/skills/extra/gamma/...         an upstream skill in no bundle
-    skills/{alpha,beta}/                    the adaptation cards
+    upstream/plugin.release.yaml            one plugin a bundle can mirror
+    skills/{alpha,beta,gamma}/              the adaptation cards
     branding/{color,outline}.png            correctly sized solid PNGs
+    probes.yaml                             one probe, P3
     cowork.yaml                             one bundle, 'test-bundle'
+
+``mirror_repo`` is the same tree with ``cowork.yaml`` rewritten so the bundle
+derives its membership from the release manifest instead of listing it.
 
 Tests mutate a copy of it to provoke individual validation codes.
 """
@@ -170,6 +175,36 @@ bundles:
       - beta
 """
 
+RELEASE_YAML = """release:
+  version: 0.1.0
+
+plugins:
+  - id: test-plugin
+    display_name: The Upstream Test Plugin
+    short_description: An upstream plugin a bundle can mirror
+    skill_groups:
+      - core
+    include_skills:
+      - extra/gamma
+  - id: other-plugin
+    display_name: Another Upstream Plugin
+    short_description: Not mirrored by anything
+    skill_groups:
+      - extra
+"""
+
+PROBES_YAML = """probes:
+  - id: P3
+    title: Does Cowork report tracked changes in a Word document?
+    settles: Whether tracked changes are visible at all.
+    setup: A synthetic DOCX with tracked insertions and deletions.
+    prompt: List every tracked change in this agreement.
+    pass: Insertions and deletions listed separately with authors.
+    fail: It reports no changes.
+    bad_outcome: silent
+    unlocks: [alpha]
+"""
+
 ALPHA_CARD = f"""name: alpha
 upstream: core/alpha
 bucket: amber
@@ -179,6 +214,23 @@ description: |
   Does the alpha thing without running anything locally.
   Use when the user asks to "do alpha", "run the alpha pass".
   Do not use for beta work (use the beta skill).
+
+cowork:
+  tier: 2
+  status: probe-gated
+  differs: |
+    The original ran a bundled program over the folder. Here you attach the
+    documents and the skill reads them one at a time, so a document it cannot
+    open is named rather than silently skipped.
+  known_issues:
+    - id: KI-alpha-1
+      title: "A document it cannot open reads as an empty one"
+      detail: "Check the list of documents it says it read against your own."
+      failure: silent
+      probe: P3
+  workarounds:
+    - instead_of: "a bundled script counts the documents it covered"
+      cowork: "the skill lists every document it read, so the count is visible"
 
 frontmatter:
   compatibility: null
@@ -226,6 +278,12 @@ description: |
   Use when the user asks to "do gamma".
   Do not use for alpha work (use the alpha skill).
 
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    Nothing changed but the description and the way it is invoked.
+
 triggers:
   positive:
     - "Do the gamma thing."
@@ -243,11 +301,32 @@ description: |
   Use when the user asks to "do beta".
   Do not use for alpha work (use the alpha skill).
 
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    Shipped as written, apart from the description and the way it is invoked.
+
 triggers:
   positive:
     - "Do the beta thing."
   negative:
     - "Do the alpha pass. -> alpha"
+"""
+
+MIRROR_BUNDLE = """bundles:
+  - id: test-bundle
+    guid: 5d40f9d0-bbfe-5aa7-a4e9-10b4e0b676bf
+    mirror: test-plugin
+    exclude_skills: []
+    name:
+      short: Test Bundle
+      full: A test bundle for the lqcowork build
+    description:
+      short: A short description for the test bundle
+      full: >-
+        A long description. Adapted from LegalQuants/lq-plugin-oss under
+        Apache-2.0; not an upstream release.
 """
 
 
@@ -304,8 +383,10 @@ def make_repo(root: Path) -> Path:
     _write(upstream / "core" / "beta" / "SKILL.md", BETA_SKILL)
     _write(upstream / "extra" / "gamma" / "SKILL.md", GAMMA_SKILL)
     _write(root / "upstream" / "LICENSE", "Apache License 2.0 (upstream copy)\n")
+    _write(root / "upstream" / "plugin.release.yaml", RELEASE_YAML)
     _write(root / "NOTICE.md", "# Notice\n\nAdapted from upstream.\n")
 
+    _write(root / "probes.yaml", PROBES_YAML)
     _write(root / "cowork.yaml", COWORK_YAML)
     _write(root / "skills" / "alpha" / "skill.yaml", ALPHA_CARD)
     _write(root / "skills" / "alpha" / "sections" / "automation.md", ALPHA_SECTION)
@@ -320,9 +401,22 @@ def make_repo(root: Path) -> Path:
     return root
 
 
+def make_mirror_repo(root: Path) -> Path:
+    """The same tree, with the bundle deriving its skills from upstream."""
+    make_repo(root)
+    head = COWORK_YAML.split("bundles:", 1)[0]
+    (root / "cowork.yaml").write_text(head + MIRROR_BUNDLE, encoding="utf-8")
+    return root
+
+
 @pytest.fixture
 def fixture_repo(tmp_path: Path) -> Path:
     return make_repo(tmp_path / "repo")
+
+
+@pytest.fixture
+def mirror_repo(tmp_path: Path) -> Path:
+    return make_mirror_repo(tmp_path / "mirror")
 
 
 @pytest.fixture

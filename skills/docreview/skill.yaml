@@ -1,0 +1,352 @@
+name: docreview
+upstream: litigation/docreview
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Reviews an incoming litigation production against the matter's requests or issues, a tranche at a time: inventories it, threads the messages, compiles the requests into a framework the lawyer confirms on a sample, holds every privilege candidate until the lawyer rules, and fills an Excel master register whose first column is the privilege state — one row per request per document, with the finding, the words it rests on and where they sit — then builds a Requests and Documents page for the preview pane. Use when the user asks to "review this production against our requests", "map these documents to the RFPs", "organize the production they just served", "what is missing from this production", or "which of their documents look privileged". Do not use for drafting requests, objections, a hold or a privilege log over your own client's documents (use the document-discovery skill), for sorting the matter's own files (use the organize-case-docs skill), or for checking citations in a brief (use the cite-check skill).
+
+exclude:
+  - "scripts/**"
+  - "*.schema.json"
+  - "references/openai-codex-runtime.md"
+  - "references/shared/inventory-design.md"
+  - "references/shared/edge-resolver-prompt.md"
+
+files: files
+
+replace:
+  - from: "Read exactly one document in a fresh context. Use only the supplied document\nand return\
+      \ the JSON schema in `metadata-reader.schema.json`. Do not use the\npath or filename as evidence."
+    to: "Read exactly one document, holding only that document while you read it.\nUse only the document\
+      \ itself and return the reading fields set out in this\nskill's data-contract reference. Do not\
+      \ use the path or filename as evidence."
+    files:
+    - references/shared/metadata-reader-prompt.md
+    expect: 1
+  - from: "- For supplied native text, set `receipt_mode` to `text` and every receipt's\n  `page` to\
+      \ null. For supplied page images, set `receipt_mode` to\n  `image-transcription`, transcribe the\
+      \ visible words faithfully, and put the\n  1-based source page on every receipt. Image transcriptions\
+      \ are proposals for\n  the lawyer's human-verification lane; never claim a script verified them."
+    to: "- Where the words came from the document's own text, record the evidence mode\n  as `text`\
+      \ and leave the page blank. Where they came from a page you looked\n  at as an image, record the\
+      \ mode as `image-transcription`, transcribe the\n  visible words faithfully, and give the 1-based\
+      \ source page. An image\n  transcription is a proposal for the lawyer's eyes; never present it\
+      \ as text\n  read straight off the document."
+    files:
+    - references/shared/metadata-reader-prompt.md
+    expect: 1
+  - from: "The orchestrator supplies the document ID and document content. The worker\nmust return that\
+      \ exact ID. It must not select a model, inspect other documents,\nor decide whether its output\
+      \ passed validation."
+    to: "Carry into this pass the document's register label and the document itself,\nand nothing else.\
+      \ Return that exact label. Within the pass, do not open\nanother document, do not look back at\
+      \ an earlier result, and do not decide\nwhether this one is good enough; that is a later step's\
+      \ job."
+    files:
+    - references/shared/metadata-reader-prompt.md
+    expect: 1
+  - from: "Review exactly one confirmed unit against exactly one approved lens in a fresh\ncontext.\
+      \ The execution layer may supply a bounded subset of no more than 12\nlens items in one call.\
+      \ Use only the supplied documents and items. Inspect\nevery supplied page before deciding any\
+      \ item. Return\n`finding-worker.schema.json` and no prose."
+    to: "Review exactly one confirmed unit against exactly one confirmed lens, holding\nonly that unit\
+      \ and that lens. Take no more than 12 lens items into one pass.\nUse only the supplied documents\
+      \ and items. Look at every supplied page before\ndeciding any item. Return the determinations\
+      \ below and no prose."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "The assignment supplies `review_plan_id`, `job_id`, a numbered document list,\nand lens items\
+      \ numbered `1..N`. Echo the two run IDs once at the top level.\nNever reproduce a document hash,\
+      \ unit ID, lens ID, or finding ID. The\ndeterministic admitter constructs those identities after\
+      \ the response passes."
+    to: "The assignment carries the tranche label, the unit label, a numbered document\nlist, and lens\
+      \ items numbered `1..N`. Repeat the tranche and unit labels once\nat the top. Refer to a document\
+      \ by its number in the supplied list rather than\nby its register label; the register labels are\
+      \ attached when the rows are\nwritten."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "- For `present`, add `doc` as the 1-based document number plus `section`, exact\n  `quote`,\
+      \ bounded `characterization`, `receipt_mode`, `page`, and\n  `current_position`. Add `band` and\
+      \ `band_basis` only when that issue includes\n  an approved `materiality` rule; omit both when\
+      \ ranking was not requested.\n  Native text uses `text` with a null page. A page image uses\n\
+      \  `image-transcription` and a positive page."
+    to: "- For `present`, add `doc` as the 1-based document number plus `section`, the\n  exact `quote`,\
+      \ a `characterization` within the framework's word cap, how the\n  words were read, the page,\
+      \ and `current_position`. Add `band` and\n  `band_basis` only when that issue carries a confirmed\
+      \ `materiality` rule;\n  omit both when ranking was not requested. Text taken from the document's\
+      \ own\n  text layer is recorded as `text` with no page. A page looked at as an image\n  is recorded\
+      \ as `image-transcription` with its page number."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "The maker does not quote-verify or check itself. The deterministic admitter\nbinds ordinals,\
+      \ verifies native quotes, expands compact negatives, and creates\nthe canonical checkpoint. On\
+      \ a retry, correct only the supplied rejection\ncodes while applying the same lens."
+    to: "This pass neither locates its own quotes again nor checks itself. Those are\nseparate steps:\
+      \ the rows go into the register, then every quote is found again\nin its source, then a later\
+      \ pass checks the finding without revisiting the\nreasoning that produced it. On a retry, correct\
+      \ only what was objected to,\napplying the same lens."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "For document review, emit a privilege candidate for each configured signal.\nUse `doc` as\
+      \ the 1-based document number and provide reason, quote,\nreceipt_mode, page, and signals. Never\
+      \ decide privilege. For diligence, return\nan empty `privilege_candidates` array."
+    to: "When the work is a litigation production, raise a privilege candidate for every\nconfigured\
+      \ signal: the document number, the reason, the quote, how the words\nwere read, the page, and\
+      \ which signals fired. Never decide privilege. Where\nthe run is a contract review rather than\
+      \ a production, there are no privilege\ncandidates."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "Check exactly one material finding in a fresh context. The orchestrator gives\nyou the finding,\
+      \ its governing frozen framework item, and only the documents\nin that finding's confirmed unit.\
+      \ It also supplies the exact\n`checker_plan_id`; copy it into the result so the verdict is bound\
+      \ to this\nledger and dispatch."
+    to: "Check exactly one finding, holding only that finding, its governing frozen\nframework item,\
+      \ and the documents in that finding's confirmed unit. Carry in\nthe unit and issue labels and\
+      \ repeat them in the result, so the verdict lands\non the right register row."
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: "Try to refute the finding. Check whether the quote exists, whether it supports\nthe characterization,\
+      \ whether a definition or amendment changes the result,\nand whether the stated band follows the\
+      \ frozen rule. Do not see the maker's\nreasoning or any other findings."
+    to: "Try to refute the finding. Check whether the quote is really in the document,\nwhether it supports\
+      \ the characterization, whether a definition or amendment\nchanges the result, and whether any\
+      \ stated band follows the frozen rule. Work\nonly from the finding, its quote, the framework item\
+      \ and the unit's text: do\nnot revisit the reasoning that produced the finding, and do not look\
+      \ at any\nother finding."
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: 'Return `finding-checker.schema.json` only:'
+    to: 'Return one verdict and nothing else:'
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: "The checker proposes a verification result. It never changes the ledger,\nselects a model,\
+      \ or makes a lawyer-only ruling."
+    to: "This pass proposes a verification result. It never changes a register row by\nitself and never\
+      \ makes a lawyer-only ruling. Record it in the register as a\nsecond pass by the same reader;\
+      \ do not describe it as independent review."
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+sections:
+  - match: "## Outcome and boundaries"
+    file: sections/outcome-and-boundaries.md
+  - match: "## Read the applicable contracts"
+    file: sections/contracts.md
+  - match: "## Runtime and assurances"
+    file: sections/how-this-runs.md
+  - match: "## Workflow"
+    file: sections/workflow.md
+  - match: "## Completion criteria"
+    file: sections/completion-criteria.md
+
+notes: |
+  Dropped scripts/ (10 top-level tools plus the 28-file shared runtime, which
+  is byte-identical to diligence's), every .schema.json contract,
+  references/openai-codex-runtime.md (a runner contract for a runtime that is
+  not here), references/shared/inventory-design.md (a design note about what
+  the scripts do) and references/shared/edge-resolver-prompt.md (contract
+  families are a transactional shape; this skill threads messages instead).
+  Eight companions remain.
+
+  Every SKILL.md section is replaced by an anchored overlay, so a heading that
+  moves upstream fails the build rather than passing silently. The body's own
+  portable fallback becomes the only path: sequential single-session
+  processing, tranches the lawyer sizes, and an Excel master register carrying
+  state between sessions. A new step 0 opens every session by reading the
+  register, stating the held count and held labels, and comparing fingerprints,
+  because everything downstream depends on it. The coverage certification is
+  retired and the claim-words rule is applied throughout; the word "prove" that
+  upstream uses of the count equation is gone with it.
+
+  The four privilege mitigations from the design are load-bearing and each has
+  a home. Privilege is the first column of both register sheets
+  (references/shared/schemas.md). The held count and labels are stated before
+  anything else is produced (workflow step 0, the review page contract, and
+  the completion criteria). No text from a held unit is written anywhere,
+  including the register — which is why a held document's first-line
+  fingerprint field stays blank and its fingerprint is three fields rather than
+  four. And a missing register is a hard stop that yields no findings at all,
+  stated in the body, in comms-schemas.md and in the completion criteria; it is
+  the one place this skill stops where diligence continues on reduced scope,
+  because the state here carries a legal hold and not merely progress.
+
+  Five references are full overlays. references/shared/execution-modes.md is
+  byte-identical to diligence's upstream and ships the same replacement in both
+  cards: it was written as a choice between a bundled program and a fallback,
+  and almost every paragraph named machinery that does not exist. Its
+  replacement states the one path, the tranche rule, the 200 MB per-file and
+  encrypted-file limits, the 50-file/500 MB limit on a handover archive, the
+  documented scheduling machinery and its 25-prompt cap together with the
+  reason no step depends on it, and which checks the original performed
+  automatically and this run performs by reading.
+  references/shared/schemas.md became the master register and the reading rules
+  for each format; references/shared/framework-schema.md keeps the compiler
+  contract and the served-request census rule and loses the checkpoint and
+  merge machinery; references/shared/review-ui.md loses the review-copy
+  builder's hash contract and gains the privilege rules for a page; and
+  references/comms-schemas.md is rewritten around the two things that are
+  genuinely this skill's own — how messages become review units, and how
+  privilege is held — with the four mitigations written out in full.
+
+  The three per-pass contracts under references/shared/ are edited by anchored
+  replacement instead, so the rules in them stay upstream's words; what changes
+  is the orchestration language (fresh workers, an admitter, schema files) and
+  the evidence-mode wording. Those twelve rules are identical to the ones in
+  the diligence card, because the files are byte-identical upstream.
+
+triggers:
+  positive:
+    - "Review the production they served last week against our requests for production."
+    - "Map these documents to the RFPs and show me which requests nothing answers."
+    - "Go through this production and tell me which documents look privileged so I can rule on them."
+    - "Here is the register from Tuesday and the next tranche of the production; carry on."
+    - "What is missing from this production — custodians, months, threads that go nowhere?"
+  negative:
+    - "Draft our objections to their requests for production. -> document-discovery"
+    - "Sort the case folder and build me an index of what we hold. -> organize-case-docs"
+    - "Check the citations and quotations in this summary judgment brief. -> cite-check"
+    - "Pull the admissions on causation out of the Farmer deposition. -> depositions"
+
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original ran a bundled program: it fixed each document's identity by
+    hash, read many documents at once, kept the privilege hold in a file the
+    program itself refused to release, and finished by computing a coverage
+    figure you could rely on. None of that machinery exists here. This version
+    reads the production one document at a time inside a single conversation,
+    a tranche at a time — you choose how many documents a session takes, and
+    you keep the workbook and attach it again next time, because that workbook
+    is the only thing that remembers what has been done and what is held. The
+    method is unchanged: the same framework compiled from your own requests,
+    the same setup confirmation before the sample, the rule that no finding
+    goes into anything without the words it rests on, the second look at every
+    finding, and above all the rule that a privilege signal holds a document
+    until you rule on it. What changes is how much you can lean on it. The
+    privilege hold is now a rule this skill applies to itself, with the
+    production in front of it, not a lock; four things make it as strong as a
+    rule can be made — privilege is the first column of the workbook, the held
+    count and the held document labels are stated before anything at all is
+    produced, no words from a held document are written anywhere including the
+    workbook, and without the workbook the skill produces no findings at all
+    and says so. Identity is a fingerprint read off the file rather than a
+    hash. The coverage count is arithmetic in a workbook you can open rather
+    than a check a program performed. The second look is a second pass by the
+    same reader, not a different reviewer. So the skill never tells you the
+    production has been covered, or that the result carries any warrant beyond
+    its own careful reading. If that trade is not one you are willing to make
+    on a privilege review, do not make it: that is a decision for the
+    litigator, not for this package.
+  known_issues:
+    - id: KI-docreview-1
+      title: "The privilege hold is a rule this skill applies, not an enforced lock"
+      detail: >-
+        Upstream, a held document could not reach a deliverable because a
+        program refused to release it. Here the hold is a rule the skill
+        follows while it has the production in its context, and a privileged
+        document's words appearing in a finding would look exactly like a
+        correct finding. Four mitigations are built in and all four are
+        mandatory: privilege is the first column of both register sheets; the
+        held count and the held labels are stated before anything is produced;
+        no text from a held unit is written anywhere, including the register
+        itself; and if the register is not attached the skill produces no
+        findings at all rather than guessing. Even with all four this is a rule
+        and not a lock. Check the held list at the start of every session, and
+        check any deliverable against it before it leaves your hands.
+      failure: silent
+    - id: KI-docreview-2
+      title: "A scanned page may be read as though it were text"
+      detail: >-
+        The skill tries every document, parks what did not open and lists it,
+        which is visible when it works. What is not settled is whether a page
+        that is an image of text is recognised as one. If it is not, the reply
+        may describe a page that was never read. Read the parked list on every
+        delivery, and treat anything marked as taken from an image as needing
+        your own eyes on the page before you rely on it.
+      failure: silent
+      probe: P4
+    - id: KI-docreview-3
+      title: "The coverage count is arithmetic this skill did itself"
+      detail: >-
+        Upstream a program checked that every request had exactly one result
+        for every reviewable unit. Here the register's Counts sheet holds
+        units, requests, expected rows, filled rows, parked rows and held rows
+        as formulas, and the skill states the row count it read in and the row
+        count it wrote out. That makes the arithmetic checkable in about ten
+        seconds — but it is the skill's own arithmetic, and a workbook that
+        came back with a formula flattened to a number or with rows dropped
+        would otherwise look like any other workbook. Open the Counts sheet;
+        compare the two stated row counts.
+      failure: silent
+      probe: P9
+    - id: KI-docreview-4
+      title: "The second look is a second pass, not an independent reviewer"
+      detail: >-
+        Upstream the checking pass ran in a separate context that had never
+        seen the first pass. Here it is the same reader, working from the
+        finding, its quote and the framework item without revisiting the
+        reasoning that produced it. It still catches a quote that is not there
+        and a characterization the words do not support; it catches a shared
+        blind spot much less well. The register records it as a second pass and
+        the skill is forbidden to call it independent review.
+      failure: silent
+    - id: KI-docreview-5
+      title: "Encrypted files cannot be read at all; labelled files are attempted"
+      detail: >-
+        An encrypted file cannot be opened here even where you have access to
+        it, so it is listed and parked, and it is visible in the parked list on
+        every delivery. A file carrying a sensitivity label is a different
+        thing and is not assumed to be blocked: the skill attempts it and
+        reports what actually came back. Either way the file stays in the
+        counts; nothing drops out quietly.
+      failure: loud
+    - id: KI-docreview-6
+      title: "A swapped document is caught by the fingerprint, and a held one by three fields"
+      detail: >-
+        At the start of every session the skill re-reads each document's
+        filename, page count, date and first line of page one and compares them
+        with the register, reporting any mismatch by row. A held document has
+        no first line recorded, because no words from a held document are
+        written anywhere, so its fingerprint is three fields rather than four
+        and is correspondingly weaker. A change that leaves the recorded fields
+        identical is not caught at all.
+      failure: loud
+    - id: KI-docreview-7
+      title: "Without the register attached, the skill produces nothing"
+      detail: >-
+        The register is the only thing that carries the privilege state between
+        sessions. When it is not attached the skill says which file it expected,
+        says the privilege state is unknown, and stops: no findings, no page, no
+        summary. This is deliberate, and it is the one hard stop in the skill.
+        Keep the workbook where you can find it, and attach it first.
+      failure: loud
+      probe: P2
+  workarounds:
+    - instead_of: "a program holds the privilege queue and refuses to release a held unit"
+      cowork: "privilege is the first column of the register, the held count and labels are stated before anything is produced, no words from a held unit are written anywhere including the register, and no register means no findings"
+    - instead_of: "a bundled program hashes every produced file and binds the review copies to those hashes"
+      cowork: "the register records a fingerprint per document — filename, page count, date, first line of page one — re-read and compared at the start of every session, with any mismatch named first; a held document's first line is not recorded"
+    - instead_of: "one fresh worker per document, many documents read at once"
+      cowork: "one document at a time in the same conversation, same fields, same rule that every claim carries the exact words it came from"
+    - instead_of: "a working directory on disk holds the run's state between passes"
+      cowork: "the Excel master register holds it, and the lawyer attaches it at the start of the next session"
+    - instead_of: "a bundled program computes the request-by-unit coverage count"
+      cowork: "the register has one row per request per unit and a Counts sheet of live formulas, so the count can be opened and checked; the skill also states the row count it read in and the row count it wrote out"
+    - instead_of: "a scaled pass runs across the whole production from a run directory"
+      cowork: "the production is worked a tranche at a time, the lawyer choosing the size, with the boundary stated on every delivery"
+    - instead_of: "the findings page is rendered by a bundled program and opened from the local file system"
+      cowork: "the page is written by hand as a self-contained HTML file in the Output folder and opened in the preview pane, loading nothing from outside itself"
+    - instead_of: "the lawyer's rulings are exported from the page and read back in by a program"
+      cowork: "the lawyer's rulings go into their own column of the register beside the finding, and the page is rebuilt from those rows without reading any document again"
+    - instead_of: "temporary working state is removed at completion"
+      cowork: "nothing is deleted, because nothing here can be; the register, the pages and the working files stay in the Output folder and are named on delivery"

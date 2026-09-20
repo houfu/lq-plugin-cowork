@@ -10,9 +10,12 @@ description: |
   me", "what's my archetype", "how do I compare to other lawyers on AI", or
   "help me work out how I should be using AI in my practice". This is a
   reflective conversation about the lawyer's own working habits, never legal
-  work. Do not use for drafting, reviewing, checking or organising anything,
-  and do not use for choosing a skill for the task in hand (use the lq-start
-  skill).
+  work. Do not use for drafting, reviewing, checking or organising anything;
+  for going back over one piece of work done in a session — "review this
+  piece of work I did with you" — to find the one change worth keeping (use
+  the lq-reflect skill); for deciding whether a session was the good kind and
+  writing it up (use the my-lq-moment skill); or for choosing a skill for the
+  task in hand (use the lq-start skill).
 sections:
 - match: '## First run? One marker, once ever'
   delete: true
@@ -74,6 +77,32 @@ notes: |
   picks from the skills offered in the session and falls back to the lq-start skill
   instead of a catalogue script. Closing sign-off replaced with the vendor-neutral
   line. The twelve questions, the archetypes and the register are untouched.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original could save the reading it gave you into a store the Companion
+    remembers later, and picked the skill it recommended next from a live
+    catalogue of everything installed. Neither exists here. Nothing is saved
+    anywhere by the skill itself: the summary is written out in the reply for
+    you to copy or save wherever you keep your own notes. The skill named at
+    the end is chosen from what is actually available to you in this session,
+    rather than looked up separately.
+  known_issues:
+    - id: KI-lq-mirror-1
+      title: "Nothing is saved unless you save it yourself"
+      detail: >-
+        This skill writes nothing to any store. The summary of your reading
+        is shown to you in the reply as a few short paragraphs; if you want
+        to keep it, copy it into wherever you keep your own notes. Asking
+        for it again later starts a fresh reading rather than recalling the
+        last one.
+      failure: loud
+  workarounds:
+    - instead_of: "the ending names a skill to try next, chosen from a live catalogue of everything installed"
+      cowork: "the ending picks from the skills actually offered to you in this session, falling back to the skill-picker skill when nothing else fits"
+
 triggers:
   positive:
   - Where am I with AI as a lawyer? Am I behind?
@@ -82,6 +111,7 @@ triggers:
   - What's my archetype when it comes to working with AI?
   negative:
   - Which of these skills should I use to check a contract? -> lq-start
-  - Review how I handled this matter and tell me what I should have done differently. -> none
+  - Review this piece of work I did with you and tell me what to change next time. -> lq-reflect
+  - Was this session the good kind? Write it up. -> my-lq-moment
   - Save what I learned about AI drafting to my wiki. -> wiki
   - Write up my time entries for the work I did in this chat. -> timenarratives

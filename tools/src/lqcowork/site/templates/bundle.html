@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ bundle.name_short }}{% endblock %}
+{% block content %}
+<h1>{{ bundle.name_full }}</h1>
+
+<p class="lede">{{ bundle.description_short }}.</p>
+
+<h2 id="download">Download</h2>
+
+<div class="download">
+  <ul class="downloads">
+    <li>
+      <a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a> — the
+      package to sideload: {{ bundle.skills | length }} skills, the manifest and
+      the icons. <a href="../install.html">How to install it.</a>
+    </li>
+    <li>
+      <a href="{{ bundle.triggers_url }}"><code>{{ bundle.triggers_asset }}</code></a>
+      — the trigger-test checklist below, with a column to write the result in.
+    </li>
+    <li>
+      <a href="{{ checksums_url }}"><code>{{ checksums_asset }}</code></a> — the
+      checksums for every asset in the release.
+    </li>
+  </ul>
+  <p class="subtle">
+    {{ latest_note }} Each skill below can also be uploaded on its own; those
+    archives, and everything else published, are on
+    <a href="../downloads.html">the downloads page</a>.
+  </p>
+</div>
+
+<dl class="facts">
+  <dt>Bundle id</dt>
+  <dd><code>{{ bundle.id }}</code></dd>
+  <dt>App id</dt>
+  <dd><code>{{ bundle.guid }}</code></dd>
+  <dt>Short name</dt>
+  <dd>{{ bundle.name_short }}</dd>
+  <dt>Version</dt>
+  <dd>{{ version }}</dd>
+  <dt>Skills</dt>
+  <dd>{{ bundle.skills | length }} ({{ bundle.tier_summary }})</dd>
+  <dt>Release asset</dt>
+  <dd><a href="#download"><code>{{ bundle.asset }}</code></a></dd>
+</dl>
+
+<h2 id="membership">Where the membership comes from</h2>
+
+{% if bundle.mirror %}
+<p>
+  <code>{{ bundle.mirror.line }}</code>
+</p>
+<dl class="facts">
+  <dt>Upstream plugin</dt>
+  <dd><code>{{ bundle.mirror.plugin_id }}</code></dd>
+  <dt>Upstream name</dt>
+  <dd>{{ bundle.mirror.display_name }}</dd>
+  {%- if bundle.mirror.short_description %}
+  <dt>Upstream description</dt>
+  <dd>{{ bundle.mirror.short_description }}</dd>
+  {%- endif %}
+</dl>
+<p>
+  This bundle mirrors an upstream release plugin: it ships whatever upstream
+  puts in those groups, in upstream's order. A skill added upstream shows up
+  here as a build error until someone writes a card for it, which is the
+  point.
+</p>
+{%- if bundle.mirror.excludes %}
+<p>Left out of this bundle, on the record:</p>
+<ul>
+  {%- for entry in bundle.mirror.excludes %}
+  <li><code>{{ entry.name }}</code> — {{ entry.reason }}</li>
+  {%- endfor %}
+</ul>
+{%- endif %}
+{% else %}
+<p>
+  This bundle lists its own skills in <code>cowork.yaml</code> rather than
+  mirroring an upstream release plugin.
+</p>
+{% endif %}
+
+<h2 id="description">What the package says about itself</h2>
+
+<p class="subtle">
+  The description Cowork shows, and the text it routes the bundle on.
+</p>
+
+{% for para in paragraphs(bundle.description_full) %}
+<p>{{ para }}</p>
+{% endfor %}
+
+<h2 id="skills">The skills</h2>
+
+<div class="tablewrap">
+  <table>
+    <caption>
+      In manifest order. "Known issues" counts what the card declares; the
+      detail is on each skill's page and on
+      <a href="../known-issues.html">the known-issues page</a>. "On its own" is
+      that skill's upload archive, for adding it without the bundle.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Skill</th>
+        <th scope="col">What it does</th>
+        <th scope="col" class="num">Tier</th>
+        <th scope="col">Status</th>
+        <th scope="col" class="num">Known issues</th>
+        <th scope="col">On its own</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for skill in bundle.skills %}
+      <tr>
+        <th scope="row"><a href="../skills/{{ skill.name }}.html">{{ skill.name }}</a></th>
+        <td>{{ skill.purpose_short }}</td>
+        <td class="num">{{ skill.tier_label }}</td>
+        <td>{{ skill.status_label }}</td>
+        <td class="num">{{ skill.known_issues | length }}</td>
+        <td><a href="{{ skill.archive.url }}"><code>{{ skill.archive.asset }}</code></a></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 id="trigger-tests">Trigger tests</h2>
+
+<p>
+  Sideload the package, then type each prompt into Cowork in a fresh session
+  and record what actually activated. A positive prompt must activate the
+  named skill; a negative prompt must not — the expectation says what should
+  take it instead. The same checklist ships as
+  <code>{{ bundle.id }}-trigger-tests.md</code> in the release, with a column
+  to write the result in.
+</p>
+
+{% for group in bundle.trigger_groups %}
+<h3 id="triggers-{{ group.name }}">{{ group.name }}</h3>
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Prompt</th>
+        <th scope="col">Expected</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for row in group.rows %}
+      <tr>
+        <td>{{ row.prompt }}</td>
+        <td>{{ row.expected | ticks }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endblock %}

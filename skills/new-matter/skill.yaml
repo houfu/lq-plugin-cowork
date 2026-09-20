@@ -6,6 +6,30 @@ anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
 description: |
   Opens a litigation matter through a human-confirmed intake and produces one reviewable matter record: parties and roles, our side, forum, engagement and authority, the conflicts posture as a human asserts it, emergency dates, preservation posture at intake, and field-level provenance. Shows the record and its destination for approval before anything is saved. Use when the user asks to "open a new matter for this dispute", "we have just been served — set up the file", "log this subpoena as a new matter", "start an intake record for a regulatory inquiry", or "open a matter for this pre-suit demand letter". Do not use for organizing an existing matter's files and chronology (use the organize-case-docs skill), for legal holds or preservation work during a discovery response, which this skill only flags at intake (use the document-discovery skill), for a conflicts clearance or merits opinion, or for calendaring the dates it captures (use the Calendar Management skill).
 
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    The original opens a matter through the same human-confirmed intake
+    here, capturing parties, role, forum, the conflicts posture as the
+    lawyer states it, emergency dates and preservation posture, and always
+    showing the full record for approval before saving anything. That
+    method is unchanged. What differs is around the edges: the skill reads
+    the documents the lawyer has supplied or made available in the session
+    rather than describing a choice of local tools; after approval it saves
+    the record to the destination the lawyer names at that point — the
+    session's output folder, or a matter folder they identify in OneDrive —
+    rather than a workspace the skill already knows about; and for a forum
+    outside federal court it goes straight to that forum's own published
+    rules and instruments for the controlling text, rather than handing
+    that step to a companion skill this release does not carry. A
+    preferences file is read only if the lawyer has attached it or placed
+    it in the session's input folder, and the skill never writes to it.
+  known_issues: []
+  workarounds:
+    - instead_of: "writing the approved record to a matter workspace the skill already knows about"
+      cowork: "the destination the lawyer names when approving the record — the session's output folder, or a matter folder they identify in OneDrive"
+
 replace:
   - from: "Do not read `lqprofile.md` or `lqplaybook.md` to discover paths or workspace defaults."
     to: "Do not read a playbook or any profile file to discover paths or workspace defaults."
@@ -31,6 +55,10 @@ replace:
   - from: "offer research and planning under the controlling forum and use `regulatory` to retrieve official instruments when appropriate; the federal reference may be a comparison but is not controlling."
     to: "offer research and planning under the controlling forum, retrieving official instruments from that forum's own published sources; the federal reference may be a comparison but is not controlling."
     files: ["references/preservation-at-intake.md"]
+    expect: 1
+  - from: "use it only for the narrow read the user approved and preserve its returned receipt or locator."
+    to: "use it only for the narrow read the user approved and preserve whatever confirmation or locator it returns."
+    files: ["SKILL.md"]
     expect: 1
 
 triggers:

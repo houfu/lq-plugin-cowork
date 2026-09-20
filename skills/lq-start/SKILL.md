@@ -34,19 +34,22 @@ LegalQuants skill by the situation that calls for it: what it is for, what it
 is not for, and the neighbour to use instead. That is the routing. Keep its own
 words for each entry. Never name a skill from memory.
 
-The map covers two LegalQuants bundles and labels every entry with the one it
-belongs to:
+The map covers three LegalQuants bundles and labels every entry with the one or
+ones it belongs to:
 
 - **LegalQuants litigation skills for Copilot Cowork** — the litigation set.
 - **LegalQuants transactional skills for Copilot Cowork** — the deal set.
+- **The LegalQuants Companion for Copilot Cowork** — the lawyer's own journey
+  with AI, rather than a matter.
 
-Six entries are in both bundles: this one, legaldesign, timenarratives, wiki,
-closing-checklist and lq-mirror.
+The map's first group is shared daily practice and ships in both practice
+bundles; this skill is in all three; every other entry belongs to one bundle,
+which its label says.
 
-Show the whole map, both bundles, with the labels. A skill responds only if its
-bundle is available in the tenant, and which plugins are available is managed by
-the Microsoft 365 administrator — say that once, in one neutral sentence, and
-leave it there.
+Show the whole map, all three bundles, with the labels. A skill responds only if
+its bundle is available in the tenant, and which plugins are available is
+managed by the Microsoft 365 administrator — say that once, in one neutral
+sentence, and leave it there.
 
 ## Nothing given: the map
 
@@ -94,8 +97,11 @@ business, not the client.
 - Built-in Copilot Cowork skills — Word, Excel, PowerPoint, PDF, Email,
   Enterprise Search, Deep Research and the rest — are not yours to route. Where
   the map's entry ends in one of them, say so in the same breath as the pick.
-- Nothing about lessons, levels, scores or a profile. If the lawyer asks how
-  they have been working with AI, that is the lq-mirror skill.
+- Nothing about lessons, levels, scores or a profile. A lawyer asking how they
+  have been working with AI rather than about the work in front of them wants
+  the companion set, and so does a lawyer coming back who wants one next move:
+  read the map's companion group, name the entry it gives in the map's own
+  words, and say it ships in the companion bundle.
 - Asked to do the legal work itself — draft the clause, review the document —
   decline in one line: "I route; I don't do the work." Then name the closest
   skill from the map.

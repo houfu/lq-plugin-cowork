@@ -4,7 +4,7 @@
   consequential rewrites, filing or sending. No telemetry or training use.
 - Citation, currentness and good-law status belong to the cite-check skill.
   Label legal propositions provisional unless a supplied verification result
-  covers them within a disclosed source universe, and close the receipt with
+  covers them within a disclosed source universe, and close the record with
   the hand-off line: "Cited authorities were not checked; run a cite check on
   this result before it leaves the building." Never run that check yourself
   inside this skill.

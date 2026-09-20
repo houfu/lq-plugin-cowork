@@ -1,8 +1,8 @@
 # Installing a skill or a bundle in Microsoft 365 Copilot Cowork
 
 How to get a single `<name>.skill` archive, or a whole bundle
-(`legalquants-litigation-cowork.zip` or
-`legalquants-transactional-cowork.zip`), from a
+(`legalquants-litigation-cowork.zip`, `legalquants-transactional-cowork.zip`
+or `legalquants-companion-cowork.zip`), from a
 [release](https://github.com/houfu/lq-plugin-cowork/releases/latest) into
 Copilot Cowork. If you only want to try one skill, [Route
 0](#route-0-upload-a-single-skill) needs no admin and no terminal — start
@@ -10,6 +10,12 @@ there. Every Microsoft page this is built on is listed, with the date it was
 checked, in [Sources](#sources) at the end. Anything that could not be
 confirmed from Microsoft's documentation is marked **unverified** rather than
 guessed at.
+
+This page is also on the site, beside what each bundle contains and what
+changed in each skill: <https://houfu.github.io/lq-plugin-cowork/>. Every
+release asset — the three bundles, the per-skill archives and `SHA256SUMS` —
+is linked from the site's downloads page:
+<https://houfu.github.io/lq-plugin-cowork/downloads.html>.
 
 Nothing in this file has been walked through in a live tenant. If a step is
 wrong, or a button is not called what this says it is called, please
@@ -72,12 +78,20 @@ admin to check.
 The fastest way to try one skill: no plugin package, no administrator, no
 `atk`. This is the route
 [UAT issue 19](https://github.com/houfu/lq-plugin-cowork/issues/19) asked for.
+The Customize page's **Skills** tab accepts one skill as a plain `.md` file up
+to 1 MB, or as a `.zip`/`.skill` archive with `SKILL.md` at its root. This
+repository publishes the second form: a ready-made `<name>.skill` archive for
+each of the thirty-one skills, well inside every limit, so there is nothing to
+assemble yourself.
 
-1. Download `<name>.skill` (for example `pressuretest.skill`) from the
-   [latest release](https://github.com/houfu/lq-plugin-cowork/releases/latest).
-   It is a small `.skill` archive — `SKILL.md` at its root plus that skill's
-   companion files, `LICENSE` and `NOTICE.md` — not a folder from this
-   repository's `skills/` directory (see [skills/README.md](../skills/README.md)).
+1. Download `<name>.skill` from the
+   [latest release](https://github.com/houfu/lq-plugin-cowork/releases/latest)
+   — for example
+   [`regulatory.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/regulatory.skill).
+   It is a small archive — `SKILL.md` at its root plus that skill's companion
+   files, `LICENSE` and `NOTICE.md` — not a folder from this repository's
+   `skills/` directory (see [skills/README.md](../skills/README.md)). Do not
+   unzip it, and check its SHA256 against `SHA256SUMS` in the same release.
 2. In Cowork, select the **+** button and then **Customize**.
 3. Select the **Skills** tab.
 4. Select the arrow next to **Add**, then **Upload skill**, and pick the file
@@ -87,6 +101,9 @@ The fastest way to try one skill: no plugin package, no administrator, no
    next sync.
 6. Test it in a **new conversation** — the same one-fresh-conversation
    discipline as [docs/TESTING.md](TESTING.md) Part A.
+
+**What you get:** a custom skill of your own, not a plugin. It needs no admin
+and carries no manifest, and it shows in the **Sources & Skills** panel.
 
 Re-uploading a skill with the same name does **not** replace the old copy:
 Cowork keeps both, with a number appended to the new one's name. If you are
@@ -104,8 +121,14 @@ formats, the size and file-count limits, the OneDrive save path, and the
 same-name-keeps-both re-upload behaviour.
 
 **Unverified:** whether the "only upload skills from sources you trust"
-reminder Cowork shows on first use looks exactly as Microsoft describes it,
-and how long the OneDrive sync into **Your skills** typically takes.
+reminder Cowork shows on first use looks exactly as Microsoft describes it;
+how long the OneDrive sync into **Your skills** typically takes; and what
+happens when a skill uploaded on its own sits next to the same skill inside an
+installed plugin — `regulatory` uploaded by itself, say, while the litigation
+bundle is also installed. Microsoft documents that a plugin skill cannot
+override a built-in skill of the same name, but says nothing about this case,
+so until it is confirmed, avoid uploading a skill on its own that a bundle you
+already have installed also ships.
 
 ### Upload troubleshooting checklist
 
@@ -214,7 +237,8 @@ be re-shared or removed from there rather than with `atk uninstall`.
    **Discover** section.
 2. **Check the skills came with it.** When a plugin is enabled, its skills appear
    alongside Cowork's built-in skills as chips in the side panel. The litigation
-   bundle should contribute 15; the transactional bundle 8.
+   bundle should contribute 15; the transactional bundle 14; the companion
+   bundle 8.
 3. **Make one activate.** Start a fresh conversation and type a prompt from the
    bundle's `*-trigger-tests.md` in the release, for example:
 
@@ -324,9 +348,13 @@ a correction here is welcome.
 4. Whether the upload control is labelled **Upload plugin** or **Add plugin** —
    Microsoft's own pages differ.
 5. What Cowork does when two installed plugins contribute skills with the same
-   name — relevant only if you install both bundles, which share six skill
-   names. Microsoft documents only that plugin skills cannot override built-in
+   name — relevant if you install more than one bundle. The litigation and
+   transactional bundles share five skill names, and `lq-start` is in all
+   three. Microsoft documents only that plugin skills cannot override built-in
    skills of the same name.
-6. Whether the "only upload skills from sources you trust" reminder on a
+6. What happens when a skill uploaded on its own (Route 0) has the same name
+   as a skill inside an installed plugin. Microsoft documents only that a
+   plugin skill cannot override a built-in of the same name.
+7. Whether the "only upload skills from sources you trust" reminder on a
    single-skill upload looks exactly as Microsoft describes it, and how long
    the OneDrive sync into **Your skills** typically takes.

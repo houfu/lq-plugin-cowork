@@ -154,3 +154,88 @@ def test_tracking_body_links_known_issues_and_flags_missing_ones(
     for issue in rest:
         assert f"not filed yet: `{issue.title}`" in body
     assert "| Bundle | Skill | Routing | Behaviour |" in body
+
+
+@pytest.fixture
+def probe_issues(script: ModuleType, real_root: Path) -> list:
+    return script.build_probe_issues(load_config(real_root))
+
+
+def test_one_issue_per_probe(script: ModuleType, real_root: Path, probe_issues):
+    config = load_config(real_root)
+    assert [issue.name for issue in probe_issues] == [p.id for p in config.probes]
+    assert len(probe_issues) == 14
+
+
+def test_probe_titles_and_labels(script: ModuleType, real_root: Path, probe_issues):
+    config = load_config(real_root)
+    titles = [issue.title for issue in probe_issues]
+    assert len(titles) == len(set(titles))
+    for probe, issue in zip(config.probes, probe_issues):
+        assert issue.title == f"Probe {probe.id}: {probe.title}"
+        assert issue.labels == ("uat", "probe")
+        assert issue.filename == f"probe-{probe.id}.md"
+
+
+def test_probe_body_carries_every_field(
+    script: ModuleType, real_root: Path, probe_issues
+):
+    config = load_config(real_root)
+    for probe, issue in zip(config.probes, probe_issues):
+        body = issue.body
+        assert probe.settles in body
+        assert probe.passes in body
+        assert probe.fails in body
+        if probe.setup:
+            assert probe.setup in body
+        for line in probe.prompt.split("\n"):
+            assert (f"> {line}" if line.strip() else ">") in body
+        for name in probe.unlocks:
+            assert f"`{name}`" in body
+
+
+def test_probes_flag_writes_files_and_creates_nothing(
+    script: ModuleType, real_root: Path, tmp_path: Path, monkeypatch
+):
+    calls: list[list[str]] = []
+    monkeypatch.setattr(script, "gh", lambda args: calls.append(args) or "")
+    monkeypatch.chdir(real_root)
+    assert script.main(["--probes", "--out", str(tmp_path)]) == 0
+    written = {path.name for path in tmp_path.iterdir()}
+    assert "index.md" in written
+    assert "probe-P3.md" in written
+    assert not any(name.startswith("probe-P0") for name in written)
+    assert calls == []  # nothing reaches GitHub without --create
+
+
+def test_probes_create_is_idempotent_by_title(
+    script: ModuleType, real_root: Path, tmp_path: Path, monkeypatch
+):
+    config = load_config(real_root)
+    existing = script.probe_title(config.probes[0])
+    calls: list[list[str]] = []
+
+    def fake_gh(args: list[str]) -> str:
+        calls.append(args)
+        if args[:2] == ["issue", "list"]:
+            return f'[{{"number": 1, "title": {existing!r}, "url": "u"}}]'.replace(
+                "'", '"'
+            )
+        return "https://example.invalid/issue\n"
+
+    monkeypatch.setattr(script, "gh", fake_gh)
+    monkeypatch.chdir(real_root)
+    assert script.main(["--probes", "--create", "--out", str(tmp_path)]) == 0
+    created = [a for a in calls if a[:2] == ["issue", "create"]]
+    assert len(created) == len(config.probes) - 1
+    assert existing not in [a[a.index("--title") + 1] for a in created]
+    for args in created:
+        assert "--label" in args
+        assert "probe" in args
+    labels = [a[2] for a in calls if a[:2] == ["label", "create"]]
+    assert "probe" in labels and "uat" in labels
+
+
+def test_probes_and_tracking_are_mutually_exclusive(script: ModuleType):
+    with pytest.raises(SystemExit):
+        script.parse_args(["--probes", "--tracking"])

@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}What changed{% endblock %}
+{% block content %}
+<h1>How this differs from the original</h1>
+
+<p class="lede">
+  The upstream skills were written for a coding agent on a lawyer's own
+  machine: a shell, a Python interpreter, a working directory, bundled
+  programs. Copilot Cowork is none of those things. This page is what that
+  costs, in one screen, before you go looking at any one skill.
+</p>
+
+<h2 id="capabilities">The capability picture</h2>
+
+<p>
+  Every card in this repository is written against these facts, read off
+  Microsoft's own documentation. They are the reason the adaptations look the
+  way they do.
+</p>
+
+<h3>No local disk, and no working directory that outlives the task</h3>
+
+<p>
+  Cowork cannot reach files on your device. It works with OneDrive and
+  SharePoint: a session has an Input folder and an Output folder, and what it
+  writes stays in your Cowork folder afterwards. While a task runs, files are
+  processed in a temporary isolated environment that is removed when the task
+  finishes and that you cannot look inside. So nothing here keeps a scratch
+  path, a run directory or a ledger that survives the task — where the
+  original kept state on disk, the adaptation either keeps it in the Output
+  folder under a name you are told, or asks you to attach it.
+</p>
+
+<p>
+  Cowork also cannot delete anything in OneDrive or SharePoint. No skill here
+  promises to clean up after itself; an intermediate file is named and left
+  where you can see it.
+</p>
+
+<h3>Scripts: documented, but never specified</h3>
+
+<p>
+  Microsoft's pages disagree with each other about whether a skill's bundled
+  code runs at all — one page calls <code>scripts/</code> "executable
+  utilities", another says a skill runs as instructions to the AI — and no
+  page anywhere names an interpreter, a language version, an installed
+  library or a way to install one. A script whose runtime nobody documents
+  cannot be relied on, so <strong>these packages ship no scripts</strong>.
+  Every step that upstream handed to a program is written out as something
+  the model does and you can check. Whether a script runs, and in what, is
+  the first capability probe.
+</p>
+
+<h3>Web reach exists, is the tenant's to switch off, and nothing depends on it</h3>
+
+<p>
+  Web search applies to Cowork but has no user-facing toggle and can be
+  disabled by admin policy, so it may simply be off where you work. Browser
+  use is off until an administrator turns it on. A skills-only package has no
+  network channel of its own: the only declared one is a connector you would
+  have to run yourself. So no card fetches anything, and no card promises a
+  source came from the publisher's own bytes — where the original fetched, the
+  adaptation asks you for the document, or cites by title and date without a
+  link.
+</p>
+
+<h3>Sessions, and what "transcript" is allowed to mean</h3>
+
+<p>
+  A skill works inside the conversation it is in: it can read what you
+  attached and refer to earlier messages. Past sessions can be reopened, but
+  what that restores to the model — as opposed to the screen — is
+  undocumented, and nothing documents a way for a skill to read another
+  session's log. Where a card here says "transcript" it means a document you
+  supply, a deposition or a meeting record; never a log of a conversation.
+</p>
+
+<p class="subtle">
+  <a href="probes.html">The capability probes</a> are the questions this
+  picture leaves open, each one written so a tester can settle it.
+</p>
+
+<h2 id="transforms">What the build does to every skill</h2>
+
+<p>
+  Before any hand-written adaptation, the same mechanical rewrites run over
+  every skill. They are rule-based and pattern-anchored, so a change upstream
+  either still matches or fails loudly rather than quietly doing nothing.
+</p>
+
+<ul>
+  <li>
+    <strong>Files that do not belong in a package are dropped</strong> —
+    upstream's per-skill licence copy, its agent definitions, and anything
+    hidden. Each card drops more: the <code>scripts/</code> folders, and the
+    schemas that went with them.
+  </li>
+  <li>
+    <strong>Host-only frontmatter is removed</strong>
+    {%- if transforms.drop_frontmatter %} ({{ transforms.drop_frontmatter | join(", ") }}){% endif %} —
+    keys that mean something to a coding agent and nothing to Cowork.
+  </li>
+  <li>
+    <strong>The invocation grammar goes</strong>. Upstream text says
+    <code>$name</code> and <code>/name</code> to call a sibling skill.
+    Cowork has no such grammar: it routes on the description. Every one of
+    those tokens is rewritten to the plain skill name, and any that survive
+    are reported.
+  </li>
+  <li>
+    <strong>Vendor names are stripped and then checked for</strong>
+    {%- if transforms.vendor_words %} ({{ transforms.vendor_words | join(", ") }}){% endif %}.
+    Nothing shipped may name the agent it was written for.
+  </li>
+  <li>
+    <strong>Machinery that does not exist here is flagged</strong> — a
+    scribe, a profile file, a run directory, an exit code, a named Python
+    library. A skill that still mentions one is a warning somebody has to
+    answer.
+  </li>
+  <li>
+    <strong>The description is replaced wholesale</strong> from the card,
+    written for the way a lawyer asks rather than the way a developer reads,
+    with an explicit hand-off to whichever neighbouring skill competes for the
+    same request.
+  </li>
+  <li>
+    <strong>Every adapted file is stamped</strong> with an Apache-2.0
+    modification notice naming the upstream commit it came from, and each
+    package carries upstream's licence and a notice at its root.
+  </li>
+</ul>
+
+<h3 id="claim-words">The claim-words rule</h3>
+
+<p>
+  A skill may not word a promise it cannot back with something you can
+  inspect. Upstream's wording leans on machinery that is gone: a script that
+  counted what it covered could call the count a receipt, and the adaptation
+  cannot. So the build refuses these words in any shipped file unless a card
+  states a reason for keeping one:
+</p>
+
+<p>
+  {%- for word in transforms.claim_words %}
+  <code>{{ word }}</code>{{ ", " if not loop.last }}
+  {%- endfor %}
+</p>
+
+<p>
+  What replaces them is on each skill's page under
+  <em>Workarounds</em>: a visible register you can count yourself, in place of
+  a number you would have had to trust.
+</p>
+
+<h2 id="bundles">The bundles against upstream's</h2>
+
+<p>
+  Upstream's release manifest defines audience plugins from four skill groups.
+  These bundles mirror them: same membership, same order, derived from
+  upstream's manifest at build time rather than listed by hand. A skill added
+  upstream turns into a build error here until someone writes a card for it.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Bundle</th>
+        <th scope="col">Mirrors</th>
+        <th scope="col">Upstream's name for it</th>
+        <th scope="col" class="num">Skills</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for bundle in bundles %}
+      <tr>
+        <th scope="row"><a href="bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a></th>
+        <td>
+          {%- if bundle.mirror %}<code>{{ bundle.mirror.plugin_id }}</code>
+          {%- else %}<span class="subtle">an explicit list</span>{% endif %}
+        </td>
+        <td>{{ bundle.mirror.display_name if bundle.mirror else "—" }}</td>
+        <td class="num">{{ bundle.skills | length }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% for bundle in bundles %}
+{%- if bundle.mirror %}
+<p class="subtle"><code>{{ bundle.mirror.line }}</code></p>
+{%- endif %}
+{% endfor %}
+
+<h2 id="tiers">The tier rubric</h2>
+
+<p>
+  Every card carries a tier: how far this adaptation had to move from the
+  original, and therefore how much of the original promise survives. It is a
+  statement about risk, not quality.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col" class="num">Tier</th>
+        <th scope="col">Means</th>
+        <th scope="col" class="num">Skills</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for tier in tiers %}
+      <tr>
+        <td class="num">{{ tier.number }}</td>
+        <td>{{ tier.legend }}</td>
+        <td class="num">{{ tier.count }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p>
+  <strong>Status</strong> is the other half: <em>shipped</em> means it is in
+  the package as it stands, and <em>probe-gated</em> means it is in the
+  package with an announced degrade until
+  <a href="probes.html">a named probe</a> settles the question it depends on.
+</p>
+
+<h2 id="skills">Every skill, in one line</h2>
+
+<div class="tablewrap">
+  <table>
+    <caption>
+      The first line of each card's own account. The whole paragraph, the
+      known issues and the workarounds are on the skill's page.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Skill</th>
+        <th scope="col" class="num">Tier</th>
+        <th scope="col">Status</th>
+        <th scope="col">What changed</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for skill in skills %}
+      <tr>
+        <th scope="row"><a href="skills/{{ skill.name }}.html">{{ skill.name }}</a></th>
+        <td class="num">{{ skill.tier_label }}</td>
+        <td>{{ skill.status_label }}</td>
+        <td>{{ skill.differs_excerpt }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

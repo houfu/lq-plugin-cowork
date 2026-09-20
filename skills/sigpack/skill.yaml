@@ -1,0 +1,294 @@
+name: sigpack
+upstream: transactional/sigpack
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Works out who signs what on a closing and gets the pages ready: reads the
+  execution versions for each party, signatory and capacity, shows the signing
+  matrix for approval, drafts the signature pages on the firm's own template
+  through the built-in Word skill, writes the per-party instruction table and the
+  cover note with the escrow wording, and keeps the chase list in a ledger the
+  lawyer brings back each session. It never assembles an executed set and never
+  looks at a returned page to say whether it is signed. Use when the user asks to
+  "prepare the signature packs for this closing", "who signs what on these
+  documents", "draft the signature pages for the SPA", or "what is still
+  outstanding from the parties". Do not use for conditions and deliverables
+  before completion (use the closing-checklist skill), or for indexing the signed
+  closing folder afterwards (use the closing-bible skill). Do not use to confirm
+  a returned page is signed, to insert signed pages, or to say a closing is
+  complete.
+exclude:
+  - "scripts/**"
+  - "schemas/**"
+
+files: files
+
+sections:
+  - match: "## When to use"
+    file: sections/when-to-use.md
+  - match: "## Modes"
+    file: sections/where-you-are.md
+  - match: "## Before you start"
+    file: sections/before-you-start.md
+  - match: "## Workflow — draft (declared start)"
+    file: sections/workflow-matrix.md
+  - match: "## Workflow — pack"
+    file: sections/workflow-packs.md
+  - match: "## Workflow — compile (repeat for every batch of returns)"
+    file: sections/workflow-ledger.md
+  - match: "## Output conventions"
+    file: sections/output-conventions.md
+  - match: "## Capability fallback"
+    file: sections/what-it-does-not-do.md
+  - match: "## Final checks"
+    file: sections/final-checks.md
+  - match: "## Scripts"
+    file: sections/reference-files.md
+
+replace:
+  - from: |-
+      Read this in full before classifying any page. It is short. These are the definitions the skill applies; the scripts do the mechanics, you do the reading.
+    to: |-
+      Read this in full before reading an execution version for its signing matrix. It is short. These are the definitions the skill applies, and the reading is all of it.
+    files: ["references/signature_page_rules.md"]
+    expect: 1
+  - from: |-
+      A signature page is a page where parties must sign. You are given the rendered page and its extracted text. Decide from both.
+    to: |-
+      A signature page is a page where parties must sign. You are reading the execution version itself: find the pages where signing happens, and read them with the whole document in view.
+    files: ["references/signature_page_rules.md"]
+    expect: 1
+  - from: |-
+      - **By agreement:** one pack per document; every signature page of that document, in page order.
+      - **By counterparty:** one pack per party; every page on which that party has a block, across all documents, ordered by document then page. Where one page carries blocks for two parties, **each party's pack gets its own copy of that page** (unless the user says no duplicates).
+      - **By signatory:** one pack per human; every page they sign, in whatever capacity, ordered by document then page.
+      - Copies: default one per page; a party may need to sign more than one original.
+      - Filenames: default `Signature Pack – [Group]`. Users often specify their own pattern; follow it exactly, including what to omit (document IDs, version suffixes).
+    to: |-
+      A set is the drafted pages for one group, delivered as separate documents rather than merged into one file.
+
+      - **By agreement:** one set per document; every signature page of that document, in page order.
+      - **By counterparty:** one set per party; every page on which that party has a block, across all documents, ordered by document then page. Where one page carries blocks for two parties, **each party's set gets its own copy of that page** (unless the user says no duplicates).
+      - **By signatory:** one set per human; every page they sign, in whatever capacity, ordered by document then page.
+      - Copies: default one per page; a party may need to sign more than one original.
+      - Filenames: default `Signature Pack – [Group]`. Users often specify their own pattern; follow it exactly, including what to omit (document IDs, version suffixes).
+    files: ["references/signature_page_rules.md"]
+    expect: 1
+  - from: |-
+      ## Returned pages (compile)
+
+      - A returned page usually carries a footer naming its agreement, sometimes its party. Read it, native text or OCR. When the footer names only the document, or nothing, read the block: the party name in caps or after "for and on behalf of", the capacity in brackets, the signatory under the line. Normalise dashes (– — - ~), quotes (’ '), and whitespace before matching; OCR mangles all three.
+      - Match on agreement + party. If the footer is missing or unreadable, read the block itself (party name, signatory name).
+      - A returned page that matches a target already filled by another returned page is a **duplicate**: place one, report the other.
+      - A returned page that matches nothing is **unmatched**: never force it; report it with what could be read. On real closings this is usually a page for a document that is not in the execution folder (a side letter, a fee letter) — say so, because the user may have simply not handed that document over.
+      - A signature page in an execution version with no returned page is **missing**; the gap list is the deliverable as much as the executed PDFs are.
+      - E-signature envelopes (DocuSign, Adobe Sign): the completed PDF often ends with a completion certificate and may open with an envelope cover; those pages are not signature pages. The file may be locked; unlock or flatten only if permitted, otherwise report it as needing manual handling.
+
+      ## What "executed" means (compile)
+
+      A returned page is not executed because it came back. It is executed because the block is signed. Decide from the render, never from the text layer alone: ink, an e-signature stamp graphic, initials over the line, a struck-through block, a rotated scan are all invisible to text extraction.
+
+      Per block, from the render:
+      - **signed** — every required mark in the block is present (ink or e-signature stamp), and the printed names match the manifest, or the manifest names were unknown. A block can require several marks: two directors, a director and a secretary, a chop and a representative, or — on deeds — a signatory **and a witness**. Count the marks; a deed signed but unwitnessed, or one director of two, is **partial**, not signed. Say "signed", not "valid": the skill checks presence and printed name, never authenticity, authority or the person's actual hand.
+      - **partial** — this block is unsigned but another block on the same page is signed. Common on shared pages. Not placed unless the user says so; the report names the missing block.
+      - **blank** — the block is unsigned. Often an unsigned execution page returned by mistake, or the pack copy meant for someone else. Never placed.
+      - **unclear** — the render cannot be read with confidence: bad scan, cropped, upside down (rotate and look again first). Manual review.
+      - **wrong-version** — the page matches the document and party but its version marker (`12345678-v9`) differs from the execution version. A signed page from an earlier draft. Never placed.
+
+      Other things a returned bundle contains that are not signature pages: initialled body pages (some jurisdictions initial every page), e-signature completion certificates and envelope covers, fax headers, blank separator sheets. Skip them and say so.
+
+      **Printed name vs manifest.** If the block was `Name: ___` in the execution version and the returned page shows a handwritten or typed name, record it; that is new information, not a mismatch. If the manifest had a name and the returned page shows a different one, that is a mismatch: quarantine, do not place, report both names.
+
+      **Dating.** Pages come back undated by design; escrow means undated. Do not date unless instructed. When instructed, date by visible annotation over the date field, never by editing the scan; leave already-dated pages alone and record what they say.
+
+      ## Placement convention
+
+      **Drafting vs marking — the boundary.** Drafting signature pages from the firm's approved template *before circulation* is ordinary lawyer work, gated by the lawyer twice (matrix confirmed; sample page approved). Adding anything to a page *after* the parties have agreed the version, or after signing, is never done. Same principle, two sides.
+
+      **Never mark the instrument.** Pack pages and returned signed pages are never stamped, tagged or annotated — a signed page must be page-identical to the execution version the parties agreed. Matching is done by reading, not by labelling.
+
+      Replace, page for page: each signed page sits exactly where its unsigned page was, and schedules and exhibits after the signature block stay where they are. One exception, from how counterparts work: a page shared by two or more parties, where each party returns its own signed sheet, is placed as ALL of those sheets, one after another in block order — a counterpart-executed page genuinely is several sheets, and none of them may be dropped. The executed page count grows by exactly those extra sheets; nothing else moves.
+
+      - Only pages whose blocks are all `signed` are placed. Spare originals (a second signed copy where `copies_required` is 1, or a duplicate return) go to `executed/spare-originals/`, never into the executed PDF.
+      - If a firm wants a separator sheet before e-signed pages in a mixed closing, `esig_separator` on the ledger line adds a labelled sheet; page count then grows by the number of separators, and the report says so.
+      - The ledger (`references/ledger_schema.md`) is the record: every page, every block, every return, and the receipt. It lives in the matter folder and is the memory across batches of returns.
+
+      ## The ledger is the memory
+
+      Signed pages arrive over days. The pack half writes the ledger; each compile run reads it, places only what is new, updates statuses, recomputes the receipt. Nothing is reclassified, no pack is rebuilt. At any moment `status` says what is signed, what is missing, from whom, and whether the closing is complete.
+    to: |-
+      ## Returned pages are out of scope
+
+      A page that has come back is not read here, and no verdict is given on it.
+      This skill does not decide whether a block is signed, partial, blank,
+      unclear or from the wrong version; it does not match a returned sheet to the
+      page it belongs to; and it does not place anything into an execution
+      version. Those judgments all rest on looking at the page as an image — ink,
+      an e-signature stamp, initials over a line, a struck-through block, a
+      rotated scan are all invisible in the text — and that looking is not
+      available here.
+
+      What the ledger records instead is what the lawyer says: that a page for a
+      row came back, on a date, in their words. The status column stops at
+      `returned` for exactly that reason. See `references/ledger_schema.md`.
+
+      Two boundaries survive from the original and are absolute.
+
+      **Drafting is not marking.** Drafting signature pages from the firm's
+      approved template *before circulation* is ordinary lawyer work, gated by the
+      lawyer twice: the matrix is confirmed, and a sample page is approved. Adding
+      anything to a page *after* the parties have agreed the version, or after
+      signing, is never done.
+
+      **Never mark the instrument.** Pages that will be signed, and pages that have
+      been signed, are never stamped, tagged, dated or annotated. A signed page
+      must be page-identical to the execution version the parties agreed.
+
+      ## The ledger is the memory
+
+      Signed pages arrive over days, and nothing written in one session comes back
+      on its own in the next. The lawyer carries the ledger: they attach it at the
+      start of a session and it goes back to the Output folder updated. Say which
+      ledger you expected, say whether it arrived, and say the rows read and the
+      rows written every time. At any moment it says what was drafted, what was
+      sent, what the lawyer has reported back, and what is still out — and nothing
+      about whether any of it is properly executed.
+    files: ["references/signature_page_rules.md"]
+    expect: 1
+
+notes: |
+  Dropped scripts/ — one 90 KB program that converted Word inputs, scanned a
+  folder for candidate signature pages, classified them, opened and balanced a
+  JSON ledger, built the pack PDFs, read and rendered every returned page,
+  compiled the executed set and wrote the chasers. Half of that half survives.
+  The skill keeps the reading and drafting work — the signing matrix off the
+  execution versions, the gate that confirms it, the pages on the firm's own
+  template through the built-in Word skill, the instruction table, the cover note
+  with the escrow line, and the chaser facts — and gives up the other half
+  entirely: no scan of a folder, no page-by-page verdict, no matching of returns,
+  no placement, no executed PDF and no balanced line. That is a changed promise
+  and the body says so three times over: in When to use, in the routing table
+  where the request is about returns, and in the new "What this skill does not
+  do" section that replaces Capability fallback. The three-mode structure and the
+  `/sigpack [mode] [flags]` grammar are gone, replaced by a table that routes on
+  what the lawyer has in front of them; the argument-hint frontmatter key the
+  grammar rested on is dropped by the build's own transform. The ledger stops
+  being a JSON file in the closing folder and becomes an Excel or Markdown table
+  the lawyer attaches at the start of each session and gets back, dated, in the
+  Output folder; its absence is named in the first reply and the run continues,
+  because it carries continuity and not a hold. Every hand-back states the rows
+  read and the rows written, which is what makes a workbook that lost a row
+  visible in the reply rather than only in the file. Companions: 2, as upstream.
+  references/ledger_schema.md is replaced wholesale through files/ — the upstream
+  schema is compile-shaped end to end (returns, placement, spare originals,
+  dating, the balance) and every one of those is out of scope; the replacement
+  gives the table's columns, cuts the block statuses from six to three, and says
+  in terms why `signed` is not among them. references/signature_page_rules.md
+  keeps its classification and party/signatory/capacity rules and its worked
+  examples, and loses its three compile sections — returned pages, what
+  "executed" means, and the placement convention — to one replace that puts a
+  scope statement and the two surviving integrity boundaries in their place.
+
+triggers:
+  positive:
+    - "Work out who signs what on this closing - here are the execution versions."
+    - "Draft the signature pages for the SPA and the two side letters on our template."
+    - "Write the signing instructions and a cover note for each counterparty."
+    - "What is still outstanding from the parties? Here is last week's ledger."
+    - "Prepare the signature packs by counterparty, two originals each."
+  negative:
+    - "The signed pages are back - assemble the executed agreements. -> none"
+    - "What conditions precedent are still open before we can complete? -> closing-checklist"
+    - "Index the signed closing folder and tell me what is missing. -> closing-bible"
+    - "Send the chaser email to Eastbridge. -> Email"
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original did two jobs. It prepared the signature pages, and then, as
+    signed pages came back over days, it looked at every returned sheet as an
+    image, decided whether each block was actually signed, put the signed ones
+    back where the unsigned ones had been, and kept a running count of what was
+    signed, blank, missing or unmatched until the closing was done. This version
+    does the first job and not the second. It reads the execution versions and
+    works out who signs what, in what capacity, how many originals and whether a
+    witness is needed; it shows you that table and waits for you to confirm it;
+    it drafts the pages on your own template; it writes the per-party instruction
+    table and the cover note with the escrow wording; and it drafts the chaser
+    facts for whoever is late, which you send yourself. It never looks at a page
+    that has come back, never says a page is signed, never assembles an executed
+    document and never tells you a closing is complete. The reason is the
+    original skill's own: the looking is what made the assembly honest, and an
+    assembly without the looking would be the less safe tool it always refused to
+    be. The running list lives in a ledger you keep rather than in a file the
+    skill owns - you attach it at the start of a session and it comes back to the
+    Output folder updated, with the rows read and the rows written both stated in
+    the reply, so a row that went missing in the round trip is something you see
+    rather than something you find later.
+  known_issues:
+    - id: KI-sigpack-1
+      title: "No ledger attached means no history, and the run says so"
+      detail: >-
+        Nothing written in one session comes back on its own in the next. If the
+        lawyer does not attach the ledger, the skill names the file it expected,
+        says it is working only from what is in this session, and carries on -
+        the ledger holds continuity, not a legal hold. The cost is real: a
+        closing worked over three sessions without the ledger has three separate
+        accounts of what went out and nothing joining them. Attach it, or expect
+        to re-state what was sent.
+      failure: loud
+      probe: P2
+    - id: KI-sigpack-2
+      title: "A ledger workbook can come back from a round trip short a row or a formula"
+      detail: >-
+        The ledger is handed to Excel and handed back. Whether the structure and
+        any live count survive that trip is not documented anywhere, and a
+        workbook that quietly lost a row looks exactly like a workbook. The
+        mitigation is arithmetic the lawyer reads rather than arithmetic the
+        skill trusts: the rows read and the rows written are stated in every
+        reply, and the standing line names the ledger it counted. If those two
+        numbers differ for any reason other than rows you asked to be added, stop
+        and check the file.
+      failure: silent
+      probe: P9
+    - id: KI-sigpack-3
+      title: "A misread execution block produces a wrong matrix that reads perfectly"
+      detail: >-
+        The signing matrix is read out of the execution versions by the model.
+        An entity signing through a general partner, a deed needing a witness, a
+        block requiring two directors, a party named only in the block and not
+        the footer - each can be read wrong, and the resulting table looks as
+        confident as a right one. The whole mitigation is upstream's own gate:
+        the matrix table is shown in full and confirmed before a single page is
+        drafted, with every unknown field flagged rather than filled. Read that
+        table properly; it is the check.
+      failure: silent
+    - id: KI-sigpack-4
+      title: "A returned page is recorded on your word, not inspected"
+      detail: >-
+        The ledger's status column stops at `returned`. It means a page arrived,
+        because you said so, and it says nothing about whether the block is
+        signed, whether the printed name matches, whether the witness line is
+        filled or whether the sheet came from the version the parties agreed. Any
+        reading of a returned page is yours, is attributed to you in the ledger,
+        and is dated. Nothing in the reply will ever describe a page as signed.
+      failure: loud
+  workarounds:
+    - instead_of: "a bundled program scanned the closing folder and classified every candidate signature page"
+      cowork: "the signing matrix is read off the execution versions the lawyer attaches, and the table is shown and confirmed before anything is drafted"
+    - instead_of: "the program rendered the firm's template into signature pages through a bundled office suite"
+      cowork: "the lawyer attaches their own template and the pages are produced through the built-in Word skill, one sample approved before the rest"
+    - instead_of: "a JSON ledger lived in the closing folder and was reopened on every run"
+      cowork: "an Excel or Markdown ledger the lawyer attaches at the start of each session and gets back, dated, in the Output folder"
+    - instead_of: "packs were built as one PDF per group"
+      cowork: "one document per page per group, named to the lawyer's pattern, downloadable together as an archive of up to 50 files and 500 MB"
+    - instead_of: "every returned page was rendered and given a per-block verdict"
+      cowork: "not attempted; the ledger records that a page came back, in the lawyer's words and attributed to them, and the scope is stated in the first reply"
+    - instead_of: "compile placed signed pages back into the execution versions and produced an executed set"
+      cowork: "not attempted, and said plainly once with the reason: the looking is what made the assembly honest"
+    - instead_of: "a balancing line counted signed, partial, blank, unclear, missing and unmatched blocks"
+      cowork: "a standing line naming what was drafted, what was sent and what is outstanding, counted from the ledger's own rows and saying so"
+    - instead_of: "a chase command wrote one file per party from the ledger"
+      cowork: "the per-party chaser facts are drafted in the reply for the lawyer to word and send from their own mail; the skill never sends"

@@ -42,6 +42,7 @@ upstream's `LICENSE` travels at the zip root.
 lq-cowork/
   upstream/                    # git submodule, read-only, pinned SHA
   cowork.yaml                  # bundles, developer block, global transforms, pin
+  probes.yaml                  # the capability probes the cards are written around
   skills/README.md             # says these folders are build inputs, not skills (section 5b)
   skills/<name>/               # one adaptation folder per shipped skill
     skill.yaml                 #   the card (required)
@@ -56,11 +57,12 @@ lq-cowork/
   tools/                       # uv-managed Python project (package: lqcowork)
     pyproject.toml
     src/lqcowork/...
+    src/lqcowork/site/         #   the static site: generator, templates, stylesheet
     tests/...
   docs/CONTRACT.md             # this file
   docs/RELEASING.md            # how a release is cut (contract section 7)
   dist/                        # generated, gitignored: bundles, zips, dist/skills/<name>.skill, reports
-  .github/workflows/           # build.yml, release.yml, upstream-drift.yml
+  .github/workflows/           # build.yml, release.yml, site.yml, upstream-drift.yml
   .github/dependabot.yml       # keeps the pinned action versions current
   Makefile                     # thin wrappers around `uv run --project tools lqcowork ...`
 ```
@@ -106,50 +108,135 @@ transforms:
   strip_waivers: true                                # remove <!-- vendor-neutral-waiver: ... --> comments
   skill_tokens: true                                 # rewrite $name and /name for every upstream skill name
   vendor_words: [Codex, CODEX, ChatGPT, Claude, Cursor, Gemini]   # validation WARNS if any survive
+  host_words: [lqprofile.md, the scribe, ...]        # host machinery that does not exist in Cowork (LQC-W009)
+  claim_words: [receipt, receipts, certified, ...]   # promises nothing can back (LQC-W011); omitted = the default list
 
 replace: []                                          # global literal replacements, same shape as a card's replace list
 
 bundles:
   - id: legalquants-litigation-cowork                # zip base name and dist folder
-    guid: 3d3f0d5c-4a1b-5e9a-9f2c-7b2f4b0a1c11       # stable; generated once (uuid5) and pinned here
+    guid: 5d40f9d0-bbfe-5aa7-a4e9-10b4e0b676bf       # stable; generated once (uuid5) and pinned here
+    mirror: legalquants-litigation                   # upstream plugin id in upstream/plugin.release.yaml
+    exclude_skills: []                               # optional; each entry {name, reason}; none today
     name:
       short: LQ Litigation Skills                    # <= 30 chars (Teams manifest limit)
-      full: LegalQuants litigation skills for Copilot Cowork   # <= 100 chars
+      full: LegalQuants Skills for Litigators for Copilot Cowork   # <= 100 chars
     description:
-      short: Litigation drafting, cite-checking, discovery and case organisation   # <= 80 chars
+      short: Source-grounded workflows for litigators   # <= 80 chars
       full: >-                                       # <= 4000 chars; must say it is an adaptation
         ...
+  - id: legalquants-transactional-cowork
+    ...
+  - id: some-other-bundle                            # a bundle may still list its own skills
     skills:                                          # order = manifest order; <= 20; names must have a card
       - lq-start
       - writing
-      - ...
-  - id: legalquants-transactional-cowork
-    ...
 ```
 
-Bundle membership (decided; edit here, not in code):
+A bundle declares **either** `mirror` **or** `skills`; both on one bundle is a
+config error, and so is neither. `exclude_skills` only belongs on a mirrored
+bundle.
 
-| bundle | skills |
-| --- | --- |
-| `legalquants-litigation-cowork` | lq-start, writing, correspondence, client-update, depositions, new-matter, organize-case-docs, cite-check, pressuretest, document-discovery, legaldesign, timenarratives, wiki, closing-checklist, lq-mirror |
-| `legalquants-transactional-cowork` | lq-start, closing-checklist, playbook-builder, playbook-review, legaldesign, timenarratives, wiki, lq-mirror |
+Mirror derivation, at config load: read `<upstream.path>/plugin.release.yaml`,
+find `plugins[].id == mirror` (a missing id is a config error), take its
+`skill_groups` in the listed order, and for each group the skill folder names
+under `<upstream.path>/<skills_root>/<group>/` in alphabetical order; then
+append `include_skills` (`<group>/<name>`) in the listed order; then remove
+every `exclude_skills` name. A folder counts as a skill when it holds a
+`SKILL.md`. That list is the bundle's `skills` for every purpose — manifest
+order, build, triggers, report and site. An explicit `skills` list keeps
+working and is unaffected.
+
+`bump-upstream` already lists upstream skills in no bundle; with `mirror`, a
+skill added upstream to a mirrored group also surfaces as `LQC-B001` at the
+next build, which is the pressure we want.
+
+Bundle membership (mirrored from upstream; change it upstream, or exclude it
+here with a reason):
+
+| bundle | mirrors | skills |
+| --- | --- | --- |
+| `legalquants-litigation-cowork` | `legalquants-litigation` | core 5 + litigation 10 = 15 |
+| `legalquants-transactional-cowork` | `legalquants-transactional` | core 5 + transactional 9 = 14 |
+| `legalquants-companion-cowork` | `legalquants-companion` | companion 7 + core/lq-start = 8 |
+
+All thirty-one upstream skills ship. `name.short` is ours; `name.full` is
+upstream's `display_name` plus ` for Copilot Cowork`; `description.short` is
+upstream's `short_description`. `description.full` says what is in the bundle,
+naming every skill, how routing works, that this is an adaptation, and the
+closing line.
 
 Manifest ids, names and descriptions live only in `cowork.yaml`. The package
 `description.full` must state that the bundle is adapted from
 LegalQuants/lq-plugin-oss under Apache-2.0 and is not an upstream release.
+
+A `guid` is generated once and never changes: an app id is the identity
+Microsoft 365 remembers a sideloaded package by. The first two were generated
+before the method was written down here, so it is not recorded; the third,
+`legalquants-companion-cowork`, is
+`uuid5(NAMESPACE_URL, "https://github.com/houfu/lq-plugin-cowork#legalquants-companion-cowork")`
+= `420f3a25-7f35-5b17-a3c5-6a9362c9e9ce`, and that is the method for any
+bundle added after it.
+
+### `probes.yaml`
+
+At the repository root: the capability probes, each one a question about
+Cowork that no card can answer for itself, transcribed from
+`docs/research/cowork-alternatives-and-risk.md` section 3.
+
+```yaml
+probes:
+  - id: P3
+    title: Does Cowork report tracked changes in a Word document?
+    settles: "..."                # what a result decides, and why it is not documented
+    setup: "..."                  # optional
+    prompt: "..."                 # the exact text a tester types
+    pass: "..."
+    fail: "..."
+    bad_outcome: silent           # refusal | fluent-fake | silent | loud
+    unlocks: [read-redline]       # skill names; may be empty
+```
+
+`id`, `title`, `settles`, `prompt`, `pass`, `fail` and `bad_outcome` are
+required; `setup` and `unlocks` are optional. Duplicate ids and an unknown
+`bad_outcome` are config errors. An absent `probes.yaml` is not: every card
+that names a probe then gets `LQC-K003`, which says exactly that.
+
+It is read by validation (`LQC-K003`), the build report, the site and
+`tools/scripts/uat_issues.py --probes`. `docs/TESTING.md` Part E summarises it
+and links to the site.
 
 ## 4. The skill card: `skills/<name>/skill.yaml`
 
 ```yaml
 name: wiki                        # == folder name == upstream skill name == Cowork folder name
 upstream: core/wiki               # <group>/<name> under upstream/skills/
-bucket: amber                     # green | amber  (from the portability assessment; informational)
+bucket: amber                     # green | amber | red  (from the portability assessment; informational)
 anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0   # upstream SHA this card was written against
 
 description: |                    # REQUIRED. Replaces upstream description wholesale. 1-1024 chars after strip.
   Keeps a Markdown legal wiki in a OneDrive folder ...
   Use when the user asks to "add this to the wiki", "what does the wiki say about", ...
   Do not use for drafting documents (use the writing skill) or ...
+
+cowork:                           # REQUIRED on every card. The lawyer-facing account of the adaptation.
+  tier: 2                         # 0 shipped as written apart from description and mechanics
+                                  # 1 documented capabilities only, loud failures
+                                  # 2 one named probe, or shipped now with an announced degrade
+                                  # 3 re-scoped: the promise changed
+                                  # 4 needs a connector -- a shipped card may not say 4 (LQC-K002)
+  status: shipped                 # shipped | probe-gated  (probe-gated = shipped with an announced degrade until the probe passes)
+  differs: |                      # REQUIRED. One paragraph for a lawyer: how this differs from the original. Plain words, no file names.
+    The original runs a bundled script ...; here ...
+  known_issues:                   # list; may be empty only when tier is 0 or 1 and status is shipped
+    - id: KI-read-redline-1       # unique across the repository: KI-<skill>-<n>
+      title: "Unseen tracked changes read as no changes"
+      detail: "..."               # what the lawyer would see, and what to do about it
+      failure: silent             # silent | loud  -- whether a wrong result would look right
+      probe: P3                   # optional; a probe id from probes.yaml that settles it
+  workarounds:                    # list; what the adaptation does instead of upstream's machinery
+    - instead_of: "a bundled script computes the coverage count"
+      cowork: "an Excel register lists every document and its status, so the count is visible and checkable"
 
 frontmatter:                      # optional. Set/override keys after mechanical transforms. null deletes.
   compatibility: null
@@ -177,7 +264,7 @@ patches:                          # optional. Applied last, with `git apply`, pa
 
 files: files                      # optional. Directory copied over the skill folder after copy+exclude (adds or replaces companions).
 
-notes: |                          # REQUIRED for amber skills. What changed and why, for the README table and the drift report.
+notes: |                          # REQUIRED for amber and red skills. What changed and why, in build terms, for the README table and the drift report.
   Dropped scripts/ and schemas/; the body's chat path is the documented fallback ...
 
 suppress:                         # optional. Accept a named warning, on the record.
@@ -194,8 +281,16 @@ triggers:                         # REQUIRED. Live trigger tests for Cowork (ste
 
 Rules for cards:
 
-- `name`, `upstream`, `anchored_to`, `description`, `triggers` are required.
-  `notes` is required when `bucket: amber`.
+- `name`, `upstream`, `anchored_to`, `description`, `cowork`, `triggers` are
+  required. `notes` is required when `bucket` is `amber` or `red`.
+- `notes` stays the technical record — what changed, in build terms.
+  `cowork.differs` is the lawyer-facing account of the same change, in plain
+  words and without file names. Both are required on an amber or red card:
+  `differs` on every card, by `LQC-K001`; `notes` by `LQC-W008`.
+- The `cowork` block is checked by `LQC-K001` and `LQC-K002` (errors) and
+  `LQC-K003` (a warning); section 6 has the rules. A known issue's `id` is
+  unique across the repository, which is what lets the build report, the site
+  and the UAT programme all refer to the same thing.
 - A section body file (`sections/*.md`) starts with the new heading line (it
   may differ from `match`) and contains the whole replacement section.
 - A full-file overlay `skills/<name>/SKILL.md` must be a complete SKILL.md
@@ -251,9 +346,10 @@ Rules for cards:
     `license: Apache-2.0`, and
     `metadata.adapted-from: "LegalQuants/lq-plugin-oss@<sha7> skills/<upstream>"`,
     `metadata.adapted-for: "Microsoft 365 Copilot Cowork"`,
-    `metadata.version: "<package.version>"` (a string; the same value as the
-    manifest version, so a skill uploaded on its own still says which release
-    it came from). Existing `metadata` keys are preserved. Insert as the first body line, right after
+    `metadata.version: "<package.version>"` (a string, e.g. `"0.2.0"`; the same
+    value as the manifest version, so a `.skill` uploaded on its own still says
+    which release it came from — there is no manifest beside it). Existing
+    `metadata` keys are preserved. Insert as the first body line, right after
     the closing `---`:
     `<!-- Modified from LegalQuants/lq-plugin-oss@<sha7> (skills/<upstream>) for Microsoft 365 Copilot Cowork. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->`
 10b. Companion notices: after every transform, compare each `*.md` companion
@@ -282,8 +378,13 @@ negative prompt's `-> target` names a skill that is not in the bundle being
 rendered, print `must not activate; expect none (<target> is not in this
 bundle)`, and when it names a Cowork built-in from §8, case-insensitively,
 print `must not activate; expect built-in <Name>`) and
-`dist/build-report.md` (per skill: bucket, files, bytes, warnings; per bundle:
-skill count, manifest summary; the single-skill archives of section 5b).
+`dist/build-report.md` (per skill: bucket, tier, status, known-issue count,
+files, bytes, warnings; per bundle: skill count, manifest summary, the
+`Mirrors upstream plugin <id>: groups …; includes …; excludes …` line with
+upstream's `display_name` and `short_description` beside ours, a
+`### Known issues` table of every known issue the bundle's cards declare —
+id, skill, title, failure, probe — and the single-skill archives of section
+5b).
 
 ## 5b. Single-skill archives: `dist/skills/<name>.skill`
 
@@ -293,26 +394,40 @@ holding a single SKILL.md, or a `.zip`/`.skill` archive with `SKILL.md` at its
 root plus the skill's companion files. That is the route a lawyer with no
 developer tooling will use, and it is the route UAT issue 19 asked for after a
 tester zipped `skills/pressuretest/` from this repository, found no SKILL.md in
-it, and rebuilt the skill by hand. Every `package` run therefore also writes
-one upload-ready archive per distinct skill, from the same built tree the
-bundles are made from.
+it, and rebuilt the skill by hand. A lawyer who wants `regulatory` and nothing
+else should not have to install a fifteen-skill plugin to get it. Every
+`package` run therefore also writes one upload-ready archive per distinct
+skill, from the same built tree the bundles are made from — thirty-one of them
+when every bundle is built.
 
 - Path `dist/skills/<name>.skill`, one per skill name across all selected
-  bundles (a shared skill is built once and archived once; the two bundle
-  copies are byte-identical by construction).
+  bundles (a shared skill is built once and archived once; the bundle copies
+  are byte-identical by construction). `<name>` is the shipped skill name,
+  which is the folder name and the frontmatter `name`.
 - Contents, all at the archive root, no top-level folder: the built skill
   folder (`SKILL.md` and its companions, exactly as in `dist/<bundle>/skills/<name>/`),
-  plus `LICENSE` (upstream's) and `NOTICE.md`, because Apache-2.0 §4 travels
-  with every distribution, and a single skill uploaded on its own is one.
+  plus each `package.root_files` entry under its own base name — `LICENSE`
+  (upstream's) and `NOTICE.md` — because Apache-2.0 §4 travels with every
+  distribution, and a single skill uploaded on its own is one.
 - Written with the bundle zip writer: sorted entries, 1980 timestamps (or
-  `SOURCE_DATE_EPOCH`), deflate, no `__MACOSX`, no dotfiles; byte-reproducible.
+  `SOURCE_DATE_EPOCH`), mode 0644, deflate, no `__MACOSX`, no dotfiles;
+  byte-reproducible. Two builds into different `--out` directories produce
+  equal bytes, and the release workflow re-checks that before it publishes.
+- Checked against the Customize-page limits, not the plugin-package ones:
+  LQC-U003 and LQC-U004 are 100 entries, 10 MB compressed and 50 MB
+  uncompressed for the archive as a whole, where LQC-C001 to LQC-C003 are
+  about a skill folder inside a plugin package (section 8, "Two packaging
+  channels with different limits").
 - There is no bare `.md` edition. A lone SKILL.md drops the companion files the
   body tells the agent to read, so it would upload cleanly and then misbehave.
   If a skill has no companions the archive still ships, for one download shape.
 
 Each archive is validated (section 6, `LQC-U` codes) after it is written, the
-same way bundle zips are, and the release publishes them all next to the
-bundles with their checksums (section 7 of RELEASING.md).
+same way bundle zips are. `package` prints one summary line per archive under
+the bundle lines, the build report gets a `## Single-skill archives` section
+(Archive | Entries | Compressed | Uncompressed | Bundles), and the release
+publishes them all next to the bundles with their checksums (section 7 of
+RELEASING.md).
 
 ## 6. Validation rules
 
@@ -355,6 +470,21 @@ Errors (fail the build):
 | LQC-U003 | ≤ 100 entries (Cowork's archive upload limit) |
 | LQC-U004 | ≤ 10 MB compressed and ≤ 50 MB uncompressed (Cowork's archive upload limits); each `.md` inside ≤ 1 MB |
 | LQC-U005 | ≤ 20 files other than `SKILL.md`, `LICENSE` and `NOTICE.md`, and the two root notices themselves are the only extra files — the archive carries nothing the bundle folder does not |
+| LQC-B001 | a mirrored bundle derives a skill that has no card under `skills/<name>/`. The message names the skill and says: write a card, or exclude it with a reason. One error per missing card, however many bundles derive it |
+| LQC-K001 | `cowork` missing, or `tier`/`status`/`differs` missing or malformed; `tier` not an integer 0 to 4; `status` not one of the two; a known issue without `id`, `title`, `detail` or `failure`; a workaround without both keys; a duplicate known-issue `id` anywhere in the repository |
+| LQC-K002 | `tier: 4` on a card in any bundle; `tier` 2 or 3 with no known issue; `status: probe-gated` with no known issue carrying `probe` |
+
+`LQC-B001`, `LQC-K001` and `LQC-K002` are read off the cards before anything
+is copied, and any of them stops the build there: half a bundle would bury
+them under a manifest's worth of consequential errors. Every one is reported,
+so a run names every card that needs work rather than the first.
+
+`LQC-U001` to `LQC-U005` are read off the `.skill` archives themselves — by
+`package` as soon as it writes one, and by `lqcowork archives`, which writes
+and validates them from an existing build without building anything (it errors
+if `dist/<bundle>/` is not there) — with `LQC-U002` comparing the archived `SKILL.md` against the
+built bundle tree it came from. They carry the skill name and
+`skills/<name>.skill` as their location.
 
 Warnings (printed, and listed in the build report):
 
@@ -367,22 +497,29 @@ Warnings (printed, and listed in the build report):
 | LQC-W005 | any `*.md` of the skill mentions `scripts/` or `schemas/` but the folder is absent from the built skill |
 | LQC-W006 | SKILL.md body > 3,000 words |
 | LQC-W007 | any `*.md` of the skill mentions `hooks`, `~/.lq/`, `CLAUDE_PLUGIN_ROOT`, `argument-hint`, or `disable-model-invocation` |
-| LQC-W008 | a card's `bucket: amber` has no `notes` |
+| LQC-W008 | a card's `bucket: amber` or `bucket: red` has no `notes` |
 | LQC-W009 | any `*.md` of the skill contains a phrase from `transforms.host_words` (case-insensitive; default list: `lqprofile.md`, `the scribe`, `the validator`, `the renderer`, `run directory`, `PyMuPDF`, `Playwright`, `pdfplumber`, `pypdf`, `--dry-run`, `--yes`, `exit code`, `python interpreter`, `interpreter floor`, `subprocess`, `parallel workers`, `sidecar`) — host machinery that does not exist in Cowork |
 | LQC-W010 | any `*.md` of the skill contains an `http(s)://` URL other than `https://github.com/LegalQuants/lq-plugin-oss` (external links and calls to action are not allowed in shipped skills; a URL that occurs anywhere in the upstream skill folder, in any file, is upstream-authored and exempt wherever the adaptation moved it to) |
+| LQC-W011 | any `*.md` of the skill contains a phrase from `transforms.claim_words` (case-insensitive whole phrase; default list: `receipt`, `receipts`, `certified`, `coverage-certified`, `proved`, `proven`, `guaranteed complete`) — a claim the model cannot back with something the lawyer can inspect must not be worded as one |
+| LQC-B002 | one per `exclude_skills` entry on a mirrored bundle, carrying its reason, so the build report and the drift report show what was left out and why |
 
 Warnings report `file:line`. All W-codes run over every `*.md` in the built
-skill unless the rule names SKILL.md.
+skill unless the rule names SKILL.md. `LQC-W011` matches a whole phrase with
+alphanumeric edges refused, so `proved` does not fire on `approved`, and
+`receipt` does not fire on `receipts`, which is its own entry. Like every
+warning it is suppressible through the card's `suppress` list, with a reason.
 
 ## 7. CLI
 
-Package `lqcowork` in `tools/`, Python ≥ 3.11, runtime dependency PyYAML only,
-dev dependencies pytest and black (black-formatted, line length 88).
+Package `lqcowork` in `tools/`, Python ≥ 3.11, runtime dependencies PyYAML,
+Jinja2 and markdown-it-py and nothing else, dev dependencies pytest and black
+(black-formatted, line length 88).
 
 ```
-uv run --project tools lqcowork build      [--bundle ID] [--report-anchors] [--upstream-path P] [--out DIR]
+uv run --project tools lqcowork build      [--bundle ID | --skill NAME ...] [--report-anchors] [--upstream-path P] [--out DIR]
 uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/ without rebuilding
 uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + single-skill archives + trigger tests + report
+uv run --project tools lqcowork site       [--out DIR]                # render <out>/site/ from a built <out>/ (section 9)
 uv run --project tools lqcowork bump-upstream [--to REF] [--dry-run] [--report PATH]
 uv run --project tools lqcowork anchor     [--skill NAME]              # set anchored_to = current pin after review
 uv run --project tools lqcowork triggers   [--bundle ID] [--out DIR]   # write dist/<bundle>-trigger-tests.md only
@@ -391,11 +528,22 @@ uv run --project tools lqcowork release-check --tag vX.Y.Z [--out DIR] # does a 
 ```
 
 Exit codes: 0 ok, 1 error, 2 validation/anchor/release-check failure. Every
-command prints a one-line summary per bundle. `--upstream-path` lets
+command prints a one-line summary per bundle; `package` prints one line per
+skill archive under them (section 5b). `--upstream-path` lets
 bump-upstream build against a temporary checkout without moving the pinned
 submodule. `--out DIR` sends a build, and everything read back from it,
 somewhere other than `dist/`, which is what lets two people — or a
 reproducibility check that builds twice — work at once.
+
+`build --skill NAME` is repeatable and is not combinable with `--bundle`. It
+builds only those skills into `<out>/skills-only/<name>/` through every card
+transform, and runs the checks that are about one skill folder — `ASKILL-P*`,
+`LQC-C*`, `LQC-S*`, `LQC-D001`, `LQC-W*`, `LQC-K*` and `LQC-A001`. Bundle
+assembly, the manifest checks, the zip and the report are skipped. There is
+no bundle, so `LQC-W003` measures a hand-off against every card in the
+repository instead: a name that exists somewhere passes. Card authors use it
+before a skill is in any buildable bundle. A `--skill` with no card is a usage
+error (exit 1), not `LQC-B001`, which is about a bundle's derived membership.
 
 `bump-upstream`:
 
@@ -448,17 +596,119 @@ repository could not be read.
 
 ## 8. Cowork facts the cards are written against
 
-- Cowork has no local filesystem. Session files live in the user's OneDrive
-  `Cowork` folder (side panel shows Input folder / Output folder); custom
-  skills live in `/Documents/Cowork/skills/`. Cowork cannot read encrypted or
-  sensitivity-labelled files and cannot delete files.
-- Whether bundled scripts execute is undocumented. Cards assume **no script
-  runs**. Every step must have a host-native path (Cowork reads documents,
-  drafts, and produces Word/Excel/PowerPoint/PDF/HTML/Markdown itself).
-- Built-in skills to hand off to, by exact name: Word, Excel, PowerPoint,
+Verified against Microsoft documentation read on 19 September 2026; each bullet
+that turns on a fast-moving fact carries its own date.
+
+- **No local disk; a OneDrive-backed file surface instead.** "Cowork can't
+  access or edit files stored locally on your device. It works with files in
+  OneDrive and SharePoint." Session files live in the user's OneDrive `Cowork`
+  folder; the side panel shows an Input folder and an Output folder; files
+  Cowork creates remain reachable in that folder after the session; custom
+  skills live in `/Documents/Cowork/skills/`. Companion files inside a package
+  must use relative paths with no `..` traversal — that is a packaging rule
+  about the uploaded `.zip`, not a rule about where a running skill may write.
+- **No working directory that outlives the task.** While a task runs, Cowork
+  processes files in a temporary isolated environment inside the Microsoft 365
+  service boundary, which "removes the temporary environment when the task
+  finishes" and which "Users can't view or access". Nothing written there
+  survives, so no card may rely on a run directory, a scratch path or a ledger
+  that outlasts the task.
+- **State between sessions is undocumented, not forbidden.** Nothing says a
+  skill cannot write a file into the user's own OneDrive `Cowork` folder and
+  read it back later; nothing says it can, either. No card may depend on it
+  until a tenant probe settles it, and no card may claim it is impossible.
+- **No deletion of OneDrive or SharePoint content.** "Cowork can't delete files
+  or folders in OneDrive or SharePoint." Attached files must be under 200 MB.
+  Never instruct deletion and never promise clean-up; say that any intermediate
+  file remains in the Output folder, and name it. (This rule is about file
+  content. Users can still delete a skill or a scheduled task from the UI.)
+- **Encrypted and labelled files.** The Cowork FAQ says Cowork cannot read
+  encrypted files even where the user has access; the Purview article says an AI
+  app can return label-encrypted data to a user holding EXTRACT as well as VIEW.
+  Cards take the FAQ's stricter rule and never depend on reading a labelled or
+  password-protected file.
+- **Scripts: Microsoft's own pages disagree, and our position is provisional.**
+  The plugin development page (17 September 2026) says a skill's `scripts/`
+  folder is "Executed, not loaded into context", labels it "Executable
+  utilities" and names `scripts/extract-clauses.py`; the Use Cowork page
+  (14 September 2026) names "script execution" as a background operation and
+  says code "is never executed during static checks". The Customize page
+  (15 September 2026) says "A skill runs as instructions to the AI" and the
+  manage-plugins page (1 September 2026) calls skills "Prompt-based workflows".
+  Nothing reconciles them. No Microsoft page names an interpreter, a language
+  version, an installed package, a dependency install path or an external
+  binary; "python" does not appear on the plugin development page at all. Cards
+  therefore ship no scripts and give every step a host-native path — because a
+  script's runtime cannot be relied on, not because nothing runs. Revisit after
+  the script probe.
+- **Companion budget.** 20 companion files per skill, 5 MB each, 10 MB total,
+  15 second download timeout. There is no documented file-type allow-list; the
+  rules are about path safety and size.
+- **Manifest features not yet supported** (plugin development page, 17 September
+  2026). The conversion table marks `commands/` (slash commands), `agents/`
+  (sub-agents) and `hooks/` (event handlers) "Not yet supported", and
+  `settings.json` and `bin/` (executables) "Not applicable". That table
+  describes what the `atk import openplugin` conversion carries over from a
+  Claude plugin, so it is not a rule that a Cowork package may not contain a
+  binary — but nothing documents a path for one either. Treat `commands/` as not
+  yet supported rather than permanently absent, and re-check the table.
+- **Two packaging channels with different limits.** Plugin package: up to 20
+  skills per manifest (ASKILL-M002, `maxItems: 20` in the v1.28 schema), up to
+  10 connectors, 256-character folder path (ASKILL-M003). Customize upload: a
+  `.md` up to 1 MB, or a `.zip` / `.skill` archive up to 10 MB compressed, 50 MB
+  uncompressed, up to 100 files. OneDrive folder drop: up to 50 custom skills
+  per user.
+- **Web reach exists, is tenant-controlled, and no card may depend on it** (as
+  at September 2026; this is the fastest-moving fact here). Microsoft's web
+  search article states it applies to Cowork, Cowork has no user-facing web
+  search toggle, and an admin policy option can disable web search in Cowork by
+  name — so search may simply be off in a given tenant. Browser use is Edge
+  automation on the user's own device, web client only, and "disabled by
+  default" until a tenant admin enables it (Learn page of 16 September 2026); it
+  was announced Frontier-scoped in the GA post of 16 June 2026 and recorded as
+  moving to general availability in August 2026. A skills-only package has no
+  network channel of its own. The only declared channel is `agentConnectors`:
+  Streamable HTTP over HTTPS with JSON-RPC 2.0, up to 10 per package, anonymous
+  or OAuth vault or dynamic client registration, with outbound requests carrying
+  `copilot-cowork/1.0`. API-key auth is declared in the schema but stated as not
+  yet available in Cowork.
+- **No receipts without a connector you operate.** Outside a declared
+  `agentConnectors` MCP server, nothing documents a way for a skill to obtain a
+  URL's raw bytes or to hash them. So no card may promise a fetch receipt, a
+  SHA-256 of a source, or a quotation guaranteed to come from publisher bytes
+  rather than a search or browser rendering. A remote MCP connector remains the
+  honest route for anything that needs one.
+- **Sessions and transcripts** (as at September 2026). Plugin skills "work
+  within the current conversation context. They can read files you attached,
+  reference earlier messages". Past sessions persist and can be reopened from
+  the recent-tasks list — "resume a previous session", "Select any task to jump
+  back into its session" — so on a resumed session the current conversation is
+  itself a past session. What resumption restores to the model, as opposed to
+  the screen, is undocumented. Nothing documents a tool or API by which a skill
+  reads another session's log: Copilot memory and chat history are documented
+  for Copilot Chat and never name Cowork; the Graph `aiInteractionHistory` API
+  never names Cowork and offers only an application permission, with delegated
+  access "Not supported". Purview retains Cowork "Conversation transcripts" for
+  audit and eDiscovery in the user's mailbox (Purview page of 22 June 2026;
+  audit page of 26 August 2026), but that is an admin surface, not something a
+  skill can read. Where a card says "transcript" it must mean a document the
+  lawyer supplies — a deposition or a meeting transcript — never a session log.
+- **Built-in skills to hand off to, by exact name**, as listed by Microsoft on
+  three Cowork pages dated 8 and 14 September 2026: Word, Excel, PowerPoint,
   PDF, Email, Scheduling, Calendar Management, Meetings, Daily Briefing,
-  Enterprise Search, Deep Research, Communications, Adaptive Cards, App.
-  HTML, Markdown, CSV and PDF files render in Cowork's preview pane.
+  Enterprise Search, Communications, Deep Research, Adaptive Cards, and App
+  (Frontier). **Keep "Deep Research" in this list.** A separate Researcher
+  support page, updated 9 September 2026, says "Deep Research has been retired
+  and Researcher is now the in-depth research experience available to Microsoft
+  365 Premium and Pro subscribers" — but that is a statement about consumer
+  plans, it never mentions Cowork, and three Cowork pages still name Deep
+  Research as a Cowork built-in. Treat them as two features sharing a name. Have
+  a tester confirm the name in a live tenant before it is changed here; do not
+  rename it in this repo on the strength of a page about a different plan. HTML,
+  Markdown, CSV and PDF files render in Cowork's preview pane.
+
+The rules below are this repository's, not Microsoft's, and stand unchanged.
+
 - Users invoke skills in natural language; Cowork routes on `description`.
   There is no `$name` or `/name` argument grammar; modes must be inferred
   from what the user says. Refer to sibling skills as "the cite-check skill".
@@ -468,8 +718,6 @@ repository could not be read.
 - Cowork scores skills on trigger clarity, instruction specificity, scope
   boundaries and robustness, and runs a conflict scan; explicit hand-offs
   between competing skills resolve conflicts.
-- Cowork cannot delete files. Never instruct deletion or claim clean-up; say
-  that any intermediate file remains in the Output folder and name it.
 - **Upload skill** (Customize page > Skills tab > arrow next to **Add**):
   accepts a `.md` with a single SKILL.md, or a `.zip`/`.skill` with `SKILL.md`
   at the root plus companions. Frontmatter must have `name` and `description`.
@@ -491,15 +739,108 @@ repository could not be read.
   writes either file, never mentions a scribe or a journey; a preference
   discovered during the run is offered as one exact line the lawyer can add
   to their own file.
-- Sibling bundle: lq-start may present the full map of both bundles, each
-  skill labelled with its bundle, with one neutral sentence that a skill
-  responds only if its bundle is available in the tenant and that plugin
-  availability is managed by the Microsoft 365 administrator. No other skill
-  names the other bundle. No shipped skill links to an external site,
-  sign-up, assessment or product; the only URL a shipped skill may carry is
-  the upstream repository in the licence notice.
+- Sibling bundles: lq-start may present the full map of all three bundles,
+  each skill labelled with the bundles it belongs to, with one neutral
+  sentence that a skill responds only if its bundle is available in the
+  tenant and that plugin availability is managed by the Microsoft 365
+  administrator. No other skill names a bundle it does not ship in. No
+  shipped skill links to an external site, sign-up, assessment or product;
+  the only URL a shipped skill may carry is the upstream repository in the
+  licence notice. Two readings of that sentence are adopted for this release:
+  citing a source by title and date, carrying no URL, is not a link; and
+  relaying a link the lawyer supplied in their own session is not the skill
+  linking to it.
 - Nothing in a shipped skill may mention Codex, ChatGPT, Claude, "CODEX for
   Legal", hooks, `~/.lq/`, or another LegalQuants plugin as an install target.
   The closing line "CODEX for Legal is a workflow aid, not legal advice. The
   judgement stays yours." becomes "LegalQuants skills are a workflow aid, not
   legal advice. The judgement stays yours."
+
+## 9. The site
+
+`lqcowork site [--out DIR]` renders a static site into `<out>/site/` from a
+build already sitting in `<out>/` (default `dist/`). It builds nothing: it
+describes a build, so a tree that has not been packaged is an error, not a
+thinner site. `make site` runs `package` and then `site`, which is the only
+supported way to get one.
+
+### What it reads
+
+| Source | For |
+| --- | --- |
+| `cowork.yaml` | bundles, manifest names and descriptions, mirror lines, the package version, the upstream pin, the transform lists |
+| `skills/<name>/skill.yaml` | the description, the triggers, the `cowork` block (tier, status, `differs`, known issues, workarounds), `notes`, `bucket` |
+| `probes.yaml` | the probes page, and the link from a known issue to the probe that settles it |
+| `upstream/plugin.release.yaml` | what upstream calls each mirrored plugin |
+| `upstream/skills/<group>/<name>/SKILL.md` | the original description, quoted on the skill page |
+| `<out>/<bundle>/skills/<name>/` | the files each skill actually ships; a skill in two bundles is read once |
+| `<out>/skills/<name>.skill` | the size and file count shown beside a skill's upload archive; absent is not an error, and the link is written either way |
+| `<out>/build-report.md` | the warnings table, shown per skill under a disclosure |
+| `docs/INSTALL.md`, `docs/TESTING.md`, `CHANGELOG.md` | rendered through markdown-it-py (CommonMark plus tables, raw HTML escaped) |
+
+`<out>/build-report.md` or a bundle's `<out>/<bundle>/skills/` tree missing is
+an error (exit 1) whose message names what is absent and says to run `package`
+first. A Markdown source that is absent is not: the page is still written, and
+says which file it would have rendered and where to read it instead.
+
+### Pages
+
+| Page | Content |
+| --- | --- |
+| `index.html` | what this is and is not (an independent adaptation, not official, pre-release, nothing exercised in a live tenant); the bundles with skill counts, tier counts and links; the release assets by file name; how Cowork routes (natural language on the description, the Sources picker, no slash grammar); the tester call; a download block linking each bundle's zip by its latest-download URL with its skill count, the `.skill` archives through the downloads page, `SHA256SUMS` and the releases page; links to every other page and every skill |
+| `bundles/<id>.html` | manifest name, ids and descriptions; the `Mirrors upstream plugin …` line with upstream's display name and description; the skills table (name, one-line purpose, tier, status, known-issue count); the trigger-test checklist as a table; a **Download** block at the top linking the zip, the trigger-test checklist and `SHA256SUMS`, and a `.skill` link on every row of the skills table |
+| `skills/<name>.html` | what it does (the description's first sentence); when to use it (positive triggers); not for (negative triggers with the hand-off the checklist would print); the bundles it ships in; tier, status and bucket badges carrying the rubric; a **Get this skill** block after the badges with the `.skill` archive, what it is, its size and file count where one was built, and the bundle zips it also ships in; **How it differs from the original** (`cowork.differs`, with `notes` under a "Build notes" disclosure); known issues with failure shape and probe link; the workarounds table; the original description quoted; the upstream link at the pinned SHA; the files shipped; the build warnings; the UAT issue search |
+| `known-issues.html` | every known issue across every card, with its skill, tier, failure shape and probe |
+| `probes.html` | every probe in `probes.yaml`, its prompt verbatim, what a pass and a fail look like, the worst outcome, and what it unlocks |
+| `differences.html` | the capability picture from section 8 in one screen; the mechanical transforms of section 5 in plain words; the claim-words rule with the list from `cowork.yaml`; the bundle structure against upstream's; the tier rubric with a count per tier; a table of every skill with its tier and a one-line `differs` excerpt |
+| `downloads.html` | every published file in two tables: the bundle packages (name, skill count, `<id>.zip`, `<id>-trigger-tests.md`) and all the skill archives (skill, bundles, `<name>.skill`, and its size where one was built); then `SHA256SUMS`, `build-report.md`, the releases page, and the sentence about what "latest" resolves to |
+| `install.html`, `testing.html`, `changelog.html` | the Markdown sources, rendered |
+
+### Rules the pages keep
+
+- **Reproducible.** Two runs of the same commit produce byte-identical files.
+  There is no timestamp, no generated id and no ordering that depends on the
+  filesystem; the only build-specific values on a page are the package version
+  and the upstream SHA, both read from `cowork.yaml`.
+- **Relative links only.** The site is served under `/lq-plugin-cowork/`, so
+  no `href` or `src` is rooted at `/`. A page under `bundles/` or `skills/`
+  reaches the root with `../`.
+- **Release assets by their latest-download URL.** Every downloadable file
+  is linked at `https://github.com/houfu/lq-plugin-cowork/releases/latest/download/<asset>`,
+  which GitHub resolves to that asset on the most recent release that is not a
+  pre-release. The assets are `<bundle.id>.zip` and
+  `<bundle.id>-trigger-tests.md` per bundle, `<name>.skill` per skill,
+  `build-report.md` and `SHA256SUMS`. No page names a version in a URL, so a
+  release publishes without rebuilding the site; every download block says in
+  as many words that those links resolve only once the current version is
+  published. A size beside a `.skill` link is read from the built archive in
+  `<out>/skills/`, so it is reproducible and absent rather than guessed when
+  the archive is not there.
+- **No external assets.** One stylesheet at `site/assets/site.css`, and
+  nothing else fetched: no font service, no CDN, no image host. Links a reader
+  clicks may of course leave the site.
+- **No JavaScript beyond one filter.** The known-issues table carries an
+  inline script that builds its own controls and hides rows. With scripting
+  off there are no controls and the whole table is there, which is the only
+  behaviour the page promises.
+- **Card text is data.** Everything from a card, a probe or a manifest is
+  escaped through Jinja2 autoescaping. Markdown sources are rendered with raw
+  HTML escaped rather than passed through.
+- **Design.** System fonts; light and dark through `prefers-color-scheme`;
+  readable at phone width with a 16px side gutter and no horizontal page
+  scroll; tables scroll inside their own wrapper; a skip link, landmark
+  elements and a visible focus ring. Every page ends with the same footer: the
+  package version, the upstream SHA linked to the tree at that commit,
+  `Apache-2.0`, and the line that says this is not an official LegalQuants
+  release.
+
+### Publishing
+
+`.github/workflows/site.yml` runs on a push to `main` and on
+`workflow_dispatch`: checkout with submodules, `astral-sh/setup-uv` at the
+version `build.yml` pins, `uv sync --project tools`, `make site`, then
+`actions/configure-pages`, `actions/upload-pages-artifact` from `dist/site`
+and `actions/deploy-pages`. Permissions are `contents: read`, `pages: write`
+and `id-token: write`; the concurrency group is `pages`. The repository's
+Pages source must be GitHub Actions. The published URL is
+<https://houfu.github.io/lq-plugin-cowork/>.

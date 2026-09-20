@@ -419,6 +419,14 @@ replace:
     (`references/source_profile.json`), and put every candidate through
     [the confidentiality gate](references/gate_prompts.md).
   expect: 1
+- from: "Return a short receipt: what changed, what was linked, and what needs review."
+  to: "Return a short status line: what changed, what was linked, and what needs review."
+  files: ["SKILL.md"]
+  expect: 1
+- from: "Review the receipt and source links."
+  to: "Review the status line and source links."
+  files: ["references/getting-started.md"]
+  expect: 1
 notes: |
   Dropped the bundled wiki tooling and the automation reference. The wiki root is
   a folder the lawyer names in their own file store, suggested as
@@ -432,6 +440,78 @@ notes: |
   there is none. Browse builds a Markdown or single-file HTML index the preview
   pane renders. Stored-wording lookup reads the note directly. Gate prompts, note
   types, the source policy and the OKF profile are otherwise untouched.
+
+suppress:
+  - code: LQC-W011
+    file: "references/note_types.md"
+    reason: >-
+      'receipt' names one of the artifact kinds the confidentiality gate
+      covers, in note_types.md's own list; these notes say note types stay
+      untouched from upstream, so the wording is the rubric's, not a claim
+      this adaptation makes about its own output.
+  - code: LQC-W011
+    file: "references/source_policy.md"
+    reason: >-
+      'receipt' names one of the artifact kinds a matter document must never
+      be exposed in, in source_policy.md's own table; these notes say the
+      source policy stays untouched from upstream, so the wording is the
+      rubric's, not a claim this adaptation makes about its own output.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original kept your wiki with a hidden machine folder alongside the
+    notes: a history, a lock, prior versions and a vocabulary file that a
+    conformance check enforced. None of that exists here — there is no hidden
+    folder and no version history. Your wiki is an ordinary folder of Markdown
+    notes you name yourself, and the day-to-day record of what happened is a
+    single log file the skill appends to on every write. Nothing here can be
+    deleted, so removing a note means marking it withdrawn and leaving it in
+    place rather than erasing it, and if a note should never have been kept at
+    all, the skill tells you so and leaves clearing it to you rather than
+    describing it as already handled. Browsing your wiki builds a fresh
+    Markdown or single-page HTML index each time, shown in the preview pane,
+    in place of a purpose-built viewer.
+  known_issues:
+    - id: KI-wiki-1
+      title: "A note is withdrawn, not deleted"
+      detail: >-
+        Nothing here can delete a file. Removing a note means marking it
+        withdrawn and leaving it in the wiki rather than erasing it, and
+        where a note held something confidential that should never have been
+        saved, the skill reports the leak to you plainly rather than
+        describing it as removed. Clearing the file itself is left to you.
+      failure: loud
+    - id: KI-wiki-2
+      title: "The log is the only record, and only while every write reaches it"
+      detail: >-
+        There is no hash chain, lock or version history behind your wiki; a
+        single log file is the entire record of what changed and when. A
+        write that is ever made without appending to the log would leave no
+        trace, and the gap would not announce itself. The mitigation is
+        procedural: every write appends to the log as part of the same step,
+        never as an afterthought, so check the log first if you ever need to
+        reconstruct what happened.
+      failure: silent
+    - id: KI-wiki-3
+      title: "Finding your wiki again next session, without pointing at it, is unproven"
+      detail: >-
+        Your wiki lives in an ordinary folder you name. Whether the skill
+        can find that folder again in a later session without you naming or
+        attaching it is not yet settled, and it may simply come back empty
+        and carry on as though the wiki were new, which would look like a
+        normal first use rather than a failure. Until this is confirmed,
+        name the wiki folder, or attach something from it, at the start of
+        each session rather than assuming it will be found on its own.
+      failure: silent
+      probe: P2
+  workarounds:
+    - instead_of: "a browse script assembles the eligible notes into a payload for a visualization skill to render"
+      cowork: "the model reads every eligible note in the wiki folder itself and builds a Markdown or single-file HTML index that the preview pane renders directly"
+    - instead_of: "a stored-wording helper returns an approved block's exact text and checks a proposed answer against it byte for byte"
+      cowork: "the model reads the delimited block out of the note itself, quotes it exactly, and compares it character by character"
+
 triggers:
   positive:
   - Add this ruling on limitation periods to my wiki.

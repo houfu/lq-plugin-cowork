@@ -8,7 +8,13 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from . import transforms
-from .build import MANIFEST_SCHEMA, MANIFEST_VERSION, Issue, Suppression, dist_root
+from .build import (
+    MANIFEST_SCHEMA,
+    MANIFEST_VERSION,
+    Issue,
+    Suppression,
+    dist_root,
+)
 from .config import GUID_RE, KEBAB_RE, SEMVER_RE, Bundle, Card, Config
 
 MAX_SKILLS = 20
@@ -93,6 +99,7 @@ def validate_bundle(
 
     _validate_manifest(root, bundle, errors)
     _validate_icons(root, bundle, errors)
+    warnings.extend(excluded_skill_warnings(bundle))
 
     upstream_root = config.upstream_skills_root(upstream_path)
     for name in bundle.skills:
@@ -110,11 +117,78 @@ def validate_bundle(
             warnings,
             upstream_dir,
         )
-        if card is not None and card.bucket == "amber" and not card.notes:
-            warnings.append(
-                _issue("LQC-W008", "amber skill has no notes", bundle.id, name)
-            )
+        _warn_missing_notes(bundle, name, card, warnings)
     return errors, _apply_suppressions(warnings, cards or {}, suppressed)
+
+
+def excluded_skill_warnings(bundle: Bundle) -> list[Issue]:
+    """LQC-B002: one per ``exclude_skills`` entry, carrying its reason.
+
+    A mirrored bundle that leaves an upstream skill out says so on every
+    build and in every drift report, with the reason in the line, so the
+    decision is re-read rather than forgotten.
+    """
+    if bundle.mirror is None:
+        return []
+    return [
+        Issue(
+            "LQC-B002",
+            f"excluded from the mirror of {bundle.mirror.plugin_id}: "
+            f"{entry.reason}",
+            skill=entry.name,
+            bundle=bundle.id,
+        )
+        for entry in bundle.mirror.excludes
+    ]
+
+
+def _warn_missing_notes(
+    bundle: Bundle, name: str, card: Card | None, warnings: list[Issue]
+) -> None:
+    """LQC-W008: an amber or red card owes the technical record in ``notes``."""
+    if card is not None and card.bucket in ("amber", "red") and not card.notes:
+        warnings.append(
+            _issue("LQC-W008", f"{card.bucket} skill has no notes", bundle.id, name)
+        )
+
+
+def validate_skill_only(
+    config: Config,
+    bundle: Bundle,
+    name: str,
+    skill_dir: Path,
+    card: Card | None,
+    *,
+    skill_names: list[str] | None = None,
+    upstream_path: Path | None = None,
+    suppressed: list[Suppression] | None = None,
+) -> tuple[list[Issue], list[Issue]]:
+    """The per-skill half of section 6, for ``build --skill NAME``.
+
+    Everything that is about one skill folder — ASKILL-P*, LQC-C*, LQC-S*,
+    LQC-D001 and every warning — and nothing that is about a package.
+    """
+    errors: list[Issue] = []
+    warnings: list[Issue] = []
+    upstream_dir = (
+        config.upstream_skills_root(upstream_path) / card.upstream
+        if card is not None
+        else None
+    )
+    _validate_skill(
+        config,
+        bundle,
+        name,
+        skill_dir,
+        card,
+        skill_names or [],
+        errors,
+        warnings,
+        upstream_dir,
+    )
+    _warn_missing_notes(bundle, name, card, warnings)
+    cards = {name: card} if card is not None else {}
+    return errors, _apply_suppressions(warnings, cards, suppressed)
 
 
 def _apply_suppressions(
@@ -427,8 +501,8 @@ def _warn_skill(
 ) -> None:
     """Every W-code except W008, which is about the card rather than the build.
 
-    W001, W002, W004, W005, W007, W009 and W010 run over every ``*.md`` in the
-    built skill and report ``file:line``.
+    W001, W002, W004, W005, W007, W009, W010 and W011 run over every ``*.md``
+    in the built skill and report ``file:line``.
     """
 
     def warn(code: str, message: str, rel: str, line: int) -> None:
@@ -477,6 +551,8 @@ def _warn_skill(
             for phrase in config.transforms.host_words:
                 if phrase.lower() in lowered:
                     warn("LQC-W009", f"host machinery '{phrase}'", rel, number)
+            for phrase in transforms.claim_words(line, config.transforms.claim_words):
+                warn("LQC-W011", f"claim word '{phrase}'", rel, number)
             for url in _external_urls(line):
                 if url not in upstream_urls:
                     warn("LQC-W010", f"external URL {url}", rel, number)

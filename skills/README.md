@@ -24,8 +24,8 @@ instead:
 - **One skill, no admin, no terminal** — download `<name>.skill` and use
   Cowork's **Upload skill** control. See
   [Route 0 in docs/INSTALL.md](../docs/INSTALL.md#route-0-upload-a-single-skill).
-- **A whole plugin** — download one of the two bundle `.zip` files and install
-  it as a plugin. See [docs/INSTALL.md](../docs/INSTALL.md).
+- **A whole plugin** — download one of the three bundle `.zip` files and
+  install it as a plugin. See [docs/INSTALL.md](../docs/INSTALL.md).
 
 ## Building it yourself
 

@@ -1,0 +1,58 @@
+name: site
+
+# The static site is built from the same sources as the packages, by the same
+# tooling: `make site` packages the bundles and then renders dist/site/ from
+# what that wrote. Publishing it is therefore never a separate description of
+# the repository that can drift from it.
+#
+# Pages source must be set to "GitHub Actions" in the repository settings for
+# the deploy step to have anywhere to go.
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; a newer push waits rather than racing.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - uses: astral-sh/setup-uv@v10.1.0
+        with:
+          enable-cache: true
+
+      - name: Install the build tooling
+        run: uv sync --project tools
+
+      - uses: actions/configure-pages@v5
+
+      - name: Package the bundles and render the site
+        run: make site
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist/site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

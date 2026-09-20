@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from lqcowork import package as pkg
+from lqcowork import validate as V
 from lqcowork.build import Builder
 from lqcowork.cli import main
 from lqcowork.config import load_cards, load_config
@@ -141,8 +142,14 @@ class TestBuildReport:
         text = (packaged / "dist/build-report.md").read_text()
         assert "# Build report" in text
         assert "## test-bundle" in text
-        assert "| Skill | Bucket | Files | Bytes | Warnings |" in text
-        assert "| alpha | amber |" in text
+        assert (
+            "| Skill | Bucket | Tier | Status | Known issues | Files | "
+            "Bytes | Warnings |" in text
+        )
+        assert "| alpha | amber | 2 | probe-gated | 1 |" in text
+        assert "Mirrors upstream plugin" not in text  # this one lists its skills
+        assert "### Known issues" in text
+        assert "| `KI-alpha-1` | alpha |" in text
         assert "### Adaptation notes" in text
         assert "| Code | Bundle | Skill | Where | Detail |" in text
         assert "Dropped scripts/" in text
@@ -192,9 +199,15 @@ class TestExitCodes:
         assert main(["validate"]) == 2
 
     def test_build_returns_one_on_config_error(self, fixture_repo, monkeypatch):
-        (fixture_repo / "skills/beta/skill.yaml").unlink()
+        card = fixture_repo / "skills/beta/skill.yaml"
+        card.write_text(card.read_text().replace("bucket: green", "bucket: puce"))
         monkeypatch.chdir(fixture_repo)
         assert main(["build"]) == 1
+
+    def test_build_returns_two_on_a_missing_card(self, fixture_repo, monkeypatch):
+        (fixture_repo / "skills/beta/skill.yaml").unlink()
+        monkeypatch.chdir(fixture_repo)
+        assert main(["build"]) == 2  # LQC-B001
 
     def test_bundle_filter(self, fixture_repo, monkeypatch):
         monkeypatch.chdir(fixture_repo)

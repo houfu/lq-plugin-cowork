@@ -112,6 +112,31 @@ notes: |
   that the Word deliverable goes through the built-in Word skill. The external
   copy is built as a fresh document instead of through the helper's narrow
   sanitising path. The review method reference is untouched.
+
+suppress:
+  - code: LQC-W011
+    file: "references/review-method.md"
+    reason: >-
+      "Approval, execution, delivery and receipt are different acts" names
+      the four distinct transactional-closing acts the checklist tracks --
+      ordinary deal-mechanics vocabulary, not a claim this skill makes
+      about its own output; these notes also say the review method
+      reference is untouched.
+
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    The original could run a local helper to compare drafts, sanitise a copy
+    for the other side and export the checklist automatically. Here the model
+    reads the agreements and does that work itself in the conversation, and
+    the finished checklist is produced as an editable Word document through
+    the built-in Word skill rather than through a bundled tool.
+  known_issues: []
+  workarounds:
+    - instead_of: "a local helper exports and sanitises the checklist automatically"
+      cowork: "the finished checklist is produced as an editable Word document through the built-in Word skill, and an external copy is built fresh from the approved content rather than edited from the internal one"
+
 triggers:
   positive:
   - Draft a closing checklist from this share purchase agreement.

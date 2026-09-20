@@ -10,6 +10,7 @@ import pytest
 
 from lqcowork import validate as V
 from lqcowork.build import Builder
+from lqcowork.cli import main
 from lqcowork.config import load_cards, load_config, upstream_skill_names
 
 
@@ -625,3 +626,128 @@ class TestSkillArchive:
         entries = self.contents(archive) | {"references/smuggled.md": b"# No\n"}
         codes = self.check(built_repo, self.rewrite(archive, entries))
         assert codes == ["LQC-U005"]
+
+
+class TestClaimWords:
+    def add(self, root: Path, line: str, name: str = "alpha") -> None:
+        path = skill_md(root, name)
+        path.write_text(path.read_text() + "\n" + line + "\n", encoding="utf-8")
+
+    def test_w011_fires_on_a_default_claim_word(self, built_repo):
+        self.add(built_repo, "The register is your receipt for the run.")
+        assert "LQC-W011" in run(built_repo)[1]
+
+    def test_w011_is_case_insensitive(self, built_repo):
+        self.add(built_repo, "Every count is CERTIFIED by the workbook.")
+        assert "LQC-W011" in run(built_repo)[1]
+
+    def test_w011_matches_a_multi_word_phrase(self, built_repo):
+        self.add(built_repo, "The list is guaranteed complete.")
+        assert "LQC-W011" in run(built_repo)[1]
+
+    def test_w011_leaves_words_that_merely_contain_one(self, built_repo):
+        self.add(built_repo, "The approved and improved receipts folder.")
+        codes = [i for i in run(built_repo)[1] if i == "LQC-W011"]
+        # 'receipts' is its own claim word; 'approved'/'improved' are not
+        assert len(codes) == 1
+
+    def test_w011_runs_over_companions_too(self, built_repo):
+        path = built_repo / "dist/test-bundle/skills/alpha/references/notes.md"
+        path.write_text(path.read_text() + "\nThe count is proven.\n", encoding="utf-8")
+        warnings = [
+            i
+            for i in V.validate_bundle(
+                load_config(built_repo),
+                load_config(built_repo).bundles[0],
+                cards=load_cards(load_config(built_repo), ["alpha", "beta"]),
+                skill_names=upstream_skill_names(load_config(built_repo)),
+            )[1]
+            if i.code == "LQC-W011"
+        ]
+        assert warnings and warnings[0].location.startswith("references/notes.md:")
+
+    def test_w011_is_suppressible(self, built_repo):
+        self.add(built_repo, "The register is your receipt for the run.")
+        card = built_repo / "skills/alpha/skill.yaml"
+        card.write_text(
+            card.read_text()
+            + "\nsuppress:\n  - code: LQC-W011\n"
+            + '    reason: "upstream wording the lawyer can check in the register"\n',
+            encoding="utf-8",
+        )
+        assert "LQC-W011" not in run(built_repo)[1]
+
+    def test_the_list_is_configurable(self, built_repo):
+        self.add(built_repo, "The register is your receipt for the run.")
+        path = built_repo / "cowork.yaml"
+        path.write_text(
+            path.read_text().replace(
+                "  skill_tokens: true", "  skill_tokens: true\n  claim_words: [flaw]"
+            ),
+            encoding="utf-8",
+        )
+        assert "LQC-W011" not in run(built_repo)[1]
+
+
+class TestNotesOnAmberAndRed:
+    def test_w008_covers_red(self, built_repo):
+        card = built_repo / "skills/alpha/skill.yaml"
+        card.write_text(
+            card.read_text()
+            .replace("bucket: amber", "bucket: red")
+            .replace(
+                "notes: |\n"
+                "  Dropped scripts/; the chat path in the body is the documented"
+                " fallback.\n",
+                "",
+            ),
+            encoding="utf-8",
+        )
+        warnings = run(built_repo)[1]
+        assert "LQC-W008" in warnings
+
+
+class TestExcludedSkillWarnings:
+    def test_b002_reports_every_exclusion_with_its_reason(self, mirror_repo):
+        path = mirror_repo / "cowork.yaml"
+        path.write_text(
+            path.read_text().replace(
+                "    exclude_skills: []",
+                "    exclude_skills:\n      - name: gamma\n"
+                '        reason: "needs a connector we do not ship"',
+            ),
+            encoding="utf-8",
+        )
+        config = load_config(mirror_repo)
+        issues = V.excluded_skill_warnings(config.bundles[0])
+        assert [i.code for i in issues] == ["LQC-B002"]
+        assert issues[0].skill == "gamma"
+        assert "needs a connector we do not ship" in issues[0].message
+
+    def test_none_for_an_explicit_list(self, fixture_repo):
+        config = load_config(fixture_repo)
+        assert V.excluded_skill_warnings(config.bundles[0]) == []
+
+    def test_reaches_the_build_warnings(self, mirror_repo, monkeypatch):
+        from lqcowork.cli import main
+
+        path = mirror_repo / "cowork.yaml"
+        path.write_text(
+            path.read_text().replace(
+                "    exclude_skills: []",
+                "    exclude_skills:\n      - name: gamma\n"
+                '        reason: "no card, and none wanted"',
+            ),
+            encoding="utf-8",
+        )
+        card = mirror_repo / "skills/alpha/skill.yaml"
+        card.write_text(
+            card.read_text().replace('    - "Do the gamma thing. -> gamma"\n', ""),
+            encoding="utf-8",
+        )
+        monkeypatch.chdir(mirror_repo)
+        assert main(["package"]) == 0
+        report = (mirror_repo / "dist/build-report.md").read_text()
+        assert "LQC-B002" in report
+        assert "no card, and none wanted" in report
+        assert "Mirrors upstream plugin test-plugin" in report

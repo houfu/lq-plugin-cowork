@@ -6,6 +6,29 @@ anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
 description: |
   Turns a litigation matter's documents and metadata into a provenance-backed case workspace: a source manifest covering every file examined, a chronology with exact page, Bates or line locators, a claim-and-defense proof chart, an issue-and-evidence matrix, witness, exhibit and deadline trackers, and an internal matter briefing. Use when the user asks to "organize the documents in this case", "build me a chronology from these files", "map the evidence to the elements of each claim", "set up witness and exhibit trackers", "restructure this matter's file so I can find things", or "close out this matter's records". Do not use for creating the initial matter record (use the new-matter skill), an audience-filtered report to the client (use the client-update skill), drafting or responding to discovery requests and objections (use the document-discovery skill), billing narratives or time entries (use the timenarratives skill), or document-by-document responsiveness and privilege review, which is out of scope.
 
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    The original turns a litigation matter's documents into the same
+    provenance-backed case workspace here: a source manifest, a chronology
+    with exact locators, a claim-and-defense proof chart, an
+    issue-and-evidence matrix, the linked trackers and an internal matter
+    briefing. That method is unchanged. What differs is around the edges:
+    the skill reads the documents the lawyer supplies or places in the
+    session's input folder directly, marking anything unreadable rather
+    than describing a choice of local tools; its polished-visual handoff
+    names this release's own design skill directly; and because a
+    document-by-document privilege and responsiveness review is not part of
+    this release, the skill no longer hands off to it automatically —
+    instead it builds the same handoff package and records it for whoever
+    performs that review later, without ever making or implying a privilege
+    call itself. A preferences file is read only if the lawyer has attached
+    it or placed it in the session's input folder, and the skill never
+    writes to it.
+  known_issues: []
+  workarounds: []
+
 exclude:
   - "templates/docreview-handoff.md"
 

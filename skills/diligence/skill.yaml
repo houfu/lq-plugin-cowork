@@ -1,0 +1,445 @@
+name: diligence
+upstream: transactional/diligence
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Reviews a data room or contract portfolio against the lawyer's own issues list, a tranche at a time: inventories the room, maps contract families, compiles the checklist into a framework the lawyer confirms on a sample, then works agreement by agreement filling an Excel master register — one row per issue per agreement, with the finding, the words it rests on and where they sit — and delivers an HTML issue-and-agreement crosswalk showing what was covered and what was parked. Use when the user asks to "review this data room", "run diligence on these contracts", "check these agreements against our issues list", "what is missing or unreadable in this data room", or "build me an issue-by-agreement crosswalk". Do not use for testing a draft against a negotiation playbook (use the playbook-review skill), for reading a markup of one agreement (use the read-redline skill), for indexing an executed closing set (use the closing-bible skill), or for reviewing an incoming litigation production document by document.
+
+exclude:
+  - "scripts/**"
+  - "*.schema.json"
+  - "references/openai-codex-runtime.md"
+  - "references/inventory-design.md"
+  - "references/shared/inventory-design.md"
+  - "references/shared/framework-schema.md"
+  - "references/shared/review-ui.md"
+  - "references/shared/schemas.md"
+
+files: files
+
+replace:
+  - from: "Read exactly one document in a fresh context. Use only the supplied document\nand return\
+      \ the JSON schema in `metadata-reader.schema.json`. Do not use the\npath or filename as evidence."
+    to: "Read exactly one document, holding only that document while you read it.\nUse only the document\
+      \ itself and return the reading fields set out in this\nskill's data-contract reference. Do not\
+      \ use the path or filename as evidence."
+    files:
+    - references/shared/metadata-reader-prompt.md
+    expect: 1
+  - from: "- For supplied native text, set `receipt_mode` to `text` and every receipt's\n  `page` to\
+      \ null. For supplied page images, set `receipt_mode` to\n  `image-transcription`, transcribe the\
+      \ visible words faithfully, and put the\n  1-based source page on every receipt. Image transcriptions\
+      \ are proposals for\n  the lawyer's human-verification lane; never claim a script verified them."
+    to: "- Where the words came from the document's own text, record the evidence mode\n  as `text`\
+      \ and leave the page blank. Where they came from a page you looked\n  at as an image, record the\
+      \ mode as `image-transcription`, transcribe the\n  visible words faithfully, and give the 1-based\
+      \ source page. An image\n  transcription is a proposal for the lawyer's eyes; never present it\
+      \ as text\n  read straight off the document."
+    files:
+    - references/shared/metadata-reader-prompt.md
+    expect: 1
+  - from: "The orchestrator supplies the document ID and document content. The worker\nmust return that\
+      \ exact ID. It must not select a model, inspect other documents,\nor decide whether its output\
+      \ passed validation."
+    to: "Carry into this pass the document's register label and the document itself,\nand nothing else.\
+      \ Return that exact label. Within the pass, do not open\nanother document, do not look back at\
+      \ an earlier result, and do not decide\nwhether this one is good enough; that is a later step's\
+      \ job."
+    files:
+    - references/shared/metadata-reader-prompt.md
+    expect: 1
+  - from: "Review exactly one confirmed unit against exactly one approved lens in a fresh\ncontext.\
+      \ The execution layer may supply a bounded subset of no more than 12\nlens items in one call.\
+      \ Use only the supplied documents and items. Inspect\nevery supplied page before deciding any\
+      \ item. Return\n`finding-worker.schema.json` and no prose."
+    to: "Review exactly one confirmed unit against exactly one confirmed lens, holding\nonly that unit\
+      \ and that lens. Take no more than 12 lens items into one pass.\nUse only the supplied documents\
+      \ and items. Look at every supplied page before\ndeciding any item. Return the determinations\
+      \ below and no prose."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "The assignment supplies `review_plan_id`, `job_id`, a numbered document list,\nand lens items\
+      \ numbered `1..N`. Echo the two run IDs once at the top level.\nNever reproduce a document hash,\
+      \ unit ID, lens ID, or finding ID. The\ndeterministic admitter constructs those identities after\
+      \ the response passes."
+    to: "The assignment carries the tranche label, the unit label, a numbered document\nlist, and lens\
+      \ items numbered `1..N`. Repeat the tranche and unit labels once\nat the top. Refer to a document\
+      \ by its number in the supplied list rather than\nby its register label; the register labels are\
+      \ attached when the rows are\nwritten."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "- For `present`, add `doc` as the 1-based document number plus `section`, exact\n  `quote`,\
+      \ bounded `characterization`, `receipt_mode`, `page`, and\n  `current_position`. Add `band` and\
+      \ `band_basis` only when that issue includes\n  an approved `materiality` rule; omit both when\
+      \ ranking was not requested.\n  Native text uses `text` with a null page. A page image uses\n\
+      \  `image-transcription` and a positive page."
+    to: "- For `present`, add `doc` as the 1-based document number plus `section`, the\n  exact `quote`,\
+      \ a `characterization` within the framework's word cap, how the\n  words were read, the page,\
+      \ and `current_position`. Add `band` and\n  `band_basis` only when that issue carries a confirmed\
+      \ `materiality` rule;\n  omit both when ranking was not requested. Text taken from the document's\
+      \ own\n  text layer is recorded as `text` with no page. A page looked at as an image\n  is recorded\
+      \ as `image-transcription` with its page number."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "The maker does not quote-verify or check itself. The deterministic admitter\nbinds ordinals,\
+      \ verifies native quotes, expands compact negatives, and creates\nthe canonical checkpoint. On\
+      \ a retry, correct only the supplied rejection\ncodes while applying the same lens."
+    to: "This pass neither locates its own quotes again nor checks itself. Those are\nseparate steps:\
+      \ the rows go into the register, then every quote is found again\nin its source, then a later\
+      \ pass checks the finding without revisiting the\nreasoning that produced it. On a retry, correct\
+      \ only what was objected to,\napplying the same lens."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "For document review, emit a privilege candidate for each configured signal.\nUse `doc` as\
+      \ the 1-based document number and provide reason, quote,\nreceipt_mode, page, and signals. Never\
+      \ decide privilege. For diligence, return\nan empty `privilege_candidates` array."
+    to: "When the work is a litigation production, raise a privilege candidate for every\nconfigured\
+      \ signal: the document number, the reason, the quote, how the words\nwere read, the page, and\
+      \ which signals fired. Never decide privilege. Where\nthe run is a contract review rather than\
+      \ a production, there are no privilege\ncandidates."
+    files:
+    - references/shared/finding-worker-prompt.md
+    expect: 1
+  - from: "Check exactly one material finding in a fresh context. The orchestrator gives\nyou the finding,\
+      \ its governing frozen framework item, and only the documents\nin that finding's confirmed unit.\
+      \ It also supplies the exact\n`checker_plan_id`; copy it into the result so the verdict is bound\
+      \ to this\nledger and dispatch."
+    to: "Check exactly one finding, holding only that finding, its governing frozen\nframework item,\
+      \ and the documents in that finding's confirmed unit. Carry in\nthe unit and issue labels and\
+      \ repeat them in the result, so the verdict lands\non the right register row."
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: "Try to refute the finding. Check whether the quote exists, whether it supports\nthe characterization,\
+      \ whether a definition or amendment changes the result,\nand whether the stated band follows the\
+      \ frozen rule. Do not see the maker's\nreasoning or any other findings."
+    to: "Try to refute the finding. Check whether the quote is really in the document,\nwhether it supports\
+      \ the characterization, whether a definition or amendment\nchanges the result, and whether any\
+      \ stated band follows the frozen rule. Work\nonly from the finding, its quote, the framework item\
+      \ and the unit's text: do\nnot revisit the reasoning that produced the finding, and do not look\
+      \ at any\nother finding."
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: 'Return `finding-checker.schema.json` only:'
+    to: 'Return one verdict and nothing else:'
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: "The checker proposes a verification result. It never changes the ledger,\nselects a model,\
+      \ or makes a lawyer-only ruling."
+    to: "This pass proposes a verification result. It never changes a register row by\nitself and never\
+      \ makes a lawyer-only ruling. Record it in the register as a\nsecond pass by the same reader;\
+      \ do not describe it as independent review."
+    files:
+    - references/shared/finding-checker-prompt.md
+    expect: 1
+  - from: "Return `edge-resolver.schema.json` only. Use `linked` only when the receipts in\none record\
+      \ establish a supported relation to the other record. Set `src` to\nthe document whose receipt\
+      \ proves the relation, `dst` to the related document,\nand copy that exact receipt as `quote`.\
+      \ Use `not-linked` when the records show\ndifferent instruments. Use `unresolved` when these two\
+      \ metadata records cannot\ndecide safely. For either non-linked decision, leave all edge fields\
+      \ null."
+    to: "Return one decision and nothing else: `linked`, `not-linked` or `unresolved`.\nUse `linked`\
+      \ only when the quoted evidence in one record establishes a\nsupported relation to the other record.\
+      \ Set `src` to the document whose quote\nestablishes the relation, `dst` to the related document,\
+      \ and copy that exact\nquote. Use `not-linked` when the records show different instruments. Use\n\
+      `unresolved` when these two records cannot decide it safely. For either\nnon-linked decision,\
+      \ leave every edge field blank."
+    files:
+    - references/shared/edge-resolver-prompt.md
+    expect: 1
+  - from: "The resolver proposes an edge. It does not select a model, assemble families,\nor make a\
+      \ lawyer-only confirmation."
+    to: "This pass proposes a link. It does not assemble families and it never makes\nthe lawyer's confirmation\
+      \ for them; a link decided here is shown to the lawyer\nas proposed, with its quote."
+    files:
+    - references/shared/edge-resolver-prompt.md
+    expect: 1
+  - from: The compiler turns the lawyer's checklist into `framework.json`, the single file every worker
+      is judged against. This document is the contract; `framework.schema.json` beside it is the machine-checkable
+      version (`validate_framework.py` enforces it).
+    to: 'Compiling turns the lawyer''s checklist into the framework: the single statement of what is
+      being looked for, against which every pass is judged. This document is the contract, and there
+      is nothing that enforces it automatically, so check a compiled framework against this document
+      by reading it.'
+    files:
+    - references/framework-schema.md
+    expect: 1
+  - from: 1. **The framework is the only instruction channel.** The orchestrator injects the approved
+      `framework.json` verbatim into every worker. Nothing else about the checklist reaches a worker.
+      If a calibration is not written in the framework, it does not exist.
+    to: 1. **The framework is the only instruction channel.** Carry the confirmed framework verbatim
+      into every pass. Nothing else about the checklist reaches a pass. If a calibration is not written
+      in the framework, it does not exist — and that matters more here than upstream, because one reader
+      working through a room is likelier to absorb an instruction out of a document than a program was.
+    files:
+    - references/framework-schema.md
+    expect: 1
+  - from: 2. **Versions are immutable.** Every recompile increments `framework_version` and writes a
+      new file (`framework.v3.json`). Gate 2 approval freezes one version; the run records which version
+      it used. Calibration history is the diff between versions.
+    to: 2. **Versions are immutable.** Every recompile increments `framework_version` and writes a new
+      file beside the last one in the Output folder, named for its version. Gate 2 freezes one version;
+      the register records which version the run used. Calibration history is the difference between
+      versions.
+    files:
+    - references/framework-schema.md
+    expect: 1
+  - from: '  "approved": false,'
+    to: '  "confirmed": false,'
+    files:
+    - references/framework-schema.md
+    expect: 1
+  - from: '`render_readback.py` derives `framework-readback.json` from framework.json. It preserves
+      `framework_version` and `approved`, then carries one row per item with `{lens, issue_id, question,
+      hit_rule, materiality, evidence_required}`. When `materiality` is omitted, the read-back says
+      `not requested`. That file feeds the Gate 1 surface (render_gate1.py `--readback`). The read-back
+      is a deliverable the lawyer approves, never an internal artifact; it must stay plain English,
+      one line per field, no schema jargon.'
+    to: 'The read-back is derived from the framework: it keeps `framework_version` and whether the framework
+      has been confirmed, then carries one row per item with `{lens, issue_id, question, hit_rule, materiality,
+      evidence_required}`. When `materiality` is omitted, the read-back says `not requested`. It goes
+      on the Gate 1 page. The read-back is a deliverable the lawyer reads and confirms, never an internal
+      artifact; it must stay plain English, one line per field, no field names and no schema jargon.'
+    files:
+    - references/framework-schema.md
+    expect: 1
+  - from: "## findings.json (the ledger the workers fill)\n\n```json\n{\n  \"framework_version\": 2,\n\
+      \  \"findings\": [\n    {\n      \"finding_id\": \"coc-01/sha256:9f3a1c04b2d7\",\n      \"issue_id\"\
+      : \"coc-01\",\n      \"lens_id\": \"change-of-control\",\n      \"unit_id\": \"sha256:aa10b2c9d001\"\
+      ,\n      \"doc_id\": \"sha256:9f3a1c04b2d7\",\n      \"status\": \"present\",\n      \"section\"\
+      : \"9.2\",\n      \"quote\": \"neither party may assign this Agreement without the prior written\
+      \ consent\",\n      \"characterization\": \"9.2: consent required on assignment and change of\
+      \ control.\",\n      \"quote_verification\": {\"status\": \"confirmed\", \"checker\": \"deterministic-text-match\"\
+      },\n      \"verification\": {\"status\": \"confirmed\", \"checker\": \"independent\"},\n     \
+      \ \"current_position\": true\n    }\n  ],\n  \"parked\": [\n    {\"doc_id\": \"sha256:0c77d1e2f3a4\"\
+      , \"reason\": \"metadata-incomplete\"}\n  ]\n}\n```\n\n- `finding_id` is `issue_id/doc_id`: stable,\
+      \ so response handling can attach in v1.1.\n- `unit_id` is the family when relationships exist,\
+      \ else the doc itself. `current_position: true` asserts the finding reflects the post-amendment\
+      \ position; a worker reading an amended family must set it and quote the governing text, never\
+      \ a superseded term.\n- `band` and `band_basis` are optional and appear only when the approved\
+      \ framework item contains `materiality`.\n- Every present quote receives a deterministic `quote_verification`\
+      \ receipt. Independent checker coverage follows the approved sample or full plan and is never\
+      \ selected by `band`.\n- Checker outputs contain exactly `{checker_plan_id, finding_id, verdict,\
+      \ objection}`. `verdict` is `confirmed | refuted | unresolved`; a non-confirming verdict requires\
+      \ an objection and changes the finding to unresolved. Missing, duplicated, or stale checker outputs\
+      \ refuse the merge.\n- Coverage invariant: every issue has exactly one finding for every reviewable\
+      \ substantive unit, unless that unit is parked. `reconcile_counts.py` refuses duplicate or missing\
+      \ issue/unit pairs and excludes confirmed `runner-control` files from substantive units."
+    to: "## The findings rows\n\nThe findings themselves live in the `Findings` sheet of the master\
+      \ register,\nwhose columns are set out in this skill's data-contract reference. Four rules\nabout\
+      \ them belong here, beside the framework they are judged against:\n\n- A unit is the confirmed\
+      \ family where relationships exist, else the document\n  itself. `Current` is set only when the\
+      \ whole family, including later\n  amendments, was read; a superseded term is never reported as\
+      \ the position\n  now in force.\n- `band` and its basis are filled only when the confirmed framework\
+      \ item\n  carries a `materiality` rule; where ranking was not requested, both stay\n  blank and\
+      \ no severity is invented.\n- Every present finding has its quote found again in the source before\
+      \ it is\n  reported, and then goes to a second pass. That second pass covers every\n  present\
+      \ finding and is never selected by band, so an issue with no ranking\n  rule cannot escape it.\
+      \ A refuted or unresolved verdict turns the finding to\n  unresolved and keeps the objection;\
+      \ nothing disappears.\n- Coverage invariant: every issue has exactly one row for every reviewable\n\
+      \  substantive unit, unless that unit is visibly parked, and instruction files\n  are accounted\
+      \ for separately. The `Counts` sheet is where that arithmetic is\n  done and where the lawyer\
+      \ can check it."
+    files:
+    - references/framework-schema.md
+    expect: 1
+  - from: 'The compiler is a model step the SKILL.md orchestrates, with these constraints: it reads
+      the lawyer''s raw inputs (any format), proposes lenses and items, and must produce schema-valid
+      output (validate_framework.py gates it, capped retries). It never invents materiality thresholds
+      or a default severity: where the lawyer''s input is silent, the item omits `materiality`, and
+      the read-back marks it `not requested`. Vague inputs compile to conservative factual hit rules
+      plus an explicit empty exclusions list: over-inclusion is tuned down at Gate 2, silence is never
+      tuned up. The calibration eval (case-02) holds an example.'
+    to: 'Compiling is a reading step, with these constraints: read the lawyer''s raw inputs in whatever
+      format they arrive, propose lenses and items, and produce output matching the shape above — checked
+      by reading it against this contract, with two attempts and then a question to the lawyer rather
+      than a loop. It never invents materiality thresholds or a default severity: where the lawyer''s
+      input is silent, the item omits `materiality`, and the read-back marks it `not requested`. Vague
+      inputs compile to conservative factual hit rules plus an explicit empty exclusions list: over-inclusion
+      is tuned down at Gate 2, silence is never tuned up.'
+    files:
+    - references/framework-schema.md
+    expect: 1
+sections:
+  - match: "## When to use"
+    file: sections/when-to-use.md
+  - match: "## Before you start"
+    file: sections/before-you-start.md
+  - match: "## Execution portability"
+    file: sections/how-this-runs.md
+  - match: "## Workflow"
+    file: sections/workflow.md
+  - match: "## Conventions"
+    file: sections/conventions.md
+  - match: "## Dependencies"
+    delete: true
+  - match: "## Final checks"
+    file: sections/final-checks.md
+
+notes: |
+  Dropped scripts/ (19 top-level tools plus the 28-file shared runtime), every
+  .schema.json contract, references/openai-codex-runtime.md (a runner contract
+  for a runtime that is not here), references/inventory-design.md and its
+  shared twin (a design note about what the scripts do, written for whoever
+  maintains them), and the four references/shared/ duplicates the body never
+  reads — the top-level schemas.md, framework-schema.md and review-ui.md are
+  the ones diligence itself points at. Eight companions remain.
+
+  Every SKILL.md section is replaced by an anchored overlay, so a heading that
+  moves upstream fails the build rather than passing silently. The body's own
+  portable fallback becomes the only path: sequential single-session
+  processing, tranches the lawyer sizes, and an Excel master register that
+  carries state between sessions and holds the coverage arithmetic as formulas
+  the lawyer can open. Dependencies is deleted outright (Python, Poppler and
+  LibreOffice have no meaning here). The coverage certification is retired: the
+  claim-words rule is applied throughout, so no artifact describes itself as
+  verified beyond this skill's own reading.
+
+  references/shared/execution-modes.md is a full overlay rather than a patch:
+  it was written as a choice between a bundled program and a fallback, and
+  almost every paragraph named machinery that does not exist. Its replacement
+  states the one path, the tranche rule, the 200 MB per-file and encrypted-file
+  limits, the 50-file/500 MB limit on a handover archive, the documented
+  scheduling machinery and its 25-prompt cap together with the reason no step
+  depends on it, and — in the lawyer's own terms — which checks the original
+  performed automatically and this run performs by reading. It is byte-identical
+  to docreview's copy upstream and the same overlay ships in both cards.
+  references/schemas.md is a full overlay because the artifacts changed kind:
+  JSON files a program validated became sheets of the master register and named
+  files in the Output folder, and the sha256 document identity became a
+  four-field fingerprint re-read each session. references/review-ui.md is a
+  full overlay because its last two sections were entirely the review-copy
+  builder's contract — hashes, derivative bundles and a rendering cascade over
+  local binaries — replaced by the quoted passage carried on the page itself,
+  and by saying plainly that the lawyer does not get their own file back with
+  marks on it.
+
+  references/framework-schema.md keeps upstream's substance and is edited by
+  anchored replacement: the compiler contract, the framework shape, the field
+  meanings and the compiler's constraints survive nearly whole. Its
+  findings.json section is replaced by a pointer to the register plus the four
+  rules that belong beside the framework. The four per-pass contracts under
+  references/shared/ are edited the same way, so the legal rules in them stay
+  upstream's words; what changes is the orchestration language (fresh workers,
+  an admitter, schema files) and the evidence-mode wording.
+
+triggers:
+  positive:
+    - "Review this data room against our issues list and give me a crosswalk I can sort."
+    - "Run diligence on the first fifty supplier agreements in the deal folder."
+    - "What is missing, unreadable or duplicated in this data room?"
+    - "Go through these agreements and tell me which ones restrict change of control, with the exact wording."
+    - "Here is the register from last week and the next tranche of contracts; carry on."
+  negative:
+    - "Read this markup of the supply agreement and tell me what they changed. -> read-redline"
+    - "Does this draft hold up against our negotiation playbook? -> playbook-review"
+    - "Do the defined terms in this agreement hang together? -> definition-check"
+    - "Go through their production and build me a privilege log queue. -> docreview"
+
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original ran a bundled program: it fixed each document's identity by
+    hash, read many documents at once, and finished by computing a coverage
+    figure you could rely on. None of that machinery exists here. This version
+    reads the room one document at a time inside a single conversation, and
+    works through it a tranche at a time — you choose how many documents a
+    session takes, and you keep the workbook and attach it again next time,
+    because that workbook is the only thing that remembers what has been done.
+    The method is unchanged: the same framework compiled from your own
+    checklist, the same two check-ins before the long run, the same rule that
+    no finding goes into an artifact without the words it rests on, and the
+    same second look at every finding. What changes is how much you can lean
+    on it. A document's identity is a fingerprint read off the file — its
+    name, its page count, its date, the first line of page one — rather than a
+    hash, so a re-export that keeps all four looks the same to this skill. The
+    coverage count is arithmetic in a workbook you can open and check rather
+    than a check a program performed. And the second look is a second pass by
+    the same reader, working from the finding and its quote alone, not a
+    different reviewer. So the skill never tells you the room has been covered
+    or that the result carries any warrant beyond its own careful reading; it
+    tells you what it read, what it could not read, and where the tranche
+    stopped. It says that at the start, not at the end.
+  known_issues:
+    - id: KI-diligence-1
+      title: "A scanned page may be read as though it were text"
+      detail: >-
+        The skill is told to try every document, park whatever did not open,
+        and list the parked ones with a reason, which is visible when it works.
+        What is not settled is whether a page that is an image of text is
+        recognised as one. If it is not, the reply may describe a page that was
+        never actually read, and a blank or unreadable signature block can come
+        back as a finding. Read the parked list on every delivery, and treat
+        any finding marked as taken from an image as needing your own eyes on
+        the page.
+      failure: silent
+      probe: P4
+    - id: KI-diligence-2
+      title: "The coverage count is arithmetic this skill did itself"
+      detail: >-
+        Upstream a program checked that every issue had exactly one result for
+        every reviewable agreement. Here the register's Counts sheet holds
+        units, issues, expected rows, filled rows and parked rows as formulas,
+        and the skill states the row count it read in and the row count it
+        wrote out. That makes the arithmetic checkable in about ten seconds,
+        which is the point — but it is the skill's own arithmetic, and a
+        workbook that came back with a formula flattened to a number or with
+        rows dropped would otherwise look like any other workbook. Open the
+        Counts sheet; compare the two stated row counts.
+      failure: silent
+      probe: P9
+    - id: KI-diligence-3
+      title: "The second look is a second pass, not an independent reviewer"
+      detail: >-
+        Upstream the checking pass ran in a separate context that had never
+        seen the first pass. Here it is the same reader, working from the
+        finding, its quote and the framework item without revisiting the
+        reasoning that produced it. That still catches a quote that is not
+        there and a characterization the words do not support; it catches a
+        shared blind spot much less well. The register records it as a second
+        pass and the skill is forbidden to call it independent review.
+      failure: silent
+    - id: KI-diligence-4
+      title: "A swapped document is caught by four fields, not by a hash"
+      detail: >-
+        At the start of every session the skill re-reads each document's
+        filename, page count, date and first line of page one and compares them
+        with the register, reporting any mismatch before doing anything else.
+        A swapped or re-exported file is normally caught and named. A change
+        that leaves all four fields identical is not.
+      failure: loud
+    - id: KI-diligence-5
+      title: "Without the register attached, the next session starts blind"
+      detail: >-
+        The register is the only state that crosses sessions. When it is not
+        attached the skill says so in its first reply, names the file it
+        expected, and says which tranches are on the record and which are not;
+        it then continues on the reduced scope it can actually see rather than
+        pretending to know the rest. Keep the workbook where you can find it.
+      failure: loud
+      probe: P2
+  workarounds:
+    - instead_of: "a bundled program hashes every file and binds the review copies to those hashes"
+      cowork: "the register records a fingerprint per document — filename, page count, date, first line of page one — re-read and compared at the start of every session, with any mismatch named before anything else happens"
+    - instead_of: "one fresh worker per document, many documents read at once"
+      cowork: "one document at a time in the same conversation, same fields, same rule that every field carries the exact words it came from"
+    - instead_of: "a working directory on disk holds the run's state between passes"
+      cowork: "an Excel master register holds it, and the lawyer attaches it at the start of the next session"
+    - instead_of: "a bundled program computes the issue-by-agreement coverage count"
+      cowork: "the register has one row per issue per agreement and a Counts sheet of live formulas, so the count can be opened and checked; the skill also states the row count it read in and the row count it wrote out"
+    - instead_of: "a scaled pass runs across the whole room from a run directory"
+      cowork: "the room is worked a tranche at a time, the lawyer choosing the size, with the boundary stated on every delivery"
+    - instead_of: "the crosswalk and the gate pages are rendered by bundled programs"
+      cowork: "each page is written by hand as a self-contained HTML file in the Output folder and opened in the preview pane, built from the register's own rows"
+    - instead_of: "the temporary master dataset is deleted at completion"
+      cowork: "nothing is deleted, because nothing here can be; the register, the pages and the working files stay in the Output folder and are named on delivery"
+    - instead_of: "a hash-bound review copy is embedded beside every finding"
+      cowork: "the quoted passage is carried on the page in full with enough of the clause around it to read in context, and the skill says plainly that it cannot hand back the lawyer's own file with marks on it"

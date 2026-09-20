@@ -21,6 +21,10 @@ replace:
     to: "mechanically, and you re-derive it from the table before delivering."
     files: ["SKILL.md"]
     expect: 1
+  - from: "Excluded and unreadable items must be disclosed in the receipt, and no"
+    to: "Excluded and unreadable items must be disclosed in the record, and no"
+    files: ["SKILL.md"]
+    expect: 1
 
 sections:
   - match: "## Modes"
@@ -59,6 +63,75 @@ notes: |
   with a pointer in the body. Body still runs to about 5,000 words because
   Steps 1-6 and the Transmission 1 checkpoint are legal method, not mechanics;
   cutting further would mean moving method out of the body.
+
+suppress:
+  - code: LQC-W011
+    file: "SKILL.md"
+    reason: >-
+      'deemed receipt under a notices clause' names a start point the
+      documents themselves may fix -- ordinary contract-law vocabulary for
+      a mechanism in the instrument under test, not a claim this skill
+      makes about its own output.
+  - code: LQC-W011
+    file: "references/calibration-examples.md"
+    reason: >-
+      Both hits sit inside the nine binding calibration examples moved
+      verbatim from upstream Step 5 (see notes): 'deemed receipt' is the
+      same ordinary contract-law vocabulary suppressed above, and "X is not
+      independently proved" is a quoted template phrase illustrating the
+      proof_gap label, not a claim about a real proposition this skill
+      proved.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original reconstructs the strongest route through the documents,
+    mounts every attack they support, adjudicates each one on its own, and
+    delivers either ranked pressure points or a resilience brief as an
+    offline report plus a short summary — using a bundled program to render
+    the report, check the finished deliverable against a fixed set of
+    rules, and work out date and period arithmetic. This version
+    pressure-tests the position the same way, through the same
+    reconstruction, attack and adjudication steps, and still delivers the
+    same colour-coded report in the preview pane plus the same chat
+    summary, with a Word copy available on request — but the skill fills
+    the report template and checks its own finished work itself, rather
+    than handing either job to a bundled program, and it keeps the same
+    honesty about quotations: a quote is confirmed to appear in the source,
+    while a pinpoint location and whether the source actually supports the
+    point are always marked unverified rather than confirmed. Date and
+    period arithmetic is no longer run through a calculator; instead the
+    skill shows the count behind every date it relies on, so the lawyer can
+    check the arithmetic themselves, using the same conventions for a
+    period running to a date, a period running clear of it, and a deadline
+    stated as due-by or not-before.
+  known_issues:
+    - id: KI-pressuretest-1
+      title: "Long body may slow activation"
+      detail: |
+        This skill's instructions run to about 5,000 words, longer than
+        this host's own guidance for how long a skill's instructions
+        should be. Cowork may take longer to activate the skill, or read
+        it less reliably, as a result. If it seems slow to start, or the
+        method seems to skip a step, say so and ask it to continue the
+        method from where it left off.
+      failure: loud
+    - id: KI-pressuretest-2
+      title: "Date arithmetic is a shown-count discipline, not a calculator"
+      detail: |
+        Date and period arithmetic is worked out by the skill itself
+        rather than checked by a separate calculator, so a miscount would
+        not necessarily be caught on its own. Every date the skill relies
+        on is shown with the count behind it — for example, how many days
+        sit between two dates — so check that count yourself before
+        relying on a deadline.
+      failure: silent
+  workarounds:
+    - instead_of: "a bundled program rendered the offline report and validated the finished deliverable against a fixed set of rules"
+      cowork: "the skill fills the same packaged report template itself and saves it for the preview pane, with the full reading view available in chat and a Word copy on request, and checks its own finished work against the same rules as a substantive self-check"
+    - instead_of: "a bundled date calculator computed every period and deadline"
+      cowork: "the skill shows the count behind every date and period it relies on, so the lawyer can check the arithmetic themselves"
 
 triggers:
   positive:

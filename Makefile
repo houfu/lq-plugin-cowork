@@ -3,6 +3,7 @@
 #   make setup          install the build tooling
 #   make package        build + validate + zip + archives + trigger tests + report
 #   make archives       upload-ready dist/skills/<name>.skill from a build
+#   make site           package, then render the static site into dist/site/
 #   make drift          report what moved upstream, without moving the pin
 #   make fmt-check      black --check, the formatting gate CI runs
 #   make release-check  does TAG agree with cowork.yaml, CHANGELOG.md and dist/?
@@ -32,8 +33,8 @@ BUNDLE_ARG := $(if $(BUNDLE),--bundle $(BUNDLE),)
 SKILL_ARG := $(if $(SKILL),--skill $(SKILL),)
 REPORT_ARG := $(if $(REPORT),--report $(REPORT),)
 
-.PHONY: setup build validate package archives triggers drift bump anchor test \
-        fmt fmt-check release-check release clean help
+.PHONY: setup build validate package archives site triggers drift bump anchor \
+        test fmt fmt-check release-check release clean help
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | grep -v '^help$$' | sort
@@ -52,6 +53,10 @@ package:
 
 archives:
 	$(LQ) archives $(BUNDLE_ARG)
+
+# The site describes a build, so it is never rendered without one.
+site: package
+	$(LQ) site
 
 triggers:
 	$(LQ) triggers $(BUNDLE_ARG)

@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}{{ skill.name }}{% endblock %}
+{% block content %}
+<h1>{{ skill.name }}</h1>
+
+<ul class="badges">
+  <li>
+    <span class="badge" title="{{ skill.tier_legend }}">Tier {{ skill.tier_label }}</span>
+  </li>
+  <li><span class="badge" title="{{ skill.status_legend }}">{{ skill.status_label }}</span></li>
+  <li><span class="badge" title="The September portability assessment's bucket.">bucket {{ skill.bucket }}</span></li>
+  {%- if skill.known_issues %}
+  <li><a class="badge" href="#known-issues">{{ skill.known_issues | length }} known issue{{ "" if skill.known_issues | length == 1 else "s" }}</a></li>
+  {%- endif %}
+</ul>
+
+<h2 id="get-this-skill">Get this skill</h2>
+
+<div class="download">
+  <ul class="downloads">
+    <li>
+      <a href="{{ skill.archive.url }}"><code>{{ skill.archive.asset }}</code></a>
+      {%- if skill.archive.built %} — {{ skill.archive.detail }}{% endif %}
+    </li>
+  </ul>
+  <p>
+    That is the upload-ready archive for Cowork's Customize page — Customize →
+    Skills → upload — a zip with <code>SKILL.md</code> at its root, the
+    companion files listed below beside it, and the licence and the notice,
+    which an archive with no package around it has to carry itself.
+  </p>
+  <p>
+    The same skill ships inside
+    {%- for bundle in skill.bundles %}
+    {%- if not loop.first %}{{ " and " if loop.last else ", " }}{% endif %}
+    <a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a>
+    {%- endfor %}, which you sideload whole.
+  </p>
+  <p class="subtle">
+    {{ latest_note }} Every package and every skill archive is on
+    <a href="../downloads.html">the downloads page</a>.
+  </p>
+</div>
+
+<h2 id="what-it-does">What it does</h2>
+
+<p class="lede">{{ skill.purpose }}</p>
+
+<h2 id="when-to-use-it">When to use it</h2>
+
+<p>
+  Cowork routes on the description, so these are the kinds of things a lawyer
+  says that should bring this skill up. They are also the positive trigger
+  tests on the card.
+</p>
+
+<ul>
+  {%- for prompt in skill.positive_triggers %}
+  <li>“{{ prompt }}”</li>
+  {%- endfor %}
+</ul>
+
+{% if skill.handoffs %}
+<h2 id="not-for">Not for</h2>
+
+<p>
+  Adjacent requests this skill must leave alone, with what should take them
+  instead. Where the answer depends on which bundle you installed, both are
+  given.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Prompt</th>
+        <th scope="col">Expected</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for handoff in skill.handoffs %}
+      <tr>
+        <td>{{ handoff.prompt }}</td>
+        <td>
+          {%- for variant in handoff.variants %}
+          {%- if handoff.variants | length > 1 %}
+          <div>
+            <span class="subtle">{{ variant.where }}:</span>
+            {{ variant.expected | ticks }}
+          </div>
+          {%- else %}
+          {{ variant.expected | ticks }}
+          {%- endif %}
+          {%- endfor %}
+        </td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2 id="bundles">Where it ships</h2>
+
+<ul>
+  {%- for bundle in skill.bundles %}
+  <li>
+    <a href="../bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a> —
+    <a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a>
+  </li>
+  {%- endfor %}
+</ul>
+
+<h2 id="differs">How it differs from the original</h2>
+
+<p class="subtle">
+  Tier {{ skill.tier_label }}: {{ skill.tier_legend }}
+  (<a href="../differences.html#tiers">the whole rubric</a>).
+</p>
+
+{% for para in paragraphs(skill.differs) %}
+<p>{{ para }}</p>
+{% endfor %}
+
+{% if skill.notes %}
+<details>
+  <summary>Build notes</summary>
+  <p class="subtle">
+    The technical record of the same change: what the build does to the
+    upstream files, in build terms.
+  </p>
+  {%- for para in paragraphs(skill.notes) %}
+  <p>{{ para }}</p>
+  {%- endfor %}
+</details>
+{% endif %}
+
+<h2 id="known-issues">Known issues</h2>
+
+{% if skill.known_issues %}
+<p>
+  Declared on the card. A <strong>silent</strong> failure is one where a wrong
+  result would look right; a <strong>loud</strong> one announces itself.
+</p>
+
+{% for issue in skill.known_issues %}
+<div class="issue" id="{{ issue.id }}">
+  <h3>{{ issue.title }}</h3>
+  <p class="issue-id"><code>{{ issue.id }}</code></p>
+  {%- for para in paragraphs(issue.detail) %}
+  <p>{{ para }}</p>
+  {%- endfor %}
+  <ul class="badges">
+    <li><span class="badge badge-{{ issue.failure }}">{{ issue.failure }} failure</span></li>
+    {%- if issue.probe %}
+    <li>
+      {%- if issue.probe in probe_ids %}
+      <a class="badge" href="../probes.html#{{ issue.probe }}">settled by probe {{ issue.probe }}</a>
+      {%- else %}
+      <span class="badge">probe {{ issue.probe }} (not defined)</span>
+      {%- endif %}
+    </li>
+    {%- endif %}
+  </ul>
+</div>
+{% endfor %}
+{% else %}
+<p>None declared on the card.</p>
+{% endif %}
+
+<h2 id="workarounds">Workarounds</h2>
+
+{% if skill.workarounds %}
+<p>What this adaptation does instead of the machinery the original relied on.</p>
+
+<div class="tablewrap">
+  <table>
+    <thead>
+      <tr>
+        <th scope="col">Instead of</th>
+        <th scope="col">In Cowork</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for item in skill.workarounds %}
+      <tr>
+        <td>{{ item.instead_of }}</td>
+        <td>{{ item.cowork }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p>None: nothing upstream did here needed replacing.</p>
+{% endif %}
+
+<h2 id="upstream">The original</h2>
+
+<p>
+  Upstream source:
+  <a href="{{ skill.upstream_url }}"><code>skills/{{ skill.upstream }}</code></a>
+  at <code>{{ sha7 }}</code>.
+</p>
+
+{% if skill.upstream_description %}
+<p>Its own description, as upstream wrote it:</p>
+<blockquote>
+  <p>{{ skill.upstream_description }}</p>
+</blockquote>
+<p class="subtle">
+  The shipped package replaces that wholesale: Cowork routes on the
+  description, so the wording above is rewritten for the way a lawyer asks.
+</p>
+{% else %}
+<p class="subtle">Upstream's own description could not be read from the pinned tree.</p>
+{% endif %}
+
+<h2 id="files">Files shipped</h2>
+
+{% if skill.files %}
+<p>
+  What is inside <code>skills/{{ skill.name }}/</code> in the package, after
+  the build has stripped, rewritten and stamped everything. The same files sit
+  at the root of <code>{{ skill.archive.asset }}</code>, with the licence and
+  the notice added.
+</p>
+
+<ul>
+  {%- for path in skill.files %}
+  <li><code>{{ path }}</code></li>
+  {%- endfor %}
+</ul>
+{% else %}
+<p class="subtle">No built tree was available to read the file list from.</p>
+{% endif %}
+
+{% if skill.warnings %}
+<details>
+  <summary>Build warnings ({{ skill.warnings | length }})</summary>
+  <p class="subtle">
+    What validation said about the built skill on the build this site was made
+    from. A warning is not a failure; it is something a person judged.
+  </p>
+  <div class="tablewrap">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Code</th>
+          <th scope="col">Where</th>
+          <th scope="col">Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {%- for warning in skill.warnings %}
+        <tr>
+          <td><code>{{ warning.code }}</code></td>
+          <td><code>{{ warning.location }}</code></td>
+          <td>{{ warning.message }}</td>
+        </tr>
+        {%- endfor %}
+      </tbody>
+    </table>
+  </div>
+</details>
+{% endif %}
+
+<h2 id="report-it">Tested it?</h2>
+
+<p>
+  There is one open issue per skill, carrying the synthetic inputs and what a
+  pass looks like. Say what happened, including when nothing went wrong:
+  <a href="{{ skill.issue_search_url }}">open issues for {{ skill.name }}</a>.
+  <a href="../testing.html">The testing guide</a> has the whole programme.
+</p>
+{% endblock %}

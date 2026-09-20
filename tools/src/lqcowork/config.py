@@ -15,8 +15,12 @@ from typing import Any
 
 import yaml
 
+from .transforms import DEFAULT_CLAIM_WORDS
+
 CONFIG_NAME = "cowork.yaml"
 CARD_NAME = "skill.yaml"
+PROBES_NAME = "probes.yaml"
+RELEASE_NAME = "plugin.release.yaml"
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
 SEMVER_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -32,6 +36,17 @@ MANIFEST_LIMITS = {
     "description.short": 80,
     "description.full": 4000,
 }
+
+# The September assessment's bucket, carried on every card (informational).
+BUCKETS = ("green", "amber", "red")
+# `cowork.status`: probe-gated means shipped with an announced degrade until
+# the probe named by one of its known issues passes.
+CARD_STATUSES = ("shipped", "probe-gated")
+# Whether a wrong result would look right.
+FAILURE_SHAPES = ("silent", "loud")
+# The shape of a probe's worst outcome, in the research document's vocabulary.
+BAD_OUTCOMES = ("refusal", "fluent-fake", "silent", "loud")
+MIN_TIER, MAX_TIER = 0, 4
 
 
 class ConfigError(Exception):
@@ -173,6 +188,243 @@ def _location_file(location: str) -> str:
 
 
 @dataclass(frozen=True)
+class KnownIssue:
+    """One thing that can go wrong, written for the lawyer who would see it."""
+
+    id: str
+    title: str
+    detail: str
+    failure: str
+    probe: str | None = None
+
+
+@dataclass(frozen=True)
+class Workaround:
+    """What the adaptation does instead of a piece of upstream machinery."""
+
+    instead_of: str
+    cowork: str
+
+
+@dataclass(frozen=True)
+class CoworkBlock:
+    """A card's ``cowork:`` block: how this skill differs, and what it costs.
+
+    ``tier`` is the risk rubric of docs/CONTRACT.md section 4:
+
+    0  shipped as written apart from description and mechanics
+    1  documented capabilities only, loud failures
+    2  one named probe, or shipped now with an announced degrade
+    3  re-scoped: the promise changed
+    4  needs a connector -- a shipped card may not say 4 (LQC-K002)
+    """
+
+    tier: int
+    status: str
+    differs: str
+    known_issues: tuple[KnownIssue, ...] = ()
+    workarounds: tuple[Workaround, ...] = ()
+
+    @property
+    def probes(self) -> tuple[str, ...]:
+        """Every probe id named by a known issue, in card order."""
+        seen: list[str] = []
+        for issue in self.known_issues:
+            if issue.probe and issue.probe not in seen:
+                seen.append(issue.probe)
+        return tuple(seen)
+
+
+def parse_cowork(raw: Any, where: str) -> tuple[CoworkBlock | None, list[str]]:
+    """Parse a card's ``cowork:`` block, collecting LQC-K001 reasons.
+
+    Nothing here raises: a card whose block is missing or malformed is an
+    error the build reports per card (LQC-K001), so one unfinished card does
+    not hide the state of the other thirty.
+    """
+    problems: list[str] = []
+    if raw is None:
+        return None, [f"{where}: the required `cowork` block is missing"]
+    if not isinstance(raw, dict):
+        return None, [f"{where}.cowork: expected a mapping"]
+
+    unknown = set(raw) - {"tier", "status", "differs", "known_issues", "workarounds"}
+    if unknown:
+        problems.append(f"{where}.cowork: unknown keys {sorted(unknown)}")
+
+    tier = raw.get("tier")
+    if isinstance(tier, bool) or not isinstance(tier, int):
+        problems.append(f"{where}.cowork.tier: expected an integer 0 to 4")
+        tier = None
+    elif not MIN_TIER <= tier <= MAX_TIER:
+        problems.append(f"{where}.cowork.tier: {tier} is not in the range 0 to 4")
+        tier = None
+
+    status = raw.get("status")
+    if not isinstance(status, str) or status not in CARD_STATUSES:
+        problems.append(
+            f"{where}.cowork.status: expected one of {', '.join(CARD_STATUSES)}"
+        )
+        status = None
+
+    differs = raw.get("differs")
+    if not isinstance(differs, str) or not differs.strip():
+        problems.append(
+            f"{where}.cowork.differs: expected a paragraph for a lawyer saying "
+            "how this skill differs from the original"
+        )
+        differs = None
+
+    known_issues: list[KnownIssue] = []
+    raw_issues = raw.get("known_issues") or []
+    if not isinstance(raw_issues, list):
+        problems.append(f"{where}.cowork.known_issues: expected a list")
+        raw_issues = []
+    for index, item in enumerate(raw_issues):
+        spot = f"{where}.cowork.known_issues[{index}]"
+        if not isinstance(item, dict):
+            problems.append(f"{spot}: expected a mapping")
+            continue
+        missing = [
+            key
+            for key in ("id", "title", "detail", "failure")
+            if not isinstance(item.get(key), str) or not str(item.get(key)).strip()
+        ]
+        if missing:
+            problems.append(f"{spot}: missing {', '.join(missing)}")
+            continue
+        failure = str(item["failure"]).strip()
+        if failure not in FAILURE_SHAPES:
+            problems.append(
+                f"{spot}.failure: expected one of {', '.join(FAILURE_SHAPES)}"
+            )
+            continue
+        probe = item.get("probe")
+        if probe is not None and not isinstance(probe, str):
+            problems.append(f"{spot}.probe: expected a probe id such as P3")
+            probe = None
+        known_issues.append(
+            KnownIssue(
+                id=str(item["id"]).strip(),
+                title=str(item["title"]).strip(),
+                detail=str(item["detail"]).strip(),
+                failure=failure,
+                probe=probe.strip() if isinstance(probe, str) else None,
+            )
+        )
+
+    workarounds: list[Workaround] = []
+    raw_workarounds = raw.get("workarounds") or []
+    if not isinstance(raw_workarounds, list):
+        problems.append(f"{where}.cowork.workarounds: expected a list")
+        raw_workarounds = []
+    for index, item in enumerate(raw_workarounds):
+        spot = f"{where}.cowork.workarounds[{index}]"
+        if not isinstance(item, dict):
+            problems.append(f"{spot}: expected a mapping")
+            continue
+        missing = [
+            key
+            for key in ("instead_of", "cowork")
+            if not isinstance(item.get(key), str) or not str(item.get(key)).strip()
+        ]
+        if missing:
+            problems.append(f"{spot}: missing {', '.join(missing)}")
+            continue
+        workarounds.append(
+            Workaround(
+                instead_of=str(item["instead_of"]).strip(),
+                cowork=str(item["cowork"]).strip(),
+            )
+        )
+
+    if tier is None or status is None or differs is None:
+        return None, problems
+    return (
+        CoworkBlock(
+            tier=tier,
+            status=status,
+            differs=differs.strip(),
+            known_issues=tuple(known_issues),
+            workarounds=tuple(workarounds),
+        ),
+        problems,
+    )
+
+
+@dataclass(frozen=True)
+class Probe:
+    """One capability probe from ``probes.yaml``."""
+
+    id: str
+    title: str
+    settles: str
+    prompt: str
+    passes: str
+    fails: str
+    bad_outcome: str
+    setup: str | None = None
+    unlocks: tuple[str, ...] = ()
+
+
+def load_probes(root: Path) -> tuple[Probe, ...]:
+    """Parse ``<root>/probes.yaml``; an absent file means no probes.
+
+    Absence is tolerated rather than fatal: a card that names a probe then
+    gets LQC-K003, which says precisely that the id is not defined.
+    """
+    path = root / PROBES_NAME
+    if not path.is_file():
+        return ()
+    try:
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"{PROBES_NAME}: invalid YAML: {exc}") from exc
+    if not isinstance(raw, dict):
+        raise ConfigError(f"{PROBES_NAME}: expected a top-level mapping")
+    items = raw.get("probes")
+    if not isinstance(items, list):
+        raise ConfigError(f"{PROBES_NAME}.probes: expected a list")
+
+    probes: list[Probe] = []
+    seen: set[str] = set()
+    for index, item in enumerate(items):
+        where = f"{PROBES_NAME}.probes[{index}]"
+        if not isinstance(item, dict):
+            raise ConfigError(f"{where}: expected a mapping")
+        probe_id = _str(_require(item, "id", where), f"{where}.id").strip()
+        if probe_id in seen:
+            raise ConfigError(f"{where}.id: duplicate probe id '{probe_id}'")
+        seen.add(probe_id)
+        bad_outcome = _str(
+            _require(item, "bad_outcome", where), f"{where}.bad_outcome"
+        ).strip()
+        if bad_outcome not in BAD_OUTCOMES:
+            raise ConfigError(
+                f"{where}.bad_outcome: expected one of {', '.join(BAD_OUTCOMES)}"
+            )
+        setup = item.get("setup")
+        if setup is not None and not isinstance(setup, str):
+            raise ConfigError(f"{where}.setup: expected a string")
+        probes.append(
+            Probe(
+                id=probe_id,
+                title=_str(_require(item, "title", where), f"{where}.title").strip(),
+                settles=_str(
+                    _require(item, "settles", where), f"{where}.settles"
+                ).strip(),
+                prompt=_str(_require(item, "prompt", where), f"{where}.prompt").strip(),
+                passes=_str(_require(item, "pass", where), f"{where}.pass").strip(),
+                fails=_str(_require(item, "fail", where), f"{where}.fail").strip(),
+                bad_outcome=bad_outcome,
+                setup=setup.strip() if isinstance(setup, str) else None,
+                unlocks=tuple(_str_list(item.get("unlocks"), f"{where}.unlocks")),
+            )
+        )
+    return tuple(probes)
+
+
+@dataclass(frozen=True)
 class Triggers:
     positive: tuple[str, ...]
     negative: tuple[str, ...]
@@ -197,6 +449,9 @@ class Card:
     notes: str | None = None
     suppress: tuple[SuppressRule, ...] = ()
     triggers: Triggers = field(default_factory=lambda: Triggers((), ()))
+    cowork: CoworkBlock | None = None
+    # LQC-K001 reasons found while parsing `cowork:`; empty on a good card.
+    cowork_problems: tuple[str, ...] = ()
 
     @property
     def overlay(self) -> Path:
@@ -205,6 +460,49 @@ class Card:
     @property
     def upstream_group(self) -> str:
         return self.upstream.split("/", 1)[0]
+
+    @property
+    def tier(self) -> int | None:
+        return self.cowork.tier if self.cowork else None
+
+    @property
+    def status(self) -> str | None:
+        return self.cowork.status if self.cowork else None
+
+    @property
+    def known_issues(self) -> tuple[KnownIssue, ...]:
+        return self.cowork.known_issues if self.cowork else ()
+
+
+@dataclass(frozen=True)
+class ExcludedSkill:
+    """One ``exclude_skills`` entry: a skill left out, and why (LQC-B002)."""
+
+    name: str
+    reason: str
+
+
+@dataclass(frozen=True)
+class Mirror:
+    """What a mirrored bundle took from upstream's release manifest."""
+
+    plugin_id: str
+    groups: tuple[str, ...]
+    includes: tuple[str, ...]
+    excludes: tuple[ExcludedSkill, ...]
+    display_name: str
+    short_description: str
+
+    def line(self) -> str:
+        """The build report's one-line account of the derivation."""
+        parts = [f"Mirrors upstream plugin {self.plugin_id}"]
+        parts.append(f"groups {', '.join(self.groups) or 'none'}")
+        parts.append(f"includes {', '.join(self.includes) or 'none'}")
+        parts.append(
+            "excludes "
+            + (", ".join(e.name for e in self.excludes) if self.excludes else "none")
+        )
+        return f"{parts[0]}: {'; '.join(parts[1:])}"
 
 
 @dataclass(frozen=True)
@@ -216,6 +514,7 @@ class Bundle:
     description_short: str
     description_full: str
     skills: tuple[str, ...]
+    mirror: Mirror | None = None
 
 
 @dataclass(frozen=True)
@@ -225,6 +524,7 @@ class Transforms:
     skill_tokens: bool
     vendor_words: tuple[str, ...]
     host_words: tuple[str, ...] = ()
+    claim_words: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -244,10 +544,18 @@ class Config:
     transforms: Transforms
     replace: tuple[ReplaceRule, ...]
     bundles: tuple[Bundle, ...]
+    probes: tuple[Probe, ...] = ()
 
     @property
     def sha7(self) -> str:
         return self.sha[:7]
+
+    @property
+    def probe_ids(self) -> set[str]:
+        return {probe.id for probe in self.probes}
+
+    def probe(self, probe_id: str) -> Probe | None:
+        return next((p for p in self.probes if p.id == probe_id), None)
 
     def upstream_root(self, override: Path | None = None) -> Path:
         base = override if override is not None else self.root / self.upstream_path
@@ -269,6 +577,114 @@ class Config:
     @property
     def card_root(self) -> Path:
         return self.root / "skills"
+
+
+def _release_plugins(release_path: Path) -> list[dict[str, Any]]:
+    """The ``plugins:`` list out of upstream's ``plugin.release.yaml``."""
+    if not release_path.is_file():
+        raise ConfigError(
+            f"{release_path}: upstream's {RELEASE_NAME} is not there, so a "
+            "bundle cannot mirror it; check the submodule out first"
+        )
+    try:
+        raw = yaml.safe_load(release_path.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ConfigError(f"{release_path}: invalid YAML: {exc}") from exc
+    plugins = (raw or {}).get("plugins") if isinstance(raw, dict) else None
+    if not isinstance(plugins, list):
+        raise ConfigError(f"{release_path}: no 'plugins' list")
+    return [p for p in plugins if isinstance(p, dict)]
+
+
+def _group_skills(group_dir: Path) -> list[str]:
+    """Skill folder names under one upstream group, alphabetically."""
+    if not group_dir.is_dir():
+        raise ConfigError(f"{group_dir}: upstream skill group not found")
+    return sorted(
+        path.name
+        for path in group_dir.iterdir()
+        if path.is_dir()
+        and not path.name.startswith(".")
+        and (path / "SKILL.md").is_file()
+    )
+
+
+def derive_mirror(
+    skills_root: Path,
+    release_path: Path,
+    plugin_id: str,
+    excludes: tuple[ExcludedSkill, ...],
+    where: str,
+) -> tuple[Mirror, tuple[str, ...]]:
+    """Membership for a bundle that mirrors an upstream release plugin.
+
+    Groups in the order the manifest lists them, alphabetically within a
+    group; then ``include_skills`` in the order listed; then the card's
+    ``exclude_skills`` removed. That list is the bundle's ``skills`` for every
+    purpose — manifest order, build, triggers, report and site.
+    """
+    plugins = _release_plugins(release_path)
+    match = next((p for p in plugins if p.get("id") == plugin_id), None)
+    if match is None:
+        known = ", ".join(str(p.get("id")) for p in plugins)
+        raise ConfigError(
+            f"{where}.mirror: '{plugin_id}' is not a plugin in "
+            f"{RELEASE_NAME}; it defines: {known}"
+        )
+
+    groups = tuple(_str_list(match.get("skill_groups"), f"{where}.mirror.skill_groups"))
+    includes = tuple(
+        _str_list(match.get("include_skills"), f"{where}.mirror.include_skills")
+    )
+
+    names: list[str] = []
+    for group in groups:
+        for name in _group_skills(skills_root / group):
+            if name not in names:
+                names.append(name)
+    for entry in includes:
+        if entry.count("/") != 1:
+            raise ConfigError(
+                f"{where}.mirror: include_skills entry '{entry}' is not "
+                "'<group>/<name>'"
+            )
+        name = entry.split("/", 1)[1]
+        if name not in names:
+            names.append(name)
+
+    excluded = {entry.name for entry in excludes}
+    mirror = Mirror(
+        plugin_id=plugin_id,
+        groups=groups,
+        includes=includes,
+        excludes=excludes,
+        display_name=str(match.get("display_name") or plugin_id),
+        short_description=str(match.get("short_description") or ""),
+    )
+    return mirror, tuple(name for name in names if name not in excluded)
+
+
+def _parse_excludes(raw: Any, where: str) -> tuple[ExcludedSkill, ...]:
+    """``exclude_skills:`` — each entry needs a name and a stated reason."""
+    if raw is None:
+        return ()
+    if not isinstance(raw, list):
+        raise ConfigError(f"{where}.exclude_skills: expected a list")
+    out: list[ExcludedSkill] = []
+    for index, item in enumerate(raw):
+        spot = f"{where}.exclude_skills[{index}]"
+        if not isinstance(item, dict):
+            raise ConfigError(f"{spot}: expected a mapping with 'name' and 'reason'")
+        unknown = set(item) - {"name", "reason"}
+        if unknown:
+            raise ConfigError(f"{spot}: unknown keys {sorted(unknown)}")
+        out.append(
+            ExcludedSkill(
+                name=_str(_require(item, "name", spot), f"{spot}.name").strip(),
+                reason=_str(_require(item, "reason", spot), f"{spot}.reason").strip(),
+            )
+        )
+    return tuple(out)
 
 
 def load_config(root: Path) -> Config:
@@ -314,6 +730,13 @@ def load_config(root: Path) -> Config:
         host_words=tuple(
             _str_list(transforms_raw.get("host_words"), "transforms.host_words")
         ),
+        claim_words=(
+            tuple(
+                _str_list(transforms_raw.get("claim_words"), "transforms.claim_words")
+            )
+            if transforms_raw.get("claim_words") is not None
+            else DEFAULT_CLAIM_WORDS
+        ),
     )
 
     replace = tuple(
@@ -324,6 +747,10 @@ def load_config(root: Path) -> Config:
     bundles_raw = raw.get("bundles")
     if not isinstance(bundles_raw, list) or not bundles_raw:
         raise ConfigError("bundles: expected a non-empty list")
+
+    upstream_path = str(upstream.get("path", "upstream"))
+    skills_root_name = str(upstream.get("skills_root", "skills"))
+    upstream_dir = root / upstream_path
 
     bundles: list[Bundle] = []
     seen_ids: set[str] = set()
@@ -359,7 +786,33 @@ def load_config(root: Path) -> Config:
                 raise ConfigError(
                     f"{where}.{key}: {len(values[key])} characters, limit is {limit}"
                 )
-        skills = _str_list(_require(item, "skills", where), f"{where}.skills")
+        mirror_id = item.get("mirror")
+        has_skills = item.get("skills") is not None
+        if mirror_id is not None and has_skills:
+            raise ConfigError(
+                f"{where}: 'mirror' and 'skills' on the same bundle; a "
+                "mirrored bundle derives its membership from upstream"
+            )
+        if mirror_id is None and not has_skills:
+            raise ConfigError(f"{where}: needs either 'mirror' or 'skills'")
+
+        mirror: Mirror | None = None
+        if mirror_id is not None:
+            mirror, derived = derive_mirror(
+                upstream_dir / skills_root_name,
+                upstream_dir / RELEASE_NAME,
+                _str(mirror_id, f"{where}.mirror").strip(),
+                _parse_excludes(item.get("exclude_skills"), where),
+                where,
+            )
+            skills = list(derived)
+        else:
+            if item.get("exclude_skills") is not None:
+                raise ConfigError(
+                    f"{where}.exclude_skills: only a mirrored bundle excludes; "
+                    "an explicit 'skills' list is already the membership"
+                )
+            skills = _str_list(_require(item, "skills", where), f"{where}.skills")
         if not skills:
             raise ConfigError(f"{where}.skills: expected at least one skill")
         if len(skills) != len(set(skills)):
@@ -373,6 +826,7 @@ def load_config(root: Path) -> Config:
                 description_short=values["description.short"],
                 description_full=values["description.full"],
                 skills=tuple(skills),
+                mirror=mirror,
             )
         )
 
@@ -394,6 +848,7 @@ def load_config(root: Path) -> Config:
         transforms=transforms,
         replace=replace,
         bundles=tuple(bundles),
+        probes=load_probes(root),
     )
 
 
@@ -428,8 +883,10 @@ def load_card(config: Config, name: str) -> Card:
     description = _str(_require(raw, "description", where), f"{where}.description")
 
     bucket = str(raw.get("bucket", "green"))
-    if bucket not in {"green", "amber"}:
-        raise ConfigError(f"{where}.bucket: expected 'green' or 'amber'")
+    if bucket not in BUCKETS:
+        raise ConfigError(f"{where}.bucket: expected one of {', '.join(BUCKETS)}")
+
+    cowork, cowork_problems = parse_cowork(raw.get("cowork"), where)
 
     frontmatter = raw.get("frontmatter") or {}
     if not isinstance(frontmatter, dict):
@@ -482,6 +939,8 @@ def load_card(config: Config, name: str) -> Card:
         ),
         notes=notes.strip() if isinstance(notes, str) else None,
         triggers=triggers,
+        cowork=cowork,
+        cowork_problems=tuple(cowork_problems),
     )
 
 
@@ -501,6 +960,30 @@ def load_cards(config: Config, names: list[str]) -> dict[str, Card]:
         raise ConfigError("missing adaptation cards for: " + ", ".join(sorted(missing)))
     validate_trigger_targets(config, cards)
     return cards
+
+
+def load_available_cards(
+    config: Config, names: list[str]
+) -> tuple[dict[str, Card], list[str]]:
+    """Load the cards that exist; report the names that have none.
+
+    The companion to :func:`load_cards` for callers that turn a missing card
+    into an issue rather than an exception — a mirrored bundle derives its
+    membership from upstream, so "no card for this skill" is LQC-B001, a
+    reviewable error naming the skill, not a crash.
+    """
+    cards: dict[str, Card] = {}
+    missing: list[str] = []
+    for name in names:
+        try:
+            cards[name] = load_card(config, name)
+        except ConfigError as exc:
+            if "no adaptation card" in str(exc):
+                missing.append(name)
+            else:
+                raise
+    validate_trigger_targets(config, cards, extra_known=set(names))
+    return cards, sorted(missing)
 
 
 def upstream_skill_names(config: Config, override: Path | None = None) -> list[str]:
@@ -566,9 +1049,18 @@ def known_card_names(config: Config) -> set[str]:
     }
 
 
-def validate_trigger_targets(config: Config, cards: dict[str, Card]) -> None:
-    """Every ``-> target`` must name a card, a built-in, or ``none``."""
-    known = known_card_names(config) | set(cards)
+def validate_trigger_targets(
+    config: Config,
+    cards: dict[str, Card],
+    extra_known: set[str] | None = None,
+) -> None:
+    """Every ``-> target`` must name a card, a built-in, or ``none``.
+
+    ``extra_known`` are skills a bundle already claims whose card is not
+    written yet: naming one is not a typo, it is LQC-B001 on the other card,
+    and that is the error worth reading.
+    """
+    known = known_card_names(config) | set(cards) | (extra_known or set())
     problems: list[str] = []
     for name in sorted(cards):
         for prompt in cards[name].triggers.negative:

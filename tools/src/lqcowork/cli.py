@@ -7,19 +7,29 @@ import sys
 from pathlib import Path
 
 from . import package as pkg
-from .build import AnchorFailure, Builder, BuildError, Issue, Suppression
+from .build import (
+    AnchorFailure,
+    Builder,
+    BuildError,
+    Issue,
+    Suppression,
+    check_cards,
+    missing_card_errors,
+)
 from .bump import BumpError, anchor, bump_upstream
 from .config import (
     Bundle,
     Config,
     ConfigError,
     find_repo_root,
+    load_available_cards,
     load_cards,
     load_config,
     upstream_skill_names,
 )
 from .release import ReleaseCheckError, check_release
-from .validate import validate_bundle
+from .site import build_site
+from .validate import validate_bundle, validate_skill_only
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -59,18 +69,23 @@ def cmd_build(args: argparse.Namespace) -> int:
     config = _load(args)
     upstream = Path(args.upstream_path).resolve() if args.upstream_path else None
     out = _out_dir(args)
+    if args.skill and args.bundle:
+        raise ConfigError("build: use either --skill or --bundle, not both")
     builder = Builder(
         config,
         upstream_path=upstream,
         report_anchors=args.report_anchors,
         out_dir=out,
     )
+    if args.skill:
+        return _build_skills_only(config, builder, args.skill, upstream)
+
     result = builder.build(args.bundle)
     cards = {
         skill.name: skill.card for built in result.bundles for skill in built.skills
     }
     errors: list[Issue] = list(result.errors)
-    warnings: list[Issue] = []
+    warnings: list[Issue] = list(result.warnings)
     suppressed: list[Suppression] = []
     for built in result.bundles:
         bundle_errors, bundle_warnings = validate_bundle(
@@ -88,6 +103,47 @@ def cmd_build(args: argparse.Namespace) -> int:
             f"{pkg.summarise(built)}, {len(bundle_errors)} errors, "
             f"{len(bundle_warnings)} warnings"
         )
+    if not result.bundles:
+        _echo("no bundle was built: the cards below have to be fixed first")
+    _report_issues("anchor failures", result.anchors)
+    _report_issues("errors", errors)
+    _report_issues("warnings", warnings)
+    if suppressed:
+        _echo(f"{len(suppressed)} warning(s) suppressed by card decisions")
+    return EXIT_INVALID if (result.anchors or errors) else EXIT_OK
+
+
+def _build_skills_only(
+    config: Config,
+    builder: Builder,
+    names: list[str],
+    upstream: Path | None,
+) -> int:
+    """``build --skill NAME``: the per-skill checks, no package around them."""
+    result = builder.build_skill_only(names)
+    errors: list[Issue] = list(result.errors)
+    warnings: list[Issue] = list(result.warnings)
+    suppressed: list[Suppression] = []
+    for built in result.bundles:
+        for skill in built.skills:
+            skill_errors, skill_warnings = validate_skill_only(
+                config,
+                built.bundle,
+                skill.name,
+                skill.path,
+                skill.card,
+                skill_names=builder.skill_names,
+                upstream_path=upstream,
+                suppressed=suppressed,
+            )
+            errors += skill_errors
+            warnings += skill_warnings
+            _echo(
+                f"{skill.name}: {len(skill.files)} files, "
+                f"{skill.total_bytes:,} bytes, {len(skill_errors)} errors, "
+                f"{len(skill_warnings)} warnings"
+            )
+            _echo(f"  {_rel(config, skill.path)}")
     _report_issues("anchor failures", result.anchors)
     _report_issues("errors", errors)
     _report_issues("warnings", warnings)
@@ -101,7 +157,14 @@ def cmd_validate(args: argparse.Namespace) -> int:
     out = _out_dir(args)
     bundles = config.select(args.bundle)
     names = sorted({name for b in bundles for name in b.skills})
-    cards = load_cards(config, names)
+    cards, missing = load_available_cards(config, names)
+    card_errors = missing_card_errors(missing, bundles)
+    key_errors, key_warnings = check_cards(config, cards)
+    card_errors += key_errors
+    _report_issues("warnings", key_warnings)
+    if card_errors:
+        _report_issues("errors", card_errors)
+        return EXIT_INVALID
     skill_names = upstream_skill_names(config)
     suppressed: list[Suppression] = []
     status = EXIT_OK
@@ -168,6 +231,9 @@ def cmd_package(args: argparse.Namespace) -> int:
         triggers = pkg.write_trigger_tests(config, built.bundle, cards, out)
         _echo(f"  {_rel(config, triggers)}")
 
+    if not result.bundles:
+        _echo("no bundle was built: the cards below have to be fixed first")
+
     report = pkg.write_build_report(
         config,
         result,
@@ -179,7 +245,7 @@ def cmd_package(args: argparse.Namespace) -> int:
     )
     _echo(f"  {_rel(config, report)}")
     _report_issues("errors", all_errors)
-    _report_issues("warnings", all_warnings)
+    _report_issues("warnings", list(result.warnings) + all_warnings)
     if all_suppressed:
         _echo(f"{len(all_suppressed)} warning(s) suppressed by card decisions")
     return EXIT_INVALID if (all_errors or result.anchors) else EXIT_OK
@@ -226,6 +292,14 @@ def cmd_triggers(args: argparse.Namespace) -> int:
             for n in bundle.skills
         )
         _echo(f"{bundle.id}: {count} prompts -> {_rel(config, target)}")
+    return EXIT_OK
+
+
+def cmd_site(args: argparse.Namespace) -> int:
+    config = _load(args)
+    result = build_site(config, _out_dir(args))
+    _echo(f"site: {result.summary()}")
+    _echo(f"  {_rel(config, result.root)}")
     return EXIT_OK
 
 
@@ -291,6 +365,15 @@ def build_parser() -> argparse.ArgumentParser:
     build = subparsers.add_parser("build", help="build dist/<bundle>/ trees")
     build.add_argument("--bundle", help="build only this bundle id")
     build.add_argument(
+        "--skill",
+        action="append",
+        metavar="NAME",
+        help=(
+            "build only this skill into <out>/skills-only/<name>/ and run the "
+            "per-skill checks; repeatable, and not combinable with --bundle"
+        ),
+    )
+    build.add_argument(
         "--report-anchors",
         action="store_true",
         help="report anchor failures instead of failing the build",
@@ -348,6 +431,10 @@ def build_parser() -> argparse.ArgumentParser:
     triggers.add_argument("--bundle", help="only this bundle id")
     triggers.add_argument("--out", help="output directory (default: dist)")
     triggers.set_defaults(func=cmd_triggers)
+
+    site = subparsers.add_parser("site", help="render <out>/site/ from a built <out>/")
+    site.add_argument("--out", help="output directory (default: dist)")
+    site.set_defaults(func=cmd_site)
 
     release_check = subparsers.add_parser(
         "release-check",

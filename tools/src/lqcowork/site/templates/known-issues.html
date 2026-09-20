@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+{% block title %}Known issues{% endblock %}
+{% block content %}
+<h1>Known issues</h1>
+
+<p class="lede">
+  Everything the cards declare can go wrong, in one table:
+  {{ known_issues | length }} issue{{ "" if known_issues | length == 1 else "s" }}
+  across {{ skills | length }} skills. These are not bug reports; they are the
+  failures this adaptation expects, written down before anyone hit them.
+</p>
+
+<p>
+  A <strong>silent</strong> failure is the dangerous one: a wrong result that
+  looks right, which a lawyer would have to catch by checking. A
+  <strong>loud</strong> failure announces itself. Where a
+  <a href="probes.html">capability probe</a> would settle whether the issue is
+  real, it is named.
+</p>
+
+<div class="tablewrap">
+  <table id="known-issues">
+    <caption>
+      Sorted by skill, then by the order the card lists them. Each id
+      links to the whole entry on the skill's own page.
+      <span class="filter-count" id="filter-count"></span>
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Id</th>
+        <th scope="col">Skill</th>
+        <th scope="col" class="num">Tier</th>
+        <th scope="col">Title</th>
+        <th scope="col">What you would see</th>
+        <th scope="col">Failure</th>
+        <th scope="col">Probe</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for row in known_issues %}
+      <tr
+        data-tier="{{ row.tier_label }}"
+        data-failure="{{ row.failure }}"
+        data-probe="{{ row.probe or 'none' }}"
+      >
+        <th scope="row">
+          <a href="skills/{{ row.skill }}.html#{{ row.id }}"><code>{{ row.id }}</code></a>
+        </th>
+        <td><a href="skills/{{ row.skill }}.html">{{ row.skill }}</a></td>
+        <td class="num">{{ row.tier_label }}</td>
+        <td>{{ row.title }}</td>
+        <td>{{ row.detail_short }}</td>
+        <td><span class="badge badge-{{ row.failure }}">{{ row.failure }}</span></td>
+        <td>
+          {%- if row.probe and row.probe in probe_ids %}
+          <a href="probes.html#{{ row.probe }}">{{ row.probe }}</a>
+          {%- elif row.probe %}{{ row.probe }}
+          {%- else %}—
+          {%- endif %}
+        </td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+{#- The only script on the site. It builds its own controls, so a reader with
+    JavaScript off sees the whole table and no dead widgets. -#}
+{% raw %}<script>
+  (function () {
+    var table = document.getElementById("known-issues");
+    if (!table || !table.tBodies.length) return;
+    var rows = Array.prototype.slice.call(table.tBodies[0].rows);
+    if (rows.length < 2) return;
+    var count = document.getElementById("filter-count");
+    var total = rows.length;
+
+    function values(key) {
+      var seen = [];
+      rows.forEach(function (row) {
+        var value = row.getAttribute("data-" + key);
+        if (value && seen.indexOf(value) === -1) seen.push(value);
+      });
+      return seen.sort();
+    }
+
+    var form = document.createElement("div");
+    form.className = "filters";
+    var selects = {};
+
+    [
+      ["tier", "Tier"],
+      ["failure", "Failure"],
+      ["probe", "Probe"],
+    ].forEach(function (pair) {
+      var key = pair[0];
+      var options = values(key);
+      if (options.length < 2) return;
+      var wrap = document.createElement("div");
+      var label = document.createElement("label");
+      var id = "filter-" + key;
+      label.setAttribute("for", id);
+      label.textContent = pair[1];
+      var select = document.createElement("select");
+      select.id = id;
+      select.appendChild(new Option("All", ""));
+      options.forEach(function (value) {
+        select.appendChild(new Option(value, value));
+      });
+      select.addEventListener("change", apply);
+      selects[key] = select;
+      wrap.appendChild(label);
+      wrap.appendChild(select);
+      form.appendChild(wrap);
+    });
+
+    if (!Object.keys(selects).length) return;
+
+    function apply() {
+      var shown = 0;
+      rows.forEach(function (row) {
+        var keep = Object.keys(selects).every(function (key) {
+          var want = selects[key].value;
+          return !want || row.getAttribute("data-" + key) === want;
+        });
+        row.hidden = !keep;
+        if (keep) shown += 1;
+      });
+      if (count) {
+        count.textContent =
+          shown === total ? "" : "Showing " + shown + " of " + total + ".";
+      }
+    }
+
+    table.parentNode.parentNode.insertBefore(form, table.parentNode);
+    apply();
+  })();
+</script>{% endraw %}
+{% endblock %}
