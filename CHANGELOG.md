@@ -60,10 +60,17 @@ two skills move bundles.
   author wants while writing one. `lqcowork site` renders the site from a built
   `dist/`; `make site` runs both.
 - **One `.skill` archive per skill, all thirty-one of them**, a release asset
-  alongside the three bundles: a zip with `SKILL.md` at its root, that skill's
-  companion files, `LICENSE` and `NOTICE.md`. `SHA256SUMS` covers them too, and
-  [docs/INSTALL.md](docs/INSTALL.md) Route 0 is how to upload one without
-  installing a bundle.
+  alongside the three bundles: every `package` run now also writes
+  `dist/skills/<name>.skill` — `SKILL.md` at the root, that skill's companion
+  files, `LICENSE` and `NOTICE.md` — so a tester or lawyer can install one
+  skill through Cowork's **Upload skill** control instead of a whole plugin.
+  Built by the new `lqcowork archives` command, validated with five new rules,
+  `LQC-U001`-`LQC-U005` ([docs/CONTRACT.md](docs/CONTRACT.md) section 5b and
+  section 6), and published as release assets next to the bundles with their
+  own checksums in `SHA256SUMS`.
+- **"Route 0 — Upload a single skill"** in [docs/INSTALL.md](docs/INSTALL.md):
+  the fastest install path, needing no plugin, no administrator and no `atk`,
+  with an upload troubleshooting checklist when Cowork refuses an archive.
 - **`metadata.version` in every built `SKILL.md`**, stamped from
   `cowork.yaml`'s `package.version`. A `.skill` archive carries no
   `manifest.json`, so this is the only place a skill uploaded on its own says
@@ -98,6 +105,12 @@ two skills move bundles.
   pre-release**, unless its tag carries a suffix such as `-rc.1`. v0.1.0 stays
   marked pre-release as it was published. This is a packaging change only:
   *Known limitations* below still says nothing here has run in a live tenant.
+- **`skills/<name>/` is labelled a build input, not a shippable skill**, with a
+  new [skills/README.md](skills/README.md) and a matching section in
+  [README.md](README.md#which-do-i-want): closes the confusion in
+  [UAT issue 19](https://github.com/houfu/lq-plugin-cowork/issues/19), where a
+  tester zipped `skills/pressuretest/` from this repository, found no
+  `SKILL.md` in it, and rebuilt the skill by hand.
 
 ### Known limitations
 

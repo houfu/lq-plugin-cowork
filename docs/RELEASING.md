@@ -49,7 +49,11 @@ its major version; only a suffixed tag is a pre-release (see below).
 
 3. **Build it.** `make package`. It must end with zero errors; read the warnings
    and decide about each one. `dist/` now carries manifests at the new version,
-   which is what `release-check` compares against.
+   which is what `release-check` compares against. `validate` already enforces
+   `SKILL.md` at the root of every `dist/skills/<name>.skill` (`LQC-U001`), but
+   open one by hand anyway (`unzip -l dist/skills/<name>.skill`, or a zip
+   viewer) as a last human check before anyone downloads it — this is exactly
+   the thing UAT issue 19 found missing when a folder was zipped by hand.
 
 4. **Commit.** The version bump and the changelog belong in one commit on the
    default branch, pushed, green in CI. `make release` refuses to tag a dirty
@@ -86,17 +90,18 @@ The `release` workflow runs on any pushed tag matching `v*`:
 3. `make release-check TAG=<tag>` — the same check again, on a clean checkout,
    so a tag that was pushed some other way cannot skip it;
 4. packages a **second** time into another directory and fails unless every
-   bundle zip and every `skills/<name>.skill` has the same SHA-256 as the
-   first. Both are byte-reproducible by construction; this is what keeps that
-   true;
-5. writes `dist/SHA256SUMS` over the zips, the skill archives and the Markdown
-   assets, from `dist/`, so the paths in it are relative to `dist/`;
+   bundle zip *and* every single-skill archive under `dist/skills/*.skill` has
+   the same SHA-256 as the first. The zips and the archives are
+   byte-reproducible by construction; this is what keeps that true;
+5. writes `dist/SHA256SUMS` over the zips, the single-skill archives and the
+   Markdown assets, from `dist/`, so the paths in it are relative to `dist/`;
 6. composes the notes: this version's `CHANGELOG.md` section, a table of the
-   bundles with their skills and zip sizes, a paragraph and a table for the
-   per-skill `.skill` archives, the upstream pin as a link to the
-   exact commit, pointers to `docs/INSTALL.md` and `docs/TESTING.md`, the
-   sentence that these bundles are an independent adaptation under Apache-2.0
-   and not an official LegalQuants release, and the checksums;
+   bundles with their skills and zip sizes, an "Upload one skill" table listing
+   every `<name>.skill` archive with its size and a pointer to Route 0 in
+   `docs/INSTALL.md`, the upstream pin as a link to the exact commit, pointers
+   to `docs/INSTALL.md` and `docs/TESTING.md`, the sentence that these bundles
+   are an independent adaptation under Apache-2.0 and not an official
+   LegalQuants release, and the checksums;
 7. creates the release, titled with the tag, carrying:
 
    | Asset | What it is |
@@ -104,7 +109,7 @@ The `release` workflow runs on any pushed tag matching `v*`:
    | `legalquants-litigation-cowork.zip` | the litigation package |
    | `legalquants-transactional-cowork.zip` | the transactional package |
    | `legalquants-companion-cowork.zip` | the companion package |
-   | `<name>.skill` | one per skill: that skill on its own, ready to upload |
+   | `<name>.skill` (31 files) | one skill's `SKILL.md`, companions, `LICENSE` and `NOTICE.md` — upload-ready via Cowork's Upload skill control (contract section 5b) |
    | `<bundle>-trigger-tests.md` | one per bundle: its routing checklist |
    | `build-report.md` | what went into the build: skills, buckets, files, bytes, warnings, suppressed warnings |
    | `SHA256SUMS` | checksums for all of the above |
@@ -119,8 +124,10 @@ Besides the three bundle zips, every skill is published as its own
 `<name>.skill` — the built `SKILL.md` at the archive root with its companion
 files, plus `LICENSE` and `NOTICE.md`. It is an upload for Cowork's Customize
 page, for a lawyer who wants one skill rather than a plugin, and the same
-archive is what `make package` leaves in `dist/skills/`. Contract section 5b
-says what is in one and which limits it is checked against.
+archive is what `make package` leaves in `dist/skills/` — `make archives`
+rewrites and revalidates them from an existing build, without building.
+Contract section 5b says what is in one and which limits it is checked
+against.
 
 Because a plain `vX.Y.Z` is now a full release, GitHub's `latest` resolves to
 it, and both kinds of asset have a permanent URL that never names a version:

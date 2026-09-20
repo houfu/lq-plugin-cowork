@@ -65,11 +65,14 @@ class TestFrontmatter:
         assert fm["metadata"]["adapted-for"] == "Microsoft 365 Copilot Cowork"
         assert fm["metadata"]["legalquants.python-requires"] == ">=3.12"
 
-    def test_the_package_version_is_stamped_on_the_skill(self, fixture_repo, built):
+    def test_metadata_version_is_the_package_version_as_a_string(
+        self, fixture_repo, built
+    ):
         config, _, _ = built
         fm = transforms.parse_document(read_skill(fixture_repo, "alpha")).frontmatter
-        assert fm["metadata"]["version"] == config.version
-        assert isinstance(fm["metadata"]["version"], str)
+        version = fm["metadata"]["version"]
+        assert isinstance(version, str)
+        assert version == config.version == "0.1.0"
 
     def test_the_version_stamp_reaches_a_skill_with_no_metadata(
         self, fixture_repo, built

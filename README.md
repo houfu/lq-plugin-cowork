@@ -34,12 +34,63 @@ The site at <https://houfu.github.io/lq-plugin-cowork/> is built from this
 repository by GitHub Actions and published from the `main` branch, so it says
 the same thing the cards do.
 
-## Get the packages
+## Install
 
-Built packages are attached to each release:
 **[Releases](https://github.com/houfu/lq-plugin-cowork/releases)** ·
 [latest](https://github.com/houfu/lq-plugin-cowork/releases/latest). You do not
-need to clone this repository to install one.
+need to clone this repository to install anything — and a GitHub **Code >
+Download ZIP** of this repository, or of a `skills/<name>/` folder, is **not**
+installable: those are build inputs (see [skills/README.md](skills/README.md)),
+not a working skill.
+
+### Which do I want?
+
+| I want to... | Get | Good for |
+| --- | --- | --- |
+| Try one skill | one `<name>.skill` file, e.g. `pressuretest.skill` | A lawyer testing a single skill: no admin, no terminal |
+| Install the whole plugin | one bundle `.zip` (table below) | A tester or team wanting the full set |
+| Work on the adaptation | clone the repo | `skills/<name>/` folders are build inputs, not skills |
+
+**Note:** the `<name>.skill` archives ship from 0.2.0 onward; v0.1.0 predates
+them and carries the bundle zips only.
+
+### Upload one skill
+
+No admin rights and no terminal needed.
+
+1. Open the [latest
+   release](https://github.com/houfu/lq-plugin-cowork/releases/latest) page.
+2. Under **Assets**, download `<name>.skill` — for example
+   `pressuretest.skill`. Do not unzip it.
+3. In Cowork, select the **+** button, then **Customize**.
+4. Select the **Skills** tab.
+5. Select the arrow next to **Add**, then **Upload skill**, and pick the file
+   you downloaded.
+6. Cowork validates it and saves it to your OneDrive
+   `/Documents/Cowork/skills/`; it appears under **Your skills** after the
+   next sync.
+
+**Check it worked.** Start a **new conversation** and attach three short
+made-up documents that disagree with each other — say, an agreement dated
+3 March and a letter that calls it dated 3 May. Never use client material.
+Then, for `pressuretest`, type:
+
+> Pressure-test our position that the termination was lawful, against these
+> documents.
+
+A pass looks like an early **Transmission 1** map in chat, headed "Untested —
+questions I am about to test, not findings", with every planned attack
+phrased as a question and no verdict yet — that shape is the skill talking,
+not base Cowork. See [docs/TESTING.md](docs/TESTING.md#pressuretest) for the
+full pass criteria, or pick another skill's prompt from the same file.
+
+If the upload is refused or the skill never shows up, work through the
+[upload troubleshooting checklist](docs/INSTALL.md#upload-troubleshooting-checklist).
+
+Full detail, limits and sources: [docs/INSTALL.md, Route
+0](docs/INSTALL.md#route-0-upload-a-single-skill).
+
+### Install the full plugin
 
 | Bundle | Who it suits |
 | --- | --- |
@@ -55,38 +106,42 @@ one to start: they can coexist, but a duplicated skill name across two enabled
 plugins is worth reporting.
 
 Every one of the thirty-one skills also ships on its own as a `<name>.skill`
-archive — for example
-[`regulatory.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/regulatory.skill)
-— small enough to upload straight into Cowork without installing a bundle at
-all. [docs/INSTALL.md](docs/INSTALL.md) has the route.
+archive — see [Upload one skill](#upload-one-skill) above if a bundle is more
+than you need.
 
-Each release carries the three zips; a `.skill` archive per skill, thirty-one
-of them; `<bundle>-trigger-tests.md` for each, the routing acceptance tests
-generated from the cards; `build-report.md` — skills, tiers, statuses, known
-issues, file counts, adaptation notes and warnings; and
+The common route, for yourself, in Cowork:
+
+1. Download the bundle `.zip` from the
+   [latest release](https://github.com/houfu/lq-plugin-cowork/releases/latest).
+   Do not unzip it.
+2. In Cowork, select the **+** button, then **Customize**.
+3. Select the **Plugins** tab, select **Upload plugin**, and choose the `.zip`.
+4. In the **Share** dialog, choose **Only you** while you are testing.
+5. Select **Apply** to publish it.
+
+Two other routes exist for a wider rollout: an administrator can deploy the
+`.zip` tenant-wide from the Microsoft 365 admin center, or you can sideload it
+from a terminal with the `atk` CLI. All the routes are covered in full in
+[docs/INSTALL.md](docs/INSTALL.md#who-can-install), and rendered on the
+[site](https://houfu.github.io/lq-plugin-cowork/install.html).
+
+Whether you can upload it yourself, rather than needing an administrator,
+depends on your tenant's custom-app policy. Read
+[docs/INSTALL.md](docs/INSTALL.md) before promising anyone a demo.
+
+Each release carries the three bundle zips; one `<name>.skill` upload-ready
+archive per skill, thirty-one of them (contract section 5b), for the
+single-skill route above; `<bundle>-trigger-tests.md` for each bundle, the
+routing acceptance tests generated from the cards; `build-report.md` — skills,
+tiers, statuses, known issues, file counts, adaptation notes and warnings; and
 [`SHA256SUMS`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/SHA256SUMS)
 to check any of them against. `latest` always resolves to the newest release
 that is not a pre-release: v0.1.0 was published as a pre-release, and from
 0.2.0 a release is published as latest unless its tag carries a suffix such as
-`-rc.1`, which marks it a pre-release instead. See
-[CHANGELOG.md](CHANGELOG.md) for what changed and
+`-rc.1`, which marks it a pre-release instead. Every asset is also listed on
+the [downloads page](https://houfu.github.io/lq-plugin-cowork/downloads.html).
+See [CHANGELOG.md](CHANGELOG.md) for what changed and
 [docs/RELEASING.md](docs/RELEASING.md) for how a release is cut.
-
-## Install
-
-Three routes, in full in [docs/INSTALL.md](docs/INSTALL.md), and rendered on the
-[site](https://houfu.github.io/lq-plugin-cowork/install.html):
-
-- **Yourself, in Cowork** — Customize page → Plugins tab → upload the `.zip`,
-  shared with **Only you**.
-- **Your whole tenant** — an administrator uploads it as a custom app in the
-  Microsoft 365 admin center and assigns it to users or groups.
-- **From a terminal** —
-  `npm install -g @microsoft/m365agentstoolkit-cli`, `atk auth login m365`,
-  then `atk install --file-path <zip> --scope Personal`.
-
-Whether you can do the first and third depends on your tenant's custom-app
-policy. Read [docs/INSTALL.md](docs/INSTALL.md) before promising anyone a demo.
 
 ## Test it and report
 
@@ -217,8 +272,9 @@ make package
 ```
 
 `dist/` then holds, per bundle: the built tree, `<bundle>.zip`,
-`<bundle>-trigger-tests.md`, and a shared `build-report.md`. `make site` builds
-the static site into `dist/site/` from the same sources.
+`<bundle>-trigger-tests.md`; one `dist/skills/<name>.skill` per skill; and a
+shared `build-report.md`. `make site` builds the static site into `dist/site/`
+from the same sources.
 
 Upstream is vendored read-only as a git submodule at `upstream/`, pinned to an
 exact commit; nothing here edits it. Rather than fork the skills, the build
@@ -242,7 +298,8 @@ Every target is a thin wrapper around `uv run --project tools lqcowork …`.
 | `make setup` | `uv sync --project tools` |
 | `make build` | build `dist/<bundle>/` trees only |
 | `make validate` | validate `dist/<bundle>/` without rebuilding |
-| `make package` | build + validate + zip + trigger tests + build report |
+| `make package` | build + validate + zip + `.skill` archives + trigger tests + build report |
+| `make archives` | write and validate `dist/skills/<name>.skill` from an existing build |
 | `make site` | render the static site into `dist/site/` from a built `dist/` |
 | `make triggers` | write `dist/<bundle>-trigger-tests.md` only |
 | `make drift` | `bump-upstream --dry-run`: report drift, move nothing |

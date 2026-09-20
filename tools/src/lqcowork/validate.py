@@ -11,8 +11,6 @@ from . import transforms
 from .build import (
     MANIFEST_SCHEMA,
     MANIFEST_VERSION,
-    SKILL_ARCHIVE_DIR,
-    SKILL_ARCHIVE_SUFFIX,
     Issue,
     Suppression,
     dist_root,
@@ -28,10 +26,15 @@ MAX_SKILL_MD_BYTES = 1024 * 1024
 MAX_DESCRIPTION_CHARS = 1024
 MAX_BODY_WORDS = 3000
 
-# Cowork's Customize-page limits for a single uploaded skill archive.
-MAX_ARCHIVE_BYTES = 10 * 1024 * 1024
-MAX_ARCHIVE_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+# Cowork's Upload skill limits for a single-skill archive (contract section 8).
 MAX_ARCHIVE_ENTRIES = 100
+MAX_ARCHIVE_COMPRESSED_BYTES = 10 * 1024 * 1024
+MAX_ARCHIVE_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+MAX_ARCHIVE_MD_BYTES = 1024 * 1024
+MAX_ARCHIVE_COMPANIONS = 20
+# The two Apache-2.0 notices a single-skill archive carries beyond the built
+# skill folder; everything else in it must come from that folder.
+ARCHIVE_ROOT_FILES = ("LICENSE", "NOTICE.md")
 
 MANIFEST_KEYS = [
     "$schema",
@@ -652,92 +655,6 @@ def _upstream_urls(upstream_dir: Path | None) -> set[str]:
     return urls
 
 
-def skill_archives(config: Config, out_dir: Path | None = None) -> list[Path]:
-    """Every ``<out>/skills/<name>.skill`` on disk, in name order."""
-    root = dist_root(config, out_dir) / SKILL_ARCHIVE_DIR
-    if not root.is_dir():
-        return []
-    return sorted(root.glob(f"*{SKILL_ARCHIVE_SUFFIX}"))
-
-
-def validate_skill_archive(path: Path) -> list[Issue]:
-    """LQC-U001 to LQC-U005 against one per-skill upload archive.
-
-    The limits are Cowork's Customize page, not the plugin package: a
-    `.skill` is uploaded on its own, so it is the thing that has to fit.
-    """
-    name = path.name[: -len(SKILL_ARCHIVE_SUFFIX)]
-    errors: list[Issue] = []
-
-    def add(code: str, message: str) -> None:
-        errors.append(
-            Issue(
-                code,
-                message,
-                skill=name,
-                location=f"{SKILL_ARCHIVE_DIR}/{path.name}",
-            )
-        )
-
-    try:
-        with zipfile.ZipFile(path) as archive:
-            infos = archive.infolist()
-            names = archive.namelist()
-            skill_md = archive.read("SKILL.md") if "SKILL.md" in names else None
-    except (zipfile.BadZipFile, OSError) as exc:
-        add("LQC-U001", f"cannot be read as a zip archive: {exc}")
-        return errors
-
-    if skill_md is None:
-        add("LQC-U001", "no SKILL.md at the archive root")
-
-    compressed = path.stat().st_size
-    uncompressed = sum(info.file_size for info in infos)
-    if compressed > MAX_ARCHIVE_BYTES:
-        add(
-            "LQC-U002",
-            f"{compressed:,} bytes compressed, limit {MAX_ARCHIVE_BYTES:,}",
-        )
-    if uncompressed > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
-        add(
-            "LQC-U002",
-            f"{uncompressed:,} bytes uncompressed, limit "
-            f"{MAX_ARCHIVE_UNCOMPRESSED_BYTES:,}",
-        )
-    if len(infos) > MAX_ARCHIVE_ENTRIES:
-        add("LQC-U003", f"{len(infos)} entries, limit {MAX_ARCHIVE_ENTRIES}")
-
-    for entry in names:
-        if _unsafe_entry(entry):
-            add("LQC-U004", f"unsafe entry '{entry}'")
-
-    if skill_md is not None:
-        try:
-            document = transforms.parse_document(skill_md.decode("utf-8"))
-        except (transforms.TransformError, UnicodeDecodeError) as exc:
-            add("LQC-U005", f"SKILL.md frontmatter cannot be read: {exc}")
-        else:
-            fm_name = document.frontmatter.get("name")
-            if fm_name != name:
-                add(
-                    "LQC-U005",
-                    f"frontmatter name '{fm_name}' != archive name '{name}'",
-                )
-    return errors
-
-
-def _unsafe_entry(entry: str) -> bool:
-    """LQC-U004: traversal, absolute paths, dotfiles, `__MACOSX`."""
-    if entry.startswith("/") or re.match(r"^[A-Za-z]:[\\/]", entry):
-        return True
-    if "\\" in entry:
-        return True
-    parts = [part for part in entry.split("/") if part]
-    return any(
-        part == ".." or part.startswith(".") or part == "__MACOSX" for part in parts
-    )
-
-
 def validate_zip(path: Path, bundle_id: str, allowed_roots: set[str]) -> list[Issue]:
     """LQC-Z001: entries live at the zip root, with no dotfiles or __MACOSX."""
     errors: list[Issue] = []
@@ -756,4 +673,96 @@ def validate_zip(path: Path, bundle_id: str, allowed_roots: set[str]) -> list[Is
             errors.append(
                 _issue("LQC-Z001", f"unexpected root entry '{entry}'", bundle_id)
             )
+    return errors
+
+
+def validate_skill_archive(archive: Path, name: str, skill_dir: Path) -> list[Issue]:
+    """LQC-U001..U005 against one ``dist/skills/<name>.skill``.
+
+    ``skill_dir`` is the built folder the archive was made from, which is what
+    makes "carries nothing the bundle folder does not" checkable.
+    """
+    errors: list[Issue] = []
+
+    def fail(code: str, message: str) -> None:
+        errors.append(Issue(code, message, skill=name))
+
+    with zipfile.ZipFile(archive) as opened:
+        infos = opened.infolist()
+        contents = {info.filename: opened.read(info.filename) for info in infos}
+    names = [info.filename for info in infos]
+
+    built = {
+        path.relative_to(skill_dir).as_posix()
+        for path in skill_dir.rglob("*")
+        if path.is_file()
+    }
+    own_roots = {rel.split("/", 1)[0] for rel in built}
+
+    # LQC-U001: SKILL.md at the root, and nothing outside the skill's own tree
+    if "SKILL.md" not in names:
+        fail("LQC-U001", "SKILL.md is not at the archive root")
+    for entry in names:
+        head = entry.split("/", 1)[0]
+        if entry.startswith("./") or entry.startswith("/"):
+            fail("LQC-U001", f"entry '{entry}' is not at the archive root")
+        elif any(part.startswith(".") for part in entry.split("/") if part):
+            fail("LQC-U001", f"dotfile entry '{entry}'")
+        elif head == "__MACOSX":
+            fail("LQC-U001", f"__MACOSX entry '{entry}'")
+        elif head not in own_roots | set(ARCHIVE_ROOT_FILES):
+            fail("LQC-U001", f"unexpected root entry '{entry}'")
+
+    # LQC-U002: the SKILL.md a lawyer uploads is the one we built, and the
+    # licence travels with it
+    skill_md = skill_dir / "SKILL.md"
+    if "SKILL.md" in contents and skill_md.is_file():
+        if contents["SKILL.md"] != skill_md.read_bytes():
+            fail("LQC-U002", "SKILL.md differs from the built skill folder")
+    for required in ARCHIVE_ROOT_FILES:
+        if required not in names:
+            fail("LQC-U002", f"{required} is missing from the archive")
+
+    # LQC-U003 / LQC-U004: Cowork's upload limits
+    if len(names) > MAX_ARCHIVE_ENTRIES:
+        fail(
+            "LQC-U003",
+            f"{len(names)} entries, limit {MAX_ARCHIVE_ENTRIES}",
+        )
+    compressed = archive.stat().st_size
+    if compressed > MAX_ARCHIVE_COMPRESSED_BYTES:
+        fail(
+            "LQC-U004",
+            f"{compressed} bytes compressed, limit " f"{MAX_ARCHIVE_COMPRESSED_BYTES}",
+        )
+    uncompressed = sum(info.file_size for info in infos)
+    if uncompressed > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
+        fail(
+            "LQC-U004",
+            f"{uncompressed} bytes uncompressed, limit "
+            f"{MAX_ARCHIVE_UNCOMPRESSED_BYTES}",
+        )
+    for info in infos:
+        if info.filename.lower().endswith(".md") and (
+            info.file_size > MAX_ARCHIVE_MD_BYTES
+        ):
+            fail(
+                "LQC-U004",
+                f"{info.filename} is {info.file_size} bytes, limit "
+                f"{MAX_ARCHIVE_MD_BYTES}",
+            )
+
+    # LQC-U005: the companion budget, and nothing the bundle folder lacks
+    extras = [n for n in names if n not in {"SKILL.md", *ARCHIVE_ROOT_FILES}]
+    if len(extras) > MAX_ARCHIVE_COMPANIONS:
+        fail(
+            "LQC-U005",
+            f"{len(extras)} files besides SKILL.md, LICENSE and NOTICE.md, "
+            f"limit {MAX_ARCHIVE_COMPANIONS}",
+        )
+    for entry in names:
+        if entry in ARCHIVE_ROOT_FILES:
+            continue
+        if entry not in built:
+            fail("LQC-U005", f"'{entry}' is not in the built skill folder")
     return errors

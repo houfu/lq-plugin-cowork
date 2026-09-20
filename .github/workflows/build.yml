@@ -35,5 +35,6 @@ jobs:
           name: cowork-packages
           path: |
             dist/*.zip
+            dist/skills/*.skill
             dist/*.md
           if-no-files-found: error

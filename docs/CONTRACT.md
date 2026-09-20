@@ -43,6 +43,7 @@ lq-cowork/
   upstream/                    # git submodule, read-only, pinned SHA
   cowork.yaml                  # bundles, developer block, global transforms, pin
   probes.yaml                  # the capability probes the cards are written around
+  skills/README.md             # says these folders are build inputs, not skills (section 5b)
   skills/<name>/               # one adaptation folder per shipped skill
     skill.yaml                 #   the card (required)
     SKILL.md                   #   full-file overlay (optional)
@@ -60,7 +61,7 @@ lq-cowork/
     tests/...
   docs/CONTRACT.md             # this file
   docs/RELEASING.md            # how a release is cut (contract section 7)
-  dist/                        # generated, gitignored
+  dist/                        # generated, gitignored: bundles, zips, dist/skills/<name>.skill, reports
   .github/workflows/           # build.yml, release.yml, site.yml, upstream-drift.yml
   .github/dependabot.yml       # keeps the pinned action versions current
   Makefile                     # thin wrappers around `uv run --project tools lqcowork ...`
@@ -345,9 +346,9 @@ Rules for cards:
     `license: Apache-2.0`, and
     `metadata.adapted-from: "LegalQuants/lq-plugin-oss@<sha7> skills/<upstream>"`,
     `metadata.adapted-for: "Microsoft 365 Copilot Cowork"`,
-    `metadata.version: "<package.version>"` (a string, e.g. `"0.2.0"`, so a
-    `.skill` uploaded on its own still says which release it came from — there
-    is no manifest beside it). Existing
+    `metadata.version: "<package.version>"` (a string, e.g. `"0.2.0"`; the same
+    value as the manifest version, so a `.skill` uploaded on its own still says
+    which release it came from — there is no manifest beside it). Existing
     `metadata` keys are preserved. Insert as the first body line, right after
     the closing `---`:
     `<!-- Modified from LegalQuants/lq-plugin-oss@<sha7> (skills/<upstream>) for Microsoft 365 Copilot Cowork. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->`
@@ -380,43 +381,53 @@ print `must not activate; expect built-in <Name>`) and
 `dist/build-report.md` (per skill: bucket, tier, status, known-issue count,
 files, bytes, warnings; per bundle: skill count, manifest summary, the
 `Mirrors upstream plugin <id>: groups …; includes …; excludes …` line with
-upstream's `display_name` and `short_description` beside ours, and a
+upstream's `display_name` and `short_description` beside ours, a
 `### Known issues` table of every known issue the bundle's cards declare —
-id, skill, title, failure, probe).
+id, skill, title, failure, probe — and the single-skill archives of section
+5b).
 
-## 5b. Skill archives
+## 5b. Single-skill archives: `dist/skills/<name>.skill`
 
-A bundle is one way in; a single skill is the other. Cowork's Customize page
-takes a `.zip` or `.skill` archive holding one skill, and a lawyer who wants
-`regulatory` and nothing else should not have to install a fifteen-skill
-plugin to get it. So `package` also writes, for every skill in any bundle it
-built, `<out>/skills/<name>.skill`.
+Cowork's **Customize** page has an **Upload skill** control that takes one
+skill at a time, without a plugin package, an administrator or `atk`: a `.md`
+holding a single SKILL.md, or a `.zip`/`.skill` archive with `SKILL.md` at its
+root plus the skill's companion files. That is the route a lawyer with no
+developer tooling will use, and it is the route UAT issue 19 asked for after a
+tester zipped `skills/pressuretest/` from this repository, found no SKILL.md in
+it, and rebuilt the skill by hand. A lawyer who wants `regulatory` and nothing
+else should not have to install a fifteen-skill plugin to get it. Every
+`package` run therefore also writes one upload-ready archive per distinct
+skill, from the same built tree the bundles are made from — thirty-one of them
+when every bundle is built.
 
-- **One per distinct skill.** A skill that ships in several bundles is built
-  once and archived once, from that one built tree.
-- **Contents, at the archive root, no top-level folder:** the built `SKILL.md`
-  and every companion exactly as it sits in the bundle tree, at the same
-  relative paths, plus each `package.root_files` entry under its own base name
-  (`LICENSE` and `NOTICE.md`) — an archive uploaded on its own carries no
-  package around it to hold the licence and the notice.
-- **Name.** `<name>.skill`, where `<name>` is the shipped skill name, which is
-  the folder name and the frontmatter `name` (LQC-U005).
-- **Deterministic**, by the same rules as the bundle zips: entries sorted by
-  path, stamped 1980-01-01 unless `SOURCE_DATE_EPOCH` says otherwise, mode
-  0644, deflate. Two builds into different `--out` directories produce equal
-  bytes, and the release workflow re-checks that before it publishes.
-- **Checked against the Customize-page limits** (section 8, "Two packaging
-  channels with different limits"), not the plugin-package ones: LQC-U002 and
-  LQC-U003 are 10 MB compressed, 50 MB uncompressed and 100 files for the
-  archive as a whole, where LQC-C001 to LQC-C003 are about a skill folder
-  inside a plugin package.
+- Path `dist/skills/<name>.skill`, one per skill name across all selected
+  bundles (a shared skill is built once and archived once; the bundle copies
+  are byte-identical by construction). `<name>` is the shipped skill name,
+  which is the folder name and the frontmatter `name`.
+- Contents, all at the archive root, no top-level folder: the built skill
+  folder (`SKILL.md` and its companions, exactly as in `dist/<bundle>/skills/<name>/`),
+  plus each `package.root_files` entry under its own base name — `LICENSE`
+  (upstream's) and `NOTICE.md` — because Apache-2.0 §4 travels with every
+  distribution, and a single skill uploaded on its own is one.
+- Written with the bundle zip writer: sorted entries, 1980 timestamps (or
+  `SOURCE_DATE_EPOCH`), mode 0644, deflate, no `__MACOSX`, no dotfiles;
+  byte-reproducible. Two builds into different `--out` directories produce
+  equal bytes, and the release workflow re-checks that before it publishes.
+- Checked against the Customize-page limits, not the plugin-package ones:
+  LQC-U003 and LQC-U004 are 100 entries, 10 MB compressed and 50 MB
+  uncompressed for the archive as a whole, where LQC-C001 to LQC-C003 are
+  about a skill folder inside a plugin package (section 8, "Two packaging
+  channels with different limits").
+- There is no bare `.md` edition. A lone SKILL.md drops the companion files the
+  body tells the agent to read, so it would upload cleanly and then misbehave.
+  If a skill has no companions the archive still ships, for one download shape.
 
-`package` prints one summary line per archive under the bundle lines —
-`skills/<name>.skill: <n> files, <bytes> bytes` — and the build report gets a
-`## Skill archives` section listing each archive's name, file count and
-compressed bytes. `validate` checks the archives under `<out>/skills/` when
-that folder is there, and says nothing when it is not: `validate` never
-builds, so a tree packaged before this existed simply has none.
+Each archive is validated (section 6, `LQC-U` codes) after it is written, the
+same way bundle zips are. `package` prints one summary line per archive under
+the bundle lines, the build report gets a `## Single-skill archives` section
+(Archive | Entries | Compressed | Uncompressed | Bundles), and the release
+publishes them all next to the bundles with their checksums (section 7 of
+RELEASING.md).
 
 ## 6. Validation rules
 
@@ -453,12 +464,12 @@ Errors (fail the build):
 | LQC-M005 | `accentColor` matches `^#[0-9A-Fa-f]{6}$` |
 | LQC-I001 | `color.png` is a PNG of exactly 192×192; `outline.png` exactly 32×32 (read the IHDR chunk) |
 | LQC-Z001 | zip entries are at the root (`manifest.json`, icons, `skills/...`), no `__MACOSX`, no dotfiles |
-| LQC-U001 | a skill archive has `SKILL.md` at its root (an archive that is not a readable zip is the same code) |
-| LQC-U002 | a skill archive is ≤ 10 MB compressed and ≤ 50 MB uncompressed (the Customize-page limits) |
-| LQC-U003 | a skill archive has ≤ 100 entries |
-| LQC-U004 | no skill-archive entry has a `..` segment, an absolute path, a leading dot on any segment, a backslash, or `__MACOSX` |
-| LQC-U005 | the frontmatter `name` in an archived `SKILL.md` equals the archive's base name |
 | LQC-A001 | anchor failure (replace count mismatch, section heading missing, patch failed, overlay base missing) |
+| LQC-U001 | a single-skill archive has `SKILL.md` at its root, and no entry starts with `./`, `/`, a top-level folder other than the skill's own subfolders, `__MACOSX`, or a dot |
+| LQC-U002 | the archive's `SKILL.md` is byte-identical to `dist/<bundle>/skills/<name>/SKILL.md`, and its `LICENSE` and `NOTICE.md` are present |
+| LQC-U003 | ≤ 100 entries (Cowork's archive upload limit) |
+| LQC-U004 | ≤ 10 MB compressed and ≤ 50 MB uncompressed (Cowork's archive upload limits); each `.md` inside ≤ 1 MB |
+| LQC-U005 | ≤ 20 files other than `SKILL.md`, `LICENSE` and `NOTICE.md`, and the two root notices themselves are the only extra files — the archive carries nothing the bundle folder does not |
 | LQC-B001 | a mirrored bundle derives a skill that has no card under `skills/<name>/`. The message names the skill and says: write a card, or exclude it with a reason. One error per missing card, however many bundles derive it |
 | LQC-K001 | `cowork` missing, or `tier`/`status`/`differs` missing or malformed; `tier` not an integer 0 to 4; `status` not one of the two; a known issue without `id`, `title`, `detail` or `failure`; a workaround without both keys; a duplicate known-issue `id` anywhere in the repository |
 | LQC-K002 | `tier: 4` on a card in any bundle; `tier` 2 or 3 with no known issue; `status: probe-gated` with no known issue carrying `probe` |
@@ -468,10 +479,12 @@ is copied, and any of them stops the build there: half a bundle would bury
 them under a manifest's worth of consequential errors. Every one is reported,
 so a run names every card that needs work rather than the first.
 
-`LQC-U001` to `LQC-U005` are read off the `.skill` archives themselves, not
-off the tree they were written from: by `package` as soon as it writes one,
-and by `validate` over every archive in `<out>/skills/`. They carry the skill
-name and `skills/<name>.skill` as their location.
+`LQC-U001` to `LQC-U005` are read off the `.skill` archives themselves — by
+`package` as soon as it writes one, and by `lqcowork archives`, which writes
+and validates them from an existing build without building anything (it errors
+if `dist/<bundle>/` is not there) — with `LQC-U002` comparing the archived `SKILL.md` against the
+built bundle tree it came from. They carry the skill name and
+`skills/<name>.skill` as their location.
 
 Warnings (printed, and listed in the build report):
 
@@ -504,12 +517,13 @@ Jinja2 and markdown-it-py and nothing else, dev dependencies pytest and black
 
 ```
 uv run --project tools lqcowork build      [--bundle ID | --skill NAME ...] [--report-anchors] [--upstream-path P] [--out DIR]
-uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/, and dist/skills/*.skill when present, without rebuilding
-uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + skill archives + trigger tests + report
+uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/ without rebuilding
+uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + single-skill archives + trigger tests + report
 uv run --project tools lqcowork site       [--out DIR]                # render <out>/site/ from a built <out>/ (section 9)
 uv run --project tools lqcowork bump-upstream [--to REF] [--dry-run] [--report PATH]
 uv run --project tools lqcowork anchor     [--skill NAME]              # set anchored_to = current pin after review
 uv run --project tools lqcowork triggers   [--bundle ID] [--out DIR]   # write dist/<bundle>-trigger-tests.md only
+uv run --project tools lqcowork archives   [--bundle ID] [--out DIR]   # write and validate dist/skills/<name>.skill from an existing build
 uv run --project tools lqcowork release-check --tag vX.Y.Z [--out DIR] # does a tag agree with the tree?
 ```
 
@@ -704,6 +718,15 @@ The rules below are this repository's, not Microsoft's, and stand unchanged.
 - Cowork scores skills on trigger clarity, instruction specificity, scope
   boundaries and robustness, and runs a conflict scan; explicit hand-offs
   between competing skills resolve conflicts.
+- **Upload skill** (Customize page > Skills tab > arrow next to **Add**):
+  accepts a `.md` with a single SKILL.md, or a `.zip`/`.skill` with `SKILL.md`
+  at the root plus companions. Frontmatter must have `name` and `description`.
+  A `.md` may be up to 1 MB; an archive up to 10 MB compressed, 50 MB
+  uncompressed, 100 files. A skill whose name already exists is kept alongside
+  the old one with a number appended, so re-uploads do not replace. Cowork
+  shows a "only upload skills from sources you trust" reminder on first use.
+  Uploaded skills land in `/Documents/Cowork/skills/` and appear after sync.
+  Custom skills are not supported on mobile.
 - Skill selection: Cowork activates a skill from its description, and the
   conversation's **Sources** picker lets the user choose plugins and skills
   for a request. Do not claim a `/` skill menu in chat, and do not claim a

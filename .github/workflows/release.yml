@@ -80,8 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           cd dist
-          sha256sum *.zip skills/*.skill *-trigger-tests.md build-report.md \
-            > SHA256SUMS
+          sha256sum *.zip *-trigger-tests.md build-report.md skills/*.skill > SHA256SUMS
           cat SHA256SUMS
 
       - name: Compose the release notes
@@ -141,7 +140,7 @@ jobs:
                   f"| {archive.stat().st_size:,} bytes |"
               )
 
-          # One upload-ready archive per skill, for the Customize page.
+          # One upload-ready archive per skill, for the Upload skill control.
           skill_rows = []
           for archive in sorted((dist / "skills").glob("*.skill")):
               with zipfile.ZipFile(archive) as opened:
@@ -159,9 +158,11 @@ jobs:
           | --- | ---: | --- | ---: |
           {chr(10).join(rows)}
 
-          Every skill is also published on its own as `<name>.skill`, an upload-ready
-          archive for Cowork's Customize page (SKILL.md at the root, its companion
-          files, LICENSE and NOTICE.md); see [docs/INSTALL.md]({blob}/docs/INSTALL.md).
+          ## Upload one skill
+
+          No plugin, no admin, no terminal: download one `.skill` archive and
+          use Cowork's Upload skill control —
+          [Route 0 in docs/INSTALL.md]({blob}/docs/INSTALL.md#route-0-upload-a-single-skill).
 
           | Skill archive | Files | Size |
           | --- | ---: | ---: |

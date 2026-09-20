@@ -1,7 +1,8 @@
 # Thin wrappers around `uv run --project tools lqcowork ...`.
 #
 #   make setup          install the build tooling
-#   make package        build + validate + zip + .skill archives + report
+#   make package        build + validate + zip + archives + trigger tests + report
+#   make archives       upload-ready dist/skills/<name>.skill from a build
 #   make site           package, then render the static site into dist/site/
 #   make drift          report what moved upstream, without moving the pin
 #   make fmt-check      black --check, the formatting gate CI runs
@@ -9,7 +10,7 @@
 #   make release        check TAG, tag this commit, push the tag; CI publishes
 #
 # Optional variables:
-#   BUNDLE=legalquants-litigation-cowork   restrict build/validate/package/triggers
+#   BUNDLE=legalquants-litigation-cowork   restrict build/validate/package/archives/triggers
 #   TO=origin/main                         the ref bump/drift resolve
 #   SKILL=wiki                             restrict anchor
 #   REPORT=dist/upstream-drift.md          where drift/bump write the report
@@ -32,8 +33,8 @@ BUNDLE_ARG := $(if $(BUNDLE),--bundle $(BUNDLE),)
 SKILL_ARG := $(if $(SKILL),--skill $(SKILL),)
 REPORT_ARG := $(if $(REPORT),--report $(REPORT),)
 
-.PHONY: setup build validate package site triggers drift bump anchor test fmt \
-        fmt-check release-check release clean help
+.PHONY: setup build validate package archives site triggers drift bump anchor \
+        test fmt fmt-check release-check release clean help
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | grep -v '^help$$' | sort
@@ -49,6 +50,9 @@ validate:
 
 package:
 	$(LQ) package $(BUNDLE_ARG)
+
+archives:
+	$(LQ) archives $(BUNDLE_ARG)
 
 # The site describes a build, so it is never rendered without one.
 site: package

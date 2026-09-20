@@ -30,12 +30,17 @@ per skill to claim, and one issue per probe labelled `probe`.
 ## What testers need
 
 - **A Microsoft 365 Copilot tenant with Cowork**, on desktop or web. Custom
-  plugins are not supported in Cowork on mobile.
-- **A bundle installed** — see [docs/INSTALL.md](INSTALL.md). Personal scope,
-  shared with **Only you**, is enough.
-- **The release assets**: the bundle zip, its `<bundle>-trigger-tests.md`, and
-  `build-report.md` (which tells you the package version and, per skill, what
-  the adaptation changed).
+  skills and plugins are not supported in Cowork on mobile.
+- **A bundle installed, or one skill uploaded** — see
+  [docs/INSTALL.md](INSTALL.md). Testing only one skill? [Route
+  0](INSTALL.md#route-0-upload-a-single-skill) — uploading its `<name>.skill`
+  archive — is the fastest way in: no plugin, no admin, no bundle choice to
+  make. Testing routing (Part A below) or more than one skill still needs a
+  bundle installed. Personal scope, shared with **Only you**, is enough for
+  either route.
+- **The release assets**: the bundle zip or the `<name>.skill` archive you are
+  testing, its `<bundle>-trigger-tests.md`, and `build-report.md` (which tells
+  you the package version and, per skill, what the adaptation changed).
 - **Synthetic documents only.** Every test below says what to prepare. Invent the
   parties, the numbers and the facts. Never use a real matter, a real client
   name or anything you would not publish. This is not a caution about the
@@ -63,12 +68,15 @@ If you install more than one at once, say so in every report: two enabled
 plugins contributing identically-named skills is untested ground, and how
 Cowork handles it is itself a finding.
 
-A tester can also skip the bundle:
-[docs/INSTALL.md](INSTALL.md#0-upload-one-skill-on-its-own)'s Route 0 uploads a
-single `.skill` archive on its own to test one skill without installing
-anything else. Say so in the report — with only that skill installed, Part A's
-routing tests only cover that one skill against Cowork's own built-in skills,
-not against the sibling skills a bundle would install beside it.
+A tester can also skip the bundle. Only here for one skill's behaviour test
+(Part B), not the routing tests? Upload that skill's `<name>.skill` archive
+instead — **Upload skill (.skill)** is the install route in
+[docs/INSTALL.md, Route 0](INSTALL.md#route-0-upload-a-single-skill) — and say
+so in the report. Part A's routing tests still want a bundle installed: with
+only one skill uploaded they cover that skill against Cowork's own built-in
+skills, not against the sibling skills a bundle would install beside it, and
+routing is about which skill a plugin's own description wins against its
+neighbours.
 
 ## Part A — routing tests
 
@@ -1069,9 +1077,17 @@ see is the defect to report.
 **One report per result.** Use the
 [UAT report form](https://github.com/houfu/lq-plugin-cowork/issues/new?template=uat-report.yml):
 it asks for the report type (routing pass, routing misfire, behaviour pass,
-behaviour defect), the bundle, the skill, the package version, the date, your
-Cowork client if you know it, the prompt you typed, the files you attached, what
-you expected, what happened, and an excerpt of the reply.
+behaviour defect), the bundle, the skill, the package version, **the exact
+filename of what you uploaded** (a bundle zip such as
+`legalquants-litigation-cowork.zip`, or a single-skill archive such as
+`pressuretest.skill`), the date, your Cowork client if you know it, the prompt
+you typed, the files you attached, what you expected, what happened, and an
+excerpt of the reply. The `SKILL.md` a single-skill archive carries is
+byte-identical to the one in its bundle, so a behaviour defect reads the same
+either way — but naming the exact artifact still matters, because a routing
+misfire is only possible with a bundle installed, and because a defect
+specific to Cowork's single-skill upload path (rather than the skill content
+itself) would only show up that way.
 
 Passes are worth reporting too. A skill with four routing passes and a clean
 behaviour run is a skill that can come off the status board, and that is the
@@ -1100,7 +1116,9 @@ exact prompt attached.
   pasting it, and say that is what you did.
 
 The package version is in the release name, in `build-report.md`, and in the
-`version` field of `manifest.json` inside the zip. For v0.2.0 it is `0.2.0`.
+`version` field of `manifest.json` inside a bundle zip. If you only uploaded a
+single-skill archive, the same value is in its `SKILL.md` frontmatter, under
+`metadata.version`. For v0.2.0 it is `0.2.0`.
 
 ## Part D — what happens to your report
 

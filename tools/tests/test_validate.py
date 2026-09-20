@@ -534,131 +534,98 @@ class TestZip:
         assert len(codes) >= 3
 
 
-SKILL_MD = "---\nname: alpha\ndescription: A description.\n---\n\n# Alpha\n"
+class TestSkillArchive:
+    """LQC-U001..U005, one provoked at a time against a written archive."""
 
+    def archive(self, root: Path, name: str = "alpha") -> Path:
+        from lqcowork.package import write_skill_archives
 
-def write_skill_archive(
-    tmp_path: Path,
-    name: str = "alpha",
-    entries: dict[str, bytes | str] | None = None,
-) -> Path:
-    """A ``<name>.skill`` carrying SKILL.md and whatever else is asked for."""
-    payloads: dict[str, bytes | str] = {"SKILL.md": SKILL_MD}
-    payloads.update(entries or {})
-    target = tmp_path / f"{name}.skill"
-    with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for rel, payload in payloads.items():
-            archive.writestr(rel, payload)
-    return target
+        config = load_config(root)
+        written = write_skill_archives(config, list(config.bundles))
+        return next(path for path in written if path.stem == name)
 
+    def skill_dir(self, root: Path, name: str = "alpha") -> Path:
+        return root / "dist/test-bundle/skills" / name
 
-class TestSkillArchiveLimits:
-    """LQC-U001 to LQC-U005: what Cowork's Customize page will take."""
+    def check(self, root: Path, archive: Path, name: str = "alpha") -> list[str]:
+        issues = V.validate_skill_archive(archive, name, self.skill_dir(root, name))
+        return [issue.code for issue in issues]
 
-    def test_the_limits_are_the_documented_ones(self):
-        assert V.MAX_ARCHIVE_BYTES == 10 * 1024 * 1024
-        assert V.MAX_ARCHIVE_UNCOMPRESSED_BYTES == 50 * 1024 * 1024
-        assert V.MAX_ARCHIVE_ENTRIES == 100
+    def rewrite(self, archive: Path, entries: dict[str, bytes]) -> Path:
+        """Replace the archive's contents, the way a tamperer would."""
+        with zipfile.ZipFile(archive, "w") as opened:
+            for name, payload in entries.items():
+                opened.writestr(name, payload)
+        return archive
 
-    def test_a_clean_archive_passes(self, tmp_path):
-        archive = write_skill_archive(
-            tmp_path, entries={"references/notes.md": "# Notes\n"}
-        )
-        assert V.validate_skill_archive(archive) == []
+    def contents(self, archive: Path) -> dict[str, bytes]:
+        with zipfile.ZipFile(archive) as opened:
+            return {name: opened.read(name) for name in opened.namelist()}
 
-    def test_u001_no_skill_md_at_the_root(self, tmp_path):
-        target = tmp_path / "alpha.skill"
-        with zipfile.ZipFile(target, "w") as archive:
-            archive.writestr("alpha/SKILL.md", SKILL_MD)
-        codes = [i.code for i in V.validate_skill_archive(target)]
-        assert "LQC-U001" in codes
+    def test_a_written_archive_is_clean(self, built_repo):
+        archive = self.archive(built_repo)
+        assert self.check(built_repo, archive) == []
+        assert self.check(built_repo, self.archive(built_repo, "beta"), "beta") == []
 
-    def test_u001_not_a_zip_at_all(self, tmp_path):
-        target = tmp_path / "alpha.skill"
-        target.write_bytes(b"not a zip")
-        issues = V.validate_skill_archive(target)
-        assert [i.code for i in issues] == ["LQC-U001"]
-        assert issues[0].skill == "alpha"
+    def test_u001_nested_top_level_folder(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = {f"alpha/{k}": v for k, v in self.contents(archive).items()}
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes.count("LQC-U001") == len(entries) + 1  # + no SKILL.md at root
 
-    def test_u002_compressed_limit(self, tmp_path, monkeypatch):
-        # The real 10 MB needs 10 MB of incompressible bytes to provoke, so
-        # the rule is exercised against a limit small enough to write.
-        monkeypatch.setattr(V, "MAX_ARCHIVE_BYTES", 16)
-        archive = write_skill_archive(tmp_path)
-        codes = [i.code for i in V.validate_skill_archive(archive)]
+    def test_u001_dotfile_entry(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {".DS_Store": b"junk"}
+        assert "LQC-U001" in self.check(built_repo, self.rewrite(archive, entries))
+
+    def test_u001_macosx_entry(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {"__MACOSX/alpha": b"junk"}
+        assert "LQC-U001" in self.check(built_repo, self.rewrite(archive, entries))
+
+    def test_u002_skill_md_must_match_the_built_one(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {"SKILL.md": b"---\nname: alpha\n---\n"}
+        codes = self.check(built_repo, self.rewrite(archive, entries))
         assert codes == ["LQC-U002"]
 
-    def test_u002_uncompressed_limit(self, tmp_path):
-        big = b"\0" * (V.MAX_ARCHIVE_UNCOMPRESSED_BYTES + 1)
-        archive = write_skill_archive(tmp_path, entries={"references/big.md": big})
-        issues = V.validate_skill_archive(archive)
-        assert [i.code for i in issues] == ["LQC-U002"]
-        assert "uncompressed" in issues[0].message
-
-    def test_u003_entry_count(self, tmp_path):
-        extra: dict[str, bytes | str] = {
-            f"references/r{i:03d}.md": "x\n" for i in range(V.MAX_ARCHIVE_ENTRIES)
+    def test_u002_licence_and_notice_must_travel(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = {
+            k: v
+            for k, v in self.contents(archive).items()
+            if k not in {"LICENSE", "NOTICE.md"}
         }
-        archive = write_skill_archive(tmp_path, entries=extra)
-        issues = V.validate_skill_archive(archive)
-        assert [i.code for i in issues] == ["LQC-U003"]
-        assert "101 entries" in issues[0].message
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes.count("LQC-U002") == 2
 
-    @pytest.mark.parametrize(
-        "entry",
-        ["../escape.md", "/etc/passwd", ".hidden", "__MACOSX/x", "a/../b.md"],
-    )
-    def test_u004_unsafe_entries(self, tmp_path, entry):
-        target = tmp_path / "alpha.skill"
-        with zipfile.ZipFile(target, "w") as archive:
-            archive.writestr("SKILL.md", SKILL_MD)
-            archive.writestr(entry, "x")
-        codes = [i.code for i in V.validate_skill_archive(target)]
-        assert codes == ["LQC-U004"]
+    def test_u003_entry_count(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_ENTRIES", 2)
+        assert "LQC-U003" in self.check(built_repo, self.archive(built_repo))
 
-    def test_u005_name_must_equal_the_archive_name(self, tmp_path):
-        archive = write_skill_archive(tmp_path, name="beta")
-        issues = V.validate_skill_archive(archive)
-        assert [i.code for i in issues] == ["LQC-U005"]
-        assert "'alpha' != archive name 'beta'" in issues[0].message
+    def test_u004_compressed_limit(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_COMPRESSED_BYTES", 10)
+        assert "LQC-U004" in self.check(built_repo, self.archive(built_repo))
 
-    def test_u005_unreadable_frontmatter(self, tmp_path):
-        target = tmp_path / "alpha.skill"
-        with zipfile.ZipFile(target, "w") as archive:
-            archive.writestr("SKILL.md", "# Alpha\n\nNo frontmatter here.\n")
-        codes = [i.code for i in V.validate_skill_archive(target)]
+    def test_u004_uncompressed_limit(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_UNCOMPRESSED_BYTES", 10)
+        assert "LQC-U004" in self.check(built_repo, self.archive(built_repo))
+
+    def test_u004_markdown_limit(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_MD_BYTES", 10)
+        codes = self.check(built_repo, self.archive(built_repo))
+        assert codes.count("LQC-U004") >= 2  # SKILL.md and its companions
+
+    def test_u005_companion_budget(self, built_repo, monkeypatch):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_COMPANIONS", 1)
+        codes = self.check(built_repo, self.archive(built_repo))
         assert codes == ["LQC-U005"]
 
-    def test_the_issue_names_the_archive(self, tmp_path):
-        archive = write_skill_archive(tmp_path, name="beta")
-        issue = V.validate_skill_archive(archive)[0]
-        assert issue.location == "skills/beta.skill"
-        assert issue.render().startswith("LQC-U005 beta: skills/beta.skill:")
-
-
-class TestValidateReadsTheArchives:
-    def test_no_archive_directory_is_not_a_failure(self, built_repo, monkeypatch):
-        monkeypatch.chdir(built_repo)
-        assert not (built_repo / "dist/skills").exists()
-        assert main(["validate"]) == 0
-
-    def test_archives_are_listed_in_name_order(self, fixture_repo, monkeypatch):
-        monkeypatch.chdir(fixture_repo)
-        assert main(["package"]) == 0
-        config = load_config(fixture_repo)
-        assert [p.name for p in V.skill_archives(config)] == [
-            "alpha.skill",
-            "beta.skill",
-        ]
-
-    def test_a_broken_archive_fails_validate(self, fixture_repo, monkeypatch, capsys):
-        monkeypatch.chdir(fixture_repo)
-        assert main(["package"]) == 0
-        (fixture_repo / "dist/skills/alpha.skill").write_bytes(b"not a zip")
-        assert main(["validate"]) == 2
-        out = capsys.readouterr().out
-        assert "skills: 2 archives, 1 errors" in out
-        assert "LQC-U001" in out
+    def test_u005_nothing_the_bundle_folder_does_not_have(self, built_repo):
+        archive = self.archive(built_repo)
+        entries = self.contents(archive) | {"references/smuggled.md": b"# No\n"}
+        codes = self.check(built_repo, self.rewrite(archive, entries))
+        assert codes == ["LQC-U005"]
 
 
 class TestClaimWords:

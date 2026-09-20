@@ -73,10 +73,6 @@ MANIFEST_VERSION = "1.28"
 # Where `build --skill NAME` puts its trees: one folder per skill, no bundle.
 SKILLS_ONLY_DIR = "skills-only"
 
-# Where `package` puts the per-skill upload archives: `<out>/skills/<name>.skill`.
-SKILL_ARCHIVE_DIR = "skills"
-SKILL_ARCHIVE_SUFFIX = ".skill"
-
 
 class BuildError(Exception):
     """The build cannot continue (missing source, unwritable output)."""
