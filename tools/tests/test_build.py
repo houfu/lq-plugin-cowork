@@ -65,6 +65,19 @@ class TestFrontmatter:
         assert fm["metadata"]["adapted-for"] == "Microsoft 365 Copilot Cowork"
         assert fm["metadata"]["legalquants.python-requires"] == ">=3.12"
 
+    def test_the_package_version_is_stamped_on_the_skill(self, fixture_repo, built):
+        config, _, _ = built
+        fm = transforms.parse_document(read_skill(fixture_repo, "alpha")).frontmatter
+        assert fm["metadata"]["version"] == config.version
+        assert isinstance(fm["metadata"]["version"], str)
+
+    def test_the_version_stamp_reaches_a_skill_with_no_metadata(
+        self, fixture_repo, built
+    ):
+        # beta's upstream frontmatter carries no metadata block at all
+        fm = transforms.parse_document(read_skill(fixture_repo, "beta")).frontmatter
+        assert fm["metadata"]["version"] == "0.1.0"
+
     def test_key_order_and_block_scalar(self, fixture_repo, built):
         lines = read_skill(fixture_repo, "alpha").split("\n")
         assert lines[0] == "---"

@@ -63,6 +63,13 @@ If you install more than one at once, say so in every report: two enabled
 plugins contributing identically-named skills is untested ground, and how
 Cowork handles it is itself a finding.
 
+A tester can also skip the bundle:
+[docs/INSTALL.md](INSTALL.md#0-upload-one-skill-on-its-own)'s Route 0 uploads a
+single `.skill` archive on its own to test one skill without installing
+anything else. Say so in the report — with only that skill installed, Part A's
+routing tests only cover that one skill against Cowork's own built-in skills,
+not against the sibling skills a bundle would install beside it.
+
 ## Part A — routing tests
 
 Cowork picks a skill from its `description` and nothing else. The routing tests

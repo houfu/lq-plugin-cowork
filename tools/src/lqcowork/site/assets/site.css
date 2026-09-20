@@ -219,7 +219,8 @@ a:visited {
 
 /* Panels, badges, definition lists -------------------------------------- */
 
-.panel {
+.panel,
+.download {
   background: var(--panel);
   border: 1px solid var(--rule);
   border-radius: 6px;
@@ -227,15 +228,37 @@ a:visited {
   margin: 0 0 1.1rem;
 }
 
-.panel > :last-child {
+.panel > :last-child,
+.download > :last-child {
   margin-bottom: 0.9rem;
 }
 
 .panel h2,
-.panel h3 {
+.panel h3,
+.download h2,
+.download h3 {
   margin-top: 0;
   border-top: 0;
   padding-top: 0;
+}
+
+/* The download blocks: the same light card, with the file names doing the
+   work. A file name is the one thing a reader has to recognise again on the
+   release page, so it is never shortened and never allowed to overflow. */
+
+ul.downloads {
+  list-style: none;
+  padding-left: 0;
+  margin-bottom: 0.7rem;
+}
+
+ul.downloads li {
+  margin-bottom: 0.45rem;
+  overflow-wrap: anywhere;
+}
+
+ul.downloads a code {
+  font-size: 0.95em;
 }
 
 .badges {

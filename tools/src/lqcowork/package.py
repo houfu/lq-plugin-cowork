@@ -5,12 +5,16 @@ from __future__ import annotations
 import os
 import time
 import zipfile
+from dataclasses import dataclass
 from pathlib import Path
 
 from .build import (
+    SKILL_ARCHIVE_DIR,
+    SKILL_ARCHIVE_SUFFIX,
     BuildResult,
     BundleBuild,
     Issue,
+    SkillBuild,
     Suppression,
     build_manifest,
     dist_root,
@@ -37,27 +41,126 @@ def allowed_roots(config: Config) -> set[str]:
     return roots
 
 
-def write_zip(config: Config, bundle: Bundle, out_dir: Path | None = None) -> Path:
-    """Zip ``<out>/<bundle>/`` with everything at the archive root."""
-    source = dist_root(config, out_dir) / bundle.id
-    target = zip_path(config, bundle, out_dir)
+def skill_archive_dir(config: Config, out_dir: Path | None = None) -> Path:
+    return dist_root(config, out_dir) / SKILL_ARCHIVE_DIR
+
+
+def skill_archive_path(config: Config, name: str, out_dir: Path | None = None) -> Path:
+    return skill_archive_dir(config, out_dir) / f"{name}{SKILL_ARCHIVE_SUFFIX}"
+
+
+@dataclass(frozen=True)
+class SkillArchive:
+    """One written ``<out>/skills/<name>.skill`` and its measurements."""
+
+    name: str
+    path: Path
+    files: int
+    compressed_bytes: int
+
+    def summary(self) -> str:
+        """The one-line summary `package` prints under the bundle lines."""
+        return (
+            f"{SKILL_ARCHIVE_DIR}/{self.path.name}: {self.files} files, "
+            f"{self.compressed_bytes:,} bytes"
+        )
+
+
+def _packable(rel: str) -> bool:
+    """Paths a package never carries: dotfiles and macOS resource forks."""
+    if any(part.startswith(".") for part in rel.split("/")):
+        return False
+    return rel.split("/", 1)[0] != "__MACOSX"
+
+
+def _tree_entries(source: Path) -> list[tuple[str, bytes]]:
+    """Every packable file under ``source``, keyed by its archive path."""
+    return [
+        (rel, path.read_bytes())
+        for rel, path in (
+            (p.relative_to(source).as_posix(), p)
+            for p in source.rglob("*")
+            if p.is_file()
+        )
+        if _packable(rel)
+    ]
+
+
+def _write_archive(target: Path, entries: list[tuple[str, bytes]]) -> Path:
+    """Write a deterministic zip: sorted entries, fixed stamps, fixed modes.
+
+    Two builds of the same tree produce equal bytes, which is what the
+    release workflow re-checks before it publishes anything.
+    """
+    target.parent.mkdir(parents=True, exist_ok=True)
     if target.exists():
         target.unlink()
-    entries = sorted(
-        (p.relative_to(source).as_posix(), p) for p in source.rglob("*") if p.is_file()
-    )
     stamp = _zip_timestamp()
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
-        for rel, path in entries:
-            if any(part.startswith(".") for part in rel.split("/")):
-                continue
-            if rel.split("/", 1)[0] == "__MACOSX":
-                continue
+        for rel, payload in sorted(entries, key=lambda entry: entry[0]):
             info = zipfile.ZipInfo(rel, date_time=stamp)
             info.compress_type = zipfile.ZIP_DEFLATED
             info.external_attr = 0o644 << 16
-            archive.writestr(info, path.read_bytes())
+            archive.writestr(info, payload)
     return target
+
+
+def write_zip(config: Config, bundle: Bundle, out_dir: Path | None = None) -> Path:
+    """Zip ``<out>/<bundle>/`` with everything at the archive root."""
+    source = dist_root(config, out_dir) / bundle.id
+    return _write_archive(zip_path(config, bundle, out_dir), _tree_entries(source))
+
+
+def root_file_entries(config: Config, bundle_dir: Path) -> list[tuple[str, bytes]]:
+    """`LICENSE` and `NOTICE.md` as the built package already carries them."""
+    entries: list[tuple[str, bytes]] = []
+    for rel in config.root_files:
+        path = bundle_dir / Path(rel).name
+        if path.is_file():
+            entries.append((path.name, path.read_bytes()))
+    return entries
+
+
+def write_skill_archive(
+    config: Config,
+    skill: SkillBuild,
+    root_files: list[tuple[str, bytes]],
+    out_dir: Path | None = None,
+) -> SkillArchive:
+    """Write ``<out>/skills/<name>.skill``: one skill, ready to upload.
+
+    Contents sit at the archive root exactly as they sit in the bundle tree —
+    the built SKILL.md and its companions — plus the package's own root
+    files, because an archive uploaded on its own carries no package around
+    it to hold the licence and the notice.
+    """
+    entries = _tree_entries(skill.path) + list(root_files)
+    target = _write_archive(skill_archive_path(config, skill.name, out_dir), entries)
+    return SkillArchive(
+        name=skill.name,
+        path=target,
+        files=len(entries),
+        compressed_bytes=target.stat().st_size,
+    )
+
+
+def write_skill_archives(
+    config: Config, result: BuildResult, out_dir: Path | None = None
+) -> list[SkillArchive]:
+    """One archive per distinct skill in the build, in name order.
+
+    A skill that ships in several bundles is built once and archived once.
+    """
+    archives: list[SkillArchive] = []
+    seen: set[str] = set()
+    for built in result.bundles:
+        root_files = root_file_entries(config, built.path)
+        for skill in built.skills:
+            if skill.name in seen:
+                continue
+            seen.add(skill.name)
+            archives.append(write_skill_archive(config, skill, root_files, out_dir))
+    return sorted(archives, key=lambda archive: archive.name)
 
 
 def _zip_timestamp() -> tuple[int, int, int, int, int, int]:
@@ -223,6 +326,26 @@ def _known_issue_lines(built: BundleBuild) -> list[str]:
     return lines
 
 
+def _archive_table(archives: list[SkillArchive]) -> list[str]:
+    """Every per-skill upload archive the build wrote, with its size."""
+    if not archives:
+        return []
+    lines = [
+        "## Skill archives",
+        "",
+        "One upload-ready archive per skill, for Cowork's Customize page.",
+        "",
+        "| Skill | Files | Bytes |",
+        "| --- | ---: | ---: |",
+    ]
+    for archive in archives:
+        lines.append(
+            f"| {archive.name} | {archive.files} | {archive.compressed_bytes:,} |"
+        )
+    lines.append("")
+    return lines
+
+
 def write_build_report(
     config: Config,
     result: BuildResult,
@@ -230,6 +353,7 @@ def write_build_report(
     errors: list[Issue] | None = None,
     warnings: list[Issue] | None = None,
     suppressed: list[Suppression] | None = None,
+    archives: list[SkillArchive] | None = None,
     out_dir: Path | None = None,
 ) -> Path:
     """dist/build-report.md — per skill and per bundle, plus every issue."""
@@ -300,6 +424,7 @@ def write_build_report(
                 lines.append(f"- **{skill.name}** — {note}")
             lines.append("")
 
+    lines += _archive_table(archives or [])
     lines += _suppressed_table(suppressed or [])
     lines += _issue_table("## Errors", errors)
     lines += _issue_table("## Anchor failures", result.anchors)

@@ -73,6 +73,10 @@ MANIFEST_VERSION = "1.28"
 # Where `build --skill NAME` puts its trees: one folder per skill, no bundle.
 SKILLS_ONLY_DIR = "skills-only"
 
+# Where `package` puts the per-skill upload archives: `<out>/skills/<name>.skill`.
+SKILL_ARCHIVE_DIR = "skills"
+SKILL_ARCHIVE_SUFFIX = ".skill"
+
 
 class BuildError(Exception):
     """The build cannot continue (missing source, unwritable output)."""
@@ -711,6 +715,9 @@ class Builder:
             f"LegalQuants/lq-plugin-oss@{self.config.sha7} skills/{card.upstream}"
         )
         metadata["adapted-for"] = "Microsoft 365 Copilot Cowork"
+        # The package version, on the skill itself: a `.skill` archive is
+        # uploaded on its own, with no manifest beside it to date it.
+        metadata["version"] = str(self.config.version)
         frontmatter["metadata"] = metadata
 
         notice = NOTICE_TEMPLATE.format(sha7=self.config.sha7, upstream=card.upstream)

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}Downloads{% endblock %}
+{% block content %}
+<h1>Downloads</h1>
+
+<p class="lede">
+  Everything this project publishes: {{ bundles | length }} bundle
+  package{{ "" if bundles | length == 1 else "s" }} to sideload whole, and
+  {{ skills | length }} single-skill archives to upload one at a time. Every
+  link on this page points at the latest release rather than at a version, so
+  it keeps working after the next one.
+</p>
+
+<h2 id="bundles">The bundle packages</h2>
+
+<p>
+  One zip per bundle: the manifest, the icons and every skill in it.
+  <a href="install.html">Installing a bundle</a> walks through the three ways
+  in. The checklist beside each package is that bundle's trigger tests, with a
+  column to write what actually happened in.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <caption>
+      In manifest order. A skill that belongs in two bundles is the same
+      skill, built once and shipped in both.
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Bundle</th>
+        <th scope="col" class="num">Skills</th>
+        <th scope="col">Package</th>
+        <th scope="col">Trigger tests</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for bundle in bundles %}
+      <tr>
+        <th scope="row"><a href="bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a></th>
+        <td class="num">{{ bundle.skills | length }}</td>
+        <td><a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a></td>
+        <td><a href="{{ bundle.triggers_url }}"><code>{{ bundle.triggers_asset }}</code></a></td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 id="skills">Single skills</h2>
+
+<p>
+  A <code>.skill</code> archive is one skill on its own: a zip with
+  <code>SKILL.md</code> at the root, its companion files beside it, and the
+  licence and notice. Upload one on Cowork's Customize page — Customize →
+  Skills → upload — when you want that skill rather than the bundle around it.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <caption>
+      {{ skills | length }} skills, alphabetically.
+      {%- if archives_built %}
+      Sizes are read from the archives built beside this site.
+      {%- else %}
+      The archives were not built beside this site, so no sizes are shown; the
+      links are the same either way.
+      {%- endif %}
+    </caption>
+    <thead>
+      <tr>
+        <th scope="col">Skill</th>
+        <th scope="col">Bundles</th>
+        <th scope="col">Archive</th>
+        <th scope="col" class="num">Size</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for skill in skills %}
+      <tr>
+        <th scope="row"><a href="skills/{{ skill.name }}.html">{{ skill.name }}</a></th>
+        <td>{{ skill.bundle_shorts | join(", ") }}</td>
+        <td><a href="{{ skill.archive.url }}"><code>{{ skill.archive.asset }}</code></a></td>
+        <td class="num">{{ skill.archive.size_label or "—" }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2 id="checksums">Checksums, and the rest of the release</h2>
+
+<div class="download">
+  <ul class="downloads">
+    <li>
+      <a href="{{ checksums_url }}"><code>{{ checksums_asset }}</code></a> — a
+      SHA-256 for every asset in the release. Check what you downloaded against
+      it before you sideload anything.
+    </li>
+    <li>
+      <a href="{{ report_url }}"><code>{{ report_asset }}</code></a> — the build
+      report: what the build did to each skill, and every warning it raised.
+    </li>
+    <li>
+      <a href="{{ releases_index_url }}">Every release</a> — the older ones too,
+      each with its own notes and its own assets.
+    </li>
+  </ul>
+  <p class="subtle">{{ latest_note }}</p>
+</div>
+{% endblock %}

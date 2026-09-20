@@ -17,6 +17,7 @@ from __future__ import annotations
 import posixpath
 import re
 import shutil
+import zipfile
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Any, Iterable, Sequence
@@ -43,9 +44,21 @@ from ..transforms import TransformError, parse_document
 # issues and the "help wanted" list are all here.
 PROJECT_REPO = "https://github.com/houfu/lq-plugin-cowork"
 RELEASES_URL = f"{PROJECT_REPO}/releases/latest"
+RELEASES_INDEX_URL = f"{PROJECT_REPO}/releases"
+# Every published asset has a second URL that names no version: GitHub
+# resolves `releases/latest/download/<asset>` to the same file on the most
+# recent release that is not a pre-release. The site links those rather than
+# a tagged URL, so a page published today still points at the right file
+# after the next tag, and publishing a release rebuilds nothing here.
+LATEST_DOWNLOAD_URL = f"{RELEASES_URL}/download"
 HELP_WANTED_URL = (
     f"{PROJECT_REPO}/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22"
 )
+
+# The two assets that belong to the release rather than to one bundle.
+# `release.yml` checksums every other asset into the first.
+CHECKSUMS_ASSET = "SHA256SUMS"
+REPORT_ASSET = "build-report.md"
 
 SITE_TITLE = "LegalQuants skills for Copilot Cowork"
 
@@ -80,6 +93,7 @@ NAV: tuple[tuple[str, str], ...] = (
     ("known-issues.html", "Known issues"),
     ("probes.html", "Probes"),
     ("install.html", "Install"),
+    ("downloads.html", "Downloads"),
     ("testing.html", "Testing"),
     ("changelog.html", "Changelog"),
 )
@@ -105,6 +119,20 @@ class SiteError(BuildError):
 
 # ---------------------------------------------------------------------------
 # small text helpers
+
+
+def download_url(asset: str) -> str:
+    """One release asset's URL on whatever the latest release turns out to be."""
+    return f"{LATEST_DOWNLOAD_URL}/{asset}"
+
+
+def latest_note(version: str) -> str:
+    """The caveat every download block repeats: what "latest" resolves to."""
+    return (
+        "\u201cLatest\u201d is GitHub's own pointer at the most recent release "
+        "that is not a pre-release, so these links resolve only once "
+        f"{version} is published."
+    )
 
 
 def first_sentence(text: str) -> str:
@@ -223,6 +251,50 @@ def render_markdown(text: str, source: str) -> Markup:
 # the built tree
 
 
+_SIZE_UNITS = ("KB", "MB", "GB")
+
+
+def human_size(size: int) -> str:
+    """A byte count in the unit a reader thinks in, rounded the same way twice.
+
+    No locale and no clock: the same number of bytes always renders the same
+    string, which is what lets a size sit on a reproducible page at all.
+    """
+    if size < 1024:
+        return f"{size} bytes"
+    value = float(size)
+    unit = _SIZE_UNITS[0]
+    for unit in _SIZE_UNITS:
+        value /= 1024
+        if value < 1024:
+            break
+    return f"{value:.1f} {unit}"
+
+
+def skill_archive(out: Path, name: str) -> Path:
+    """Where ``package`` writes one skill's upload archive, if it wrote one."""
+    return out / "skills" / f"{name}.skill"
+
+
+def read_archive(path: Path) -> tuple[int, int] | None:
+    """One built ``.skill`` archive's size in bytes and its count of files.
+
+    Defensive for the same reason the report parser is, and for one more: the
+    archives are `package`'s to write, and the site has to render before they
+    exist. An archive that is absent or unreadable costs the page a size, not
+    the page.
+    """
+    if not path.is_file():
+        return None
+    try:
+        size = path.stat().st_size
+        with zipfile.ZipFile(path) as archive:
+            files = sum(1 for info in archive.infolist() if not info.is_dir())
+    except (OSError, zipfile.BadZipFile):
+        return None
+    return size, files
+
+
 def _skill_files(tree: Path) -> tuple[str, ...]:
     """Every file in one built skill folder, as sorted relative paths."""
     if not tree.is_dir():
@@ -291,6 +363,49 @@ def read_report_warnings(path: Path) -> tuple[ReportWarning, ...]:
 
 
 @dataclass(frozen=True)
+class ArchiveView:
+    """One skill's ``.skill`` upload archive, built or not.
+
+    The link is the same either way, because it points at the release and not
+    at this working tree; only the size and the file count need an archive on
+    disk to read.
+    """
+
+    asset: str
+    url: str
+    size: int | None = None
+    files: int | None = None
+
+    @property
+    def built(self) -> bool:
+        return self.size is not None
+
+    @property
+    def size_label(self) -> str:
+        return "" if self.size is None else human_size(self.size)
+
+    @property
+    def detail(self) -> str:
+        """``12.3 KB, 4 files``, or nothing when no archive was on disk."""
+        if self.size is None or self.files is None:
+            return ""
+        plural = "" if self.files == 1 else "s"
+        return f"{human_size(self.size)}, {self.files} file{plural}"
+
+
+def _archive_view(out: Path, name: str) -> ArchiveView:
+    """One skill's archive as a page sees it, measured where one was built."""
+    asset = f"{name}.skill"
+    measured = read_archive(skill_archive(out, name))
+    return ArchiveView(
+        asset=asset,
+        url=download_url(asset),
+        size=None if measured is None else measured[0],
+        files=None if measured is None else measured[1],
+    )
+
+
+@dataclass(frozen=True)
 class MirrorView:
     plugin_id: str
     display_name: str
@@ -337,6 +452,18 @@ class BundleView:
     trigger_groups: tuple[TriggerGroup, ...] = ()
 
     @property
+    def asset_url(self) -> str:
+        return download_url(self.asset)
+
+    @property
+    def triggers_asset(self) -> str:
+        return f"{self.id}-trigger-tests.md"
+
+    @property
+    def triggers_url(self) -> str:
+        return download_url(self.triggers_asset)
+
+    @property
     def known_issue_count(self) -> int:
         return sum(len(skill.known_issues) for skill in self.skills)
 
@@ -367,6 +494,7 @@ class SkillView:
     issue_search_url: str
     files: tuple[str, ...]
     warnings: tuple[ReportWarning, ...]
+    archive: ArchiveView
     bundles: tuple[BundleView, ...] = ()
 
     @property
@@ -630,6 +758,7 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
             issue_search_url=_issue_search_url(name),
             files=files,
             warnings=tuple(warnings_by_skill.get(name, ())),
+            archive=_archive_view(out, name),
             bundles=tuple(bundle_views[b.id] for b in in_bundles),
         )
 
@@ -702,6 +831,12 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
         "upstream_tree_url": f"{config.repo.rstrip('/')}/tree/{config.sha}",
         "not_official": NOT_OFFICIAL,
         "releases_url": RELEASES_URL,
+        "releases_index_url": RELEASES_INDEX_URL,
+        "checksums_asset": CHECKSUMS_ASSET,
+        "checksums_url": download_url(CHECKSUMS_ASSET),
+        "report_asset": REPORT_ASSET,
+        "report_url": download_url(REPORT_ASSET),
+        "latest_note": latest_note(config.version),
         "help_wanted_url": HELP_WANTED_URL,
         "nav": [{"href": href, "label": label} for href, label in NAV],
         "bundles": [bundle_views[b.id] for b in config.bundles],
@@ -713,6 +848,7 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
         "probe_span": _probe_span(probe_views),
         "tiers": tier_rows,
         "transforms": config.transforms,
+        "archives_built": any(skill.archive.built for skill in ordered_skills),
     }
 
 
@@ -792,6 +928,7 @@ def build_site(config: Config, out_dir: Path | None = None) -> SiteResult:
     render("differences.html", "differences.html")
     render("known-issues.html", "known-issues.html")
     render("probes.html", "probes.html")
+    render("downloads.html", "downloads.html")
     for bundle in context["bundles"]:
         render("bundle.html", f"bundles/{bundle.id}.html", bundle=bundle)
     for skill in context["skills"]:

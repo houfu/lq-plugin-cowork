@@ -63,17 +63,31 @@
 
 <h2 id="get-the-packages">Get the packages</h2>
 
-<p>
-  The zips are attached to the latest release, together with one trigger-test
-  checklist per bundle and the build report:
-  <a href="{{ releases_url }}">{{ releases_url }}</a>
-</p>
-
-<ul>
-  {%- for bundle in bundles %}
-  <li><code>{{ bundle.asset }}</code> — {{ bundle.name_short }}</li>
-  {%- endfor %}
-</ul>
+<div class="download">
+  <p>Each bundle is one zip you sideload:</p>
+  <ul class="downloads">
+    {%- for bundle in bundles %}
+    <li>
+      <a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a> —
+      {{ bundle.name_short }}, {{ bundle.skills | length }}
+      skill{{ "" if bundle.skills | length == 1 else "s" }}.
+    </li>
+    {%- endfor %}
+  </ul>
+  <p>
+    Any one skill can also be added on its own: each of the
+    {{ skills | length }} is published as a <code>.skill</code> archive you
+    upload on Cowork's Customize page.
+    <a href="downloads.html">The downloads page</a> lists every one of them,
+    with the packages again.
+  </p>
+  <p>
+    Check what you downloaded against
+    <a href="{{ checksums_url }}"><code>{{ checksums_asset }}</code></a>. Every
+    release, with its notes: <a href="{{ releases_index_url }}">{{ releases_index_url }}</a>.
+  </p>
+  <p class="subtle">{{ latest_note }}</p>
+</div>
 
 <p>
   <a href="install.html">Installing a bundle</a> walks through the three ways
@@ -129,6 +143,7 @@
   <li><a href="differences.html">How this differs from the original</a> — the capability picture, the transforms, the tier rubric, and every skill's one-line account.</li>
   <li><a href="known-issues.html">Known issues</a> — {{ known_issues | length }} across all cards, filterable by tier, failure mode and probe.</li>
   <li><a href="probes.html">Capability probes</a> — {{ probe_span }}, and what each one unlocks.</li>
+  <li><a href="downloads.html">Downloads</a> — every package and every single skill, with its size.</li>
   <li><a href="install.html">Install</a> · <a href="testing.html">Testing</a> · <a href="changelog.html">Changelog</a></li>
   {%- for bundle in bundles %}
   <li><a href="bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a> — manifest, skills, trigger tests.</li>

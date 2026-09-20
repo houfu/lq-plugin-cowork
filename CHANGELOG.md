@@ -11,9 +11,11 @@ undocumented, so every published change gets its own version.
 
 ## [Unreleased]
 
-Next release: **0.2.0**. Every upstream skill now ships, in three bundles that
-mirror the three plugins upstream publishes. If you installed 0.1.0, read
-*Changed* before you upgrade: two skills move bundles.
+## [0.2.0] - 2026-09-20
+
+Every upstream skill now ships, in three bundles that mirror the three plugins
+upstream publishes. If you installed 0.1.0, read *Changed* before you upgrade:
+two skills move bundles.
 
 ### Added
 
@@ -50,11 +52,22 @@ mirror the three plugins upstream publishes. If you installed 0.1.0, read
 - **A site**, built from these same sources and published from `main`:
   <https://houfu.github.io/lq-plugin-cowork/>. The bundles and their skills,
   what changed for each one, every known issue filterable by failure mode and
-  probe, the probes themselves, and the install and testing guides.
+  probe, the probes themselves, the install and testing guides, and a
+  downloads page linking every release asset:
+  <https://houfu.github.io/lq-plugin-cowork/downloads.html>.
 - `lqcowork build --skill NAME` builds one skill through every transform and
   check without needing it to be in a buildable bundle, which is what a card
   author wants while writing one. `lqcowork site` renders the site from a built
   `dist/`; `make site` runs both.
+- **One `.skill` archive per skill, all thirty-one of them**, a release asset
+  alongside the three bundles: a zip with `SKILL.md` at its root, that skill's
+  companion files, `LICENSE` and `NOTICE.md`. `SHA256SUMS` covers them too, and
+  [docs/INSTALL.md](docs/INSTALL.md) Route 0 is how to upload one without
+  installing a bundle.
+- **`metadata.version` in every built `SKILL.md`**, stamped from
+  `cowork.yaml`'s `package.version`. A `.skill` archive carries no
+  `manifest.json`, so this is the only place a skill uploaded on its own says
+  which release it came from.
 
 ### Changed
 
@@ -81,6 +94,10 @@ mirror the three plugins upstream publishes. If you installed 0.1.0, read
   scripts — because a script's runtime cannot be relied on, not because nothing
   runs. [docs/CONTRACT.md](docs/CONTRACT.md) section 8 carries the full
   corrected list, dated, with Microsoft's own words.
+- **From 0.2.0, a release is published as GitHub's latest rather than as a
+  pre-release**, unless its tag carries a suffix such as `-rc.1`. v0.1.0 stays
+  marked pre-release as it was published. This is a packaging change only:
+  *Known limitations* below still says nothing here has run in a live tenant.
 
 ### Known limitations
 
@@ -168,5 +185,6 @@ the open LegalQuants skills, seventeen distinct skills between them.
   thirty-one as Cowork-native adaptations; the sentence as first published
   overstated what Cowork lacks.)*
 
-[Unreleased]: https://github.com/houfu/lq-plugin-cowork/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/houfu/lq-plugin-cowork/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/houfu/lq-plugin-cowork/releases/tag/v0.2.0
 [0.1.0]: https://github.com/houfu/lq-plugin-cowork/releases/tag/v0.1.0

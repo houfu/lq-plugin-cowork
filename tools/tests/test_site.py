@@ -8,6 +8,8 @@ three real bundles have.
 from __future__ import annotations
 
 import re
+import shutil
+import zipfile
 from pathlib import Path
 
 import pytest
@@ -16,9 +18,13 @@ from lqcowork.cli import main
 from lqcowork.config import load_config
 from lqcowork.site import SiteError, build_site
 from lqcowork.site.generate import (
+    LATEST_DOWNLOAD_URL,
     PROJECT_REPO,
     ReportWarning,
+    download_url,
     first_sentence,
+    human_size,
+    read_archive,
     read_report_warnings,
     render_markdown,
     shorten,
@@ -77,12 +83,27 @@ def _pages(site: Path) -> list[str]:
     return sorted(p.relative_to(site).as_posix() for p in site.rglob("*.html"))
 
 
+def _write_archives(out: Path, *names: str) -> None:
+    """Stand in for what ``package`` writes into ``<out>/skills/``.
+
+    The sizes on the site come from these files, so the tests make their own
+    rather than depend on whether the build wrote any.
+    """
+    for name in names:
+        path = out / "skills" / f"{name}.skill"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(path, "w") as archive:
+            archive.writestr("SKILL.md", f"---\nname: {name}\n---\n\n# {name}\n")
+            archive.writestr("LICENSE", "Apache License 2.0\n")
+
+
 class TestPages:
     def test_every_page_in_the_contract_is_written(self, site):
         assert _pages(site) == [
             "bundles/test-bundle.html",
             "changelog.html",
             "differences.html",
+            "downloads.html",
             "index.html",
             "install.html",
             "known-issues.html",
@@ -123,6 +144,32 @@ class TestPages:
         assert "test-bundle.zip" in text  # the asset by name
         assert 'href="testing.html"' in text
 
+    def test_the_downloads_page_lists_every_package_and_every_archive(self, site):
+        text = (site / "downloads.html").read_text(encoding="utf-8")
+        assert f"{LATEST_DOWNLOAD_URL}/test-bundle.zip" in text
+        assert f"{LATEST_DOWNLOAD_URL}/test-bundle-trigger-tests.md" in text
+        for name in ("alpha", "beta", "gamma"):
+            assert f"{LATEST_DOWNLOAD_URL}/{name}.skill" in text, name
+            assert f'href="skills/{name}.html"' in text, name
+        assert f"{LATEST_DOWNLOAD_URL}/SHA256SUMS" in text
+        assert f"{LATEST_DOWNLOAD_URL}/build-report.md" in text
+        assert f'href="{PROJECT_REPO}/releases"' in text
+        assert "Customize" in text  # where a .skill archive is uploaded
+        assert "not a pre-release" in text
+
+    def test_every_page_offers_the_downloads_page(self, site):
+        for page in sorted(site.rglob("*.html")):
+            assert "downloads.html" in page.read_text(encoding="utf-8"), page
+
+    def test_the_index_links_the_packages_rather_than_naming_them(self, site):
+        text = (site / "index.html").read_text(encoding="utf-8")
+        assert f'href="{LATEST_DOWNLOAD_URL}/test-bundle.zip"' in text
+        assert f'href="{LATEST_DOWNLOAD_URL}/SHA256SUMS"' in text
+        assert f'href="{PROJECT_REPO}/releases"' in text
+        assert 'href="downloads.html"' in text
+        assert "<code>.skill</code>" in text
+        assert "not a pre-release" in text
+
     def test_the_bundle_page_carries_the_manifest_and_the_mirror(self, site):
         text = (site / "bundles/test-bundle.html").read_text(encoding="utf-8")
         assert "A test bundle for the lqcowork build" in text
@@ -131,6 +178,16 @@ class TestPages:
         assert "test-bundle.zip" in text
         assert "activate <code>alpha</code>" in text
         assert "must not activate; expect built-in Word" in text
+
+    def test_the_bundle_page_downloads_the_package_and_its_checklist(self, site):
+        text = (site / "bundles/test-bundle.html").read_text(encoding="utf-8")
+        assert 'id="download"' in text
+        assert f'href="{LATEST_DOWNLOAD_URL}/test-bundle.zip"' in text
+        assert f'href="{LATEST_DOWNLOAD_URL}/test-bundle-trigger-tests.md"' in text
+        assert f'href="{LATEST_DOWNLOAD_URL}/SHA256SUMS"' in text
+        # every row of the skills table offers that skill on its own
+        for name in ("alpha", "beta"):
+            assert f'href="{LATEST_DOWNLOAD_URL}/{name}.skill"' in text, name
 
     def test_the_skill_page_has_every_section(self, site):
         text = (site / "skills/alpha.html").read_text(encoding="utf-8")
@@ -157,6 +214,16 @@ class TestPages:
         assert "<code>scripts/alpha.py</code>" not in text  # excluded by the card
         assert f"{PROJECT_REPO}/issues?q=is%3Aissue+%22UAT%3A+alpha%22" in text
         assert "/tree/" + "a1b2c3d4" * 5 + "/skills/core/alpha" in text
+
+    def test_the_skill_page_offers_the_skill_on_its_own(self, site):
+        text = (site / "skills/alpha.html").read_text(encoding="utf-8")
+        assert 'id="get-this-skill"' in text
+        assert f'href="{LATEST_DOWNLOAD_URL}/alpha.skill"' in text
+        assert "<code>alpha.skill</code>" in text
+        assert "Customize" in text
+        assert "<code>SKILL.md</code>" in text
+        # and the bundles it ships in, as zips rather than as names
+        assert f'href="{LATEST_DOWNLOAD_URL}/test-bundle.zip"' in text
 
     def test_a_skill_page_without_known_issues_says_so(self, site):
         text = (site / "skills/beta.html").read_text(encoding="utf-8")
@@ -232,6 +299,77 @@ class TestPages:
         assert f'href="{PROJECT_REPO}/blob/main/CHANGELOG.md"' in text
 
 
+class TestSkillArchives:
+    """The `.skill` archives are `package`'s to write; the site must not need them."""
+
+    def _render(self, repo: Path) -> Path:
+        build_site(load_config(repo))
+        return repo / "dist" / "site"
+
+    def test_the_site_renders_with_no_archives_built(self, mirror_repo, monkeypatch):
+        _write_docs(mirror_repo)
+        monkeypatch.chdir(mirror_repo)
+        assert main(["package"]) == 0
+        shutil.rmtree(mirror_repo / "dist" / "skills", ignore_errors=True)
+        site = self._render(mirror_repo)
+
+        downloads = (site / "downloads.html").read_text(encoding="utf-8")
+        assert "no sizes are shown" in downloads
+        # the link is the same either way: it points at the release, not here
+        assert f'href="{LATEST_DOWNLOAD_URL}/alpha.skill"' in downloads
+        assert downloads.count('<td class="num">\u2014</td>') == 3
+        skill = (site / "skills/alpha.html").read_text(encoding="utf-8")
+        assert f'href="{LATEST_DOWNLOAD_URL}/alpha.skill"' in skill
+        assert " bytes" not in skill
+
+    def test_a_built_archive_puts_its_size_and_file_count_on_the_page(
+        self, mirror_repo, monkeypatch
+    ):
+        _write_docs(mirror_repo)
+        monkeypatch.chdir(mirror_repo)
+        assert main(["package"]) == 0
+        _write_archives(mirror_repo / "dist", "alpha", "beta", "gamma")
+        site = self._render(mirror_repo)
+
+        size = (mirror_repo / "dist/skills/alpha.skill").stat().st_size
+        skill = (site / "skills/alpha.html").read_text(encoding="utf-8")
+        assert f"{size} bytes, 2 files" in skill
+        downloads = (site / "downloads.html").read_text(encoding="utf-8")
+        assert "Sizes are read from the archives" in downloads
+        assert f"{size} bytes" in downloads
+
+    def test_a_site_built_without_an_archive_still_links_it(
+        self, mirror_repo, monkeypatch
+    ):
+        """Only two skills' archives exist; all three keep their link."""
+        _write_docs(mirror_repo)
+        monkeypatch.chdir(mirror_repo)
+        assert main(["package"]) == 0
+        shutil.rmtree(mirror_repo / "dist" / "skills", ignore_errors=True)
+        _write_archives(mirror_repo / "dist", "alpha", "beta")
+        site = self._render(mirror_repo)
+
+        downloads = (site / "downloads.html").read_text(encoding="utf-8")
+        assert f'href="{LATEST_DOWNLOAD_URL}/gamma.skill"' in downloads
+        # only gamma's size cell is empty
+        assert downloads.count('<td class="num">\u2014</td>') == 1
+
+    def test_an_unreadable_archive_costs_the_size_not_the_page(
+        self, mirror_repo, monkeypatch
+    ):
+        _write_docs(mirror_repo)
+        monkeypatch.chdir(mirror_repo)
+        assert main(["package"]) == 0
+        broken = mirror_repo / "dist/skills/alpha.skill"
+        broken.parent.mkdir(parents=True, exist_ok=True)
+        broken.write_text("not a zip at all", encoding="utf-8")
+        site = self._render(mirror_repo)
+
+        skill = (site / "skills/alpha.html").read_text(encoding="utf-8")
+        assert f'href="{LATEST_DOWNLOAD_URL}/alpha.skill"' in skill
+        assert " bytes" not in skill
+
+
 class TestLinks:
     def test_every_internal_link_resolves_to_a_file(self, site):
         missing: list[tuple[str, str]] = []
@@ -276,6 +414,8 @@ class TestReproducible:
         for run in ("first", "second"):
             out = tmp_path / run
             assert main(["package", "--out", str(out)]) == 0
+            # the sizes on the pages come from these, so they are in the check
+            _write_archives(out, "alpha", "beta", "gamma")
             build_site(config, out)
             root = out / "site"
             digests.append(
@@ -338,6 +478,30 @@ class TestHelpers:
     def test_ticks_escapes_before_it_marks_up(self):
         assert str(ticks("expect `a`")) == "expect <code>a</code>"
         assert "&lt;b&gt;" in str(ticks("<b> `x`"))
+
+    def test_a_download_url_names_no_version(self):
+        assert download_url("alpha.skill") == (
+            f"{PROJECT_REPO}/releases/latest/download/alpha.skill"
+        )
+
+    def test_human_size_rounds_the_same_way_twice(self):
+        assert human_size(0) == "0 bytes"
+        assert human_size(1023) == "1023 bytes"
+        assert human_size(1024) == "1.0 KB"
+        assert human_size(1536) == "1.5 KB"
+        assert human_size(5 * 1024 * 1024) == "5.0 MB"
+        assert human_size(3 * 1024**3) == "3.0 GB"
+
+    def test_a_missing_or_broken_archive_reads_as_nothing(self, tmp_path):
+        assert read_archive(tmp_path / "nope.skill") is None
+        bad = tmp_path / "bad.skill"
+        bad.write_text("not a zip", encoding="utf-8")
+        assert read_archive(bad) is None
+
+    def test_an_archive_reports_its_size_and_its_files(self, tmp_path):
+        _write_archives(tmp_path, "alpha")
+        path = tmp_path / "skills/alpha.skill"
+        assert read_archive(path) == (path.stat().st_size, 2)
 
     def test_slug_matches_the_anchors_github_makes(self):
         assert (

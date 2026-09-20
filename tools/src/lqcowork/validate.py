@@ -8,7 +8,15 @@ import zipfile
 from pathlib import Path, PurePosixPath
 
 from . import transforms
-from .build import MANIFEST_SCHEMA, MANIFEST_VERSION, Issue, Suppression, dist_root
+from .build import (
+    MANIFEST_SCHEMA,
+    MANIFEST_VERSION,
+    SKILL_ARCHIVE_DIR,
+    SKILL_ARCHIVE_SUFFIX,
+    Issue,
+    Suppression,
+    dist_root,
+)
 from .config import GUID_RE, KEBAB_RE, SEMVER_RE, Bundle, Card, Config
 
 MAX_SKILLS = 20
@@ -19,6 +27,11 @@ MAX_SKILL_COMPANION_BYTES = 10 * 1024 * 1024
 MAX_SKILL_MD_BYTES = 1024 * 1024
 MAX_DESCRIPTION_CHARS = 1024
 MAX_BODY_WORDS = 3000
+
+# Cowork's Customize-page limits for a single uploaded skill archive.
+MAX_ARCHIVE_BYTES = 10 * 1024 * 1024
+MAX_ARCHIVE_UNCOMPRESSED_BYTES = 50 * 1024 * 1024
+MAX_ARCHIVE_ENTRIES = 100
 
 MANIFEST_KEYS = [
     "$schema",
@@ -637,6 +650,92 @@ def _upstream_urls(upstream_dir: Path | None) -> set[str]:
             continue
         urls.update(URL_RE.findall(text))
     return urls
+
+
+def skill_archives(config: Config, out_dir: Path | None = None) -> list[Path]:
+    """Every ``<out>/skills/<name>.skill`` on disk, in name order."""
+    root = dist_root(config, out_dir) / SKILL_ARCHIVE_DIR
+    if not root.is_dir():
+        return []
+    return sorted(root.glob(f"*{SKILL_ARCHIVE_SUFFIX}"))
+
+
+def validate_skill_archive(path: Path) -> list[Issue]:
+    """LQC-U001 to LQC-U005 against one per-skill upload archive.
+
+    The limits are Cowork's Customize page, not the plugin package: a
+    `.skill` is uploaded on its own, so it is the thing that has to fit.
+    """
+    name = path.name[: -len(SKILL_ARCHIVE_SUFFIX)]
+    errors: list[Issue] = []
+
+    def add(code: str, message: str) -> None:
+        errors.append(
+            Issue(
+                code,
+                message,
+                skill=name,
+                location=f"{SKILL_ARCHIVE_DIR}/{path.name}",
+            )
+        )
+
+    try:
+        with zipfile.ZipFile(path) as archive:
+            infos = archive.infolist()
+            names = archive.namelist()
+            skill_md = archive.read("SKILL.md") if "SKILL.md" in names else None
+    except (zipfile.BadZipFile, OSError) as exc:
+        add("LQC-U001", f"cannot be read as a zip archive: {exc}")
+        return errors
+
+    if skill_md is None:
+        add("LQC-U001", "no SKILL.md at the archive root")
+
+    compressed = path.stat().st_size
+    uncompressed = sum(info.file_size for info in infos)
+    if compressed > MAX_ARCHIVE_BYTES:
+        add(
+            "LQC-U002",
+            f"{compressed:,} bytes compressed, limit {MAX_ARCHIVE_BYTES:,}",
+        )
+    if uncompressed > MAX_ARCHIVE_UNCOMPRESSED_BYTES:
+        add(
+            "LQC-U002",
+            f"{uncompressed:,} bytes uncompressed, limit "
+            f"{MAX_ARCHIVE_UNCOMPRESSED_BYTES:,}",
+        )
+    if len(infos) > MAX_ARCHIVE_ENTRIES:
+        add("LQC-U003", f"{len(infos)} entries, limit {MAX_ARCHIVE_ENTRIES}")
+
+    for entry in names:
+        if _unsafe_entry(entry):
+            add("LQC-U004", f"unsafe entry '{entry}'")
+
+    if skill_md is not None:
+        try:
+            document = transforms.parse_document(skill_md.decode("utf-8"))
+        except (transforms.TransformError, UnicodeDecodeError) as exc:
+            add("LQC-U005", f"SKILL.md frontmatter cannot be read: {exc}")
+        else:
+            fm_name = document.frontmatter.get("name")
+            if fm_name != name:
+                add(
+                    "LQC-U005",
+                    f"frontmatter name '{fm_name}' != archive name '{name}'",
+                )
+    return errors
+
+
+def _unsafe_entry(entry: str) -> bool:
+    """LQC-U004: traversal, absolute paths, dotfiles, `__MACOSX`."""
+    if entry.startswith("/") or re.match(r"^[A-Za-z]:[\\/]", entry):
+        return True
+    if "\\" in entry:
+        return True
+    parts = [part for part in entry.split("/") if part]
+    return any(
+        part == ".." or part.startswith(".") or part == "__MACOSX" for part in parts
+    )
 
 
 def validate_zip(path: Path, bundle_id: str, allowed_roots: set[str]) -> list[Issue]:

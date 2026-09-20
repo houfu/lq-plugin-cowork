@@ -14,6 +14,34 @@
   {%- endif %}
 </ul>
 
+<h2 id="get-this-skill">Get this skill</h2>
+
+<div class="download">
+  <ul class="downloads">
+    <li>
+      <a href="{{ skill.archive.url }}"><code>{{ skill.archive.asset }}</code></a>
+      {%- if skill.archive.built %} — {{ skill.archive.detail }}{% endif %}
+    </li>
+  </ul>
+  <p>
+    That is the upload-ready archive for Cowork's Customize page — Customize →
+    Skills → upload — a zip with <code>SKILL.md</code> at its root, the
+    companion files listed below beside it, and the licence and the notice,
+    which an archive with no package around it has to carry itself.
+  </p>
+  <p>
+    The same skill ships inside
+    {%- for bundle in skill.bundles %}
+    {%- if not loop.first %}{{ " and " if loop.last else ", " }}{% endif %}
+    <a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a>
+    {%- endfor %}, which you sideload whole.
+  </p>
+  <p class="subtle">
+    {{ latest_note }} Every package and every skill archive is on
+    <a href="../downloads.html">the downloads page</a>.
+  </p>
+</div>
+
 <h2 id="what-it-does">What it does</h2>
 
 <p class="lede">{{ skill.purpose }}</p>
@@ -78,7 +106,7 @@
   {%- for bundle in skill.bundles %}
   <li>
     <a href="../bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a> —
-    <code>{{ bundle.asset }}</code>
+    <a href="{{ bundle.asset_url }}"><code>{{ bundle.asset }}</code></a>
   </li>
   {%- endfor %}
 </ul>
@@ -193,7 +221,9 @@
 {% if skill.files %}
 <p>
   What is inside <code>skills/{{ skill.name }}/</code> in the package, after
-  the build has stripped, rewritten and stamped everything.
+  the build has stripped, rewritten and stamped everything. The same files sit
+  at the root of <code>{{ skill.archive.asset }}</code>, with the licence and
+  the notice added.
 </p>
 
 <ul>

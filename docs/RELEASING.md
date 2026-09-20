@@ -3,8 +3,9 @@
 A release is a tag. `make release TAG=vX.Y.Z` checks the tag against the tree
 and pushes it; [.github/workflows/release.yml](../.github/workflows/release.yml)
 does the rest — tests, packaging, a reproducibility check, and a GitHub release
-carrying both zips. Nothing is built on your machine and uploaded by hand, so
-what people download is what CI built from the tagged commit.
+carrying the bundle packages and the per-skill archives. Nothing is built on
+your machine and uploaded by hand, so what people download is what CI built
+from the tagged commit.
 
 This is the maintainer's procedure. It needs no secrets: the workflow runs with
 the repository's own `GITHUB_TOKEN` and `contents: write`.
@@ -24,8 +25,8 @@ version here.
 Semver applied to skills, roughly: **patch** for wording, a description tweak, a
 fixed link; **minor** for a new skill in a bundle, or a skill that now does
 something it did not; **major** for a bundle that loses a skill or changes what
-the packages are for. While the major is 0, everything is a pre-release
-(see below).
+the packages are for. A plain `vX.Y.Z` is published as a full release whatever
+its major version; only a suffixed tag is a pre-release (see below).
 
 ## The procedure
 
@@ -84,12 +85,15 @@ The `release` workflow runs on any pushed tag matching `v*`:
 2. `make test`, `make fmt-check`, `make package`;
 3. `make release-check TAG=<tag>` — the same check again, on a clean checkout,
    so a tag that was pushed some other way cannot skip it;
-4. packages a **second** time into another directory and fails unless every zip
-   has the same SHA-256 as the first. The zips are byte-reproducible by
-   construction; this is what keeps that true;
-5. writes `dist/SHA256SUMS` over the zips and the Markdown assets;
+4. packages a **second** time into another directory and fails unless every
+   bundle zip and every `skills/<name>.skill` has the same SHA-256 as the
+   first. Both are byte-reproducible by construction; this is what keeps that
+   true;
+5. writes `dist/SHA256SUMS` over the zips, the skill archives and the Markdown
+   assets, from `dist/`, so the paths in it are relative to `dist/`;
 6. composes the notes: this version's `CHANGELOG.md` section, a table of the
-   bundles with their skills and zip sizes, the upstream pin as a link to the
+   bundles with their skills and zip sizes, a paragraph and a table for the
+   per-skill `.skill` archives, the upstream pin as a link to the
    exact commit, pointers to `docs/INSTALL.md` and `docs/TESTING.md`, the
    sentence that these bundles are an independent adaptation under Apache-2.0
    and not an official LegalQuants release, and the checksums;
@@ -99,14 +103,36 @@ The `release` workflow runs on any pushed tag matching `v*`:
    | --- | --- |
    | `legalquants-litigation-cowork.zip` | the litigation package |
    | `legalquants-transactional-cowork.zip` | the transactional package |
-   | `legalquants-litigation-cowork-trigger-tests.md` | its routing checklist |
-   | `legalquants-transactional-cowork-trigger-tests.md` | its routing checklist |
+   | `legalquants-companion-cowork.zip` | the companion package |
+   | `<name>.skill` | one per skill: that skill on its own, ready to upload |
+   | `<bundle>-trigger-tests.md` | one per bundle: its routing checklist |
    | `build-report.md` | what went into the build: skills, buckets, files, bytes, warnings, suppressed warnings |
    | `SHA256SUMS` | checksums for all of the above |
 
 Watch it in the Actions tab. If it fails, nothing is published: fix the cause,
 and re-run the workflow against the same tag (below) rather than inventing a new
 one.
+
+## The per-skill archives, and the stable download links
+
+Besides the three bundle zips, every skill is published as its own
+`<name>.skill` — the built `SKILL.md` at the archive root with its companion
+files, plus `LICENSE` and `NOTICE.md`. It is an upload for Cowork's Customize
+page, for a lawyer who wants one skill rather than a plugin, and the same
+archive is what `make package` leaves in `dist/skills/`. Contract section 5b
+says what is in one and which limits it is checked against.
+
+Because a plain `vX.Y.Z` is now a full release, GitHub's `latest` resolves to
+it, and both kinds of asset have a permanent URL that never names a version:
+
+```
+https://github.com/houfu/lq-plugin-cowork/releases/latest/download/legalquants-litigation-cowork.zip
+https://github.com/houfu/lq-plugin-cowork/releases/latest/download/regulatory.skill
+```
+
+Those are the links to put in documentation and in a message to a tester: they
+follow the newest release, so nothing has to be rewritten at the next version.
+A link to one exact version stays `releases/download/vX.Y.Z/<asset>`.
 
 ## Re-publishing an existing tag
 
@@ -121,16 +147,21 @@ committed to the default branch. A changed build needs a new version.
 
 ## Pre-releases
 
-A release is marked "pre-release" on GitHub when either is true:
+A release is marked "pre-release" on GitHub **only when the tag carries a
+suffix** — `v1.2.0-rc.1`, `v2.0.0-beta.2`. A plain `vX.Y.Z` is a full release,
+including everything in the 0.x series.
 
-- the tag has a suffix — `v1.2.0-rc.1`, `v2.0.0-beta.2`; or
-- the major version is 0.
+That is what makes the stable download links above work: GitHub points
+"Latest" at the newest full release, so a 0.x release marked pre-release would
+leave `releases/latest/download/...` resolving to nothing, or to something
+older. Being early is said in the release notes and in the README, not by
+hiding the release. `v0.1.0` was published under the old rule and stays a
+pre-release as it is; nothing re-labels a release people have already taken.
 
-So everything in the 0.x series is a pre-release, which is the honest label
-while no skill has been exercised in a live Cowork tenant. A suffixed tag pairs
-with an unsuffixed `package.version` — `v1.2.0-rc.1` ships `version: 1.2.0` —
-because the Teams manifest version can only be `x.y.z`. Its changelog section
-may be `## [1.2.0-rc.1]` or the `## [1.2.0]` section it is a candidate for.
+A suffixed tag pairs with an unsuffixed `package.version` — `v1.2.0-rc.1` ships
+`version: 1.2.0` — because the Teams manifest version can only be `x.y.z`. Its
+changelog section may be `## [1.2.0-rc.1]` or the `## [1.2.0]` section it is a
+candidate for.
 
 ## Withdrawing a bad release
 

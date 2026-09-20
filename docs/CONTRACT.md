@@ -344,7 +344,10 @@ Rules for cards:
 10. Stamp: set `name` from the card, `description` from the card (stripped),
     `license: Apache-2.0`, and
     `metadata.adapted-from: "LegalQuants/lq-plugin-oss@<sha7> skills/<upstream>"`,
-    `metadata.adapted-for: "Microsoft 365 Copilot Cowork"`. Existing
+    `metadata.adapted-for: "Microsoft 365 Copilot Cowork"`,
+    `metadata.version: "<package.version>"` (a string, e.g. `"0.2.0"`, so a
+    `.skill` uploaded on its own still says which release it came from — there
+    is no manifest beside it). Existing
     `metadata` keys are preserved. Insert as the first body line, right after
     the closing `---`:
     `<!-- Modified from LegalQuants/lq-plugin-oss@<sha7> (skills/<upstream>) for Microsoft 365 Copilot Cowork. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->`
@@ -381,6 +384,40 @@ upstream's `display_name` and `short_description` beside ours, and a
 `### Known issues` table of every known issue the bundle's cards declare —
 id, skill, title, failure, probe).
 
+## 5b. Skill archives
+
+A bundle is one way in; a single skill is the other. Cowork's Customize page
+takes a `.zip` or `.skill` archive holding one skill, and a lawyer who wants
+`regulatory` and nothing else should not have to install a fifteen-skill
+plugin to get it. So `package` also writes, for every skill in any bundle it
+built, `<out>/skills/<name>.skill`.
+
+- **One per distinct skill.** A skill that ships in several bundles is built
+  once and archived once, from that one built tree.
+- **Contents, at the archive root, no top-level folder:** the built `SKILL.md`
+  and every companion exactly as it sits in the bundle tree, at the same
+  relative paths, plus each `package.root_files` entry under its own base name
+  (`LICENSE` and `NOTICE.md`) — an archive uploaded on its own carries no
+  package around it to hold the licence and the notice.
+- **Name.** `<name>.skill`, where `<name>` is the shipped skill name, which is
+  the folder name and the frontmatter `name` (LQC-U005).
+- **Deterministic**, by the same rules as the bundle zips: entries sorted by
+  path, stamped 1980-01-01 unless `SOURCE_DATE_EPOCH` says otherwise, mode
+  0644, deflate. Two builds into different `--out` directories produce equal
+  bytes, and the release workflow re-checks that before it publishes.
+- **Checked against the Customize-page limits** (section 8, "Two packaging
+  channels with different limits"), not the plugin-package ones: LQC-U002 and
+  LQC-U003 are 10 MB compressed, 50 MB uncompressed and 100 files for the
+  archive as a whole, where LQC-C001 to LQC-C003 are about a skill folder
+  inside a plugin package.
+
+`package` prints one summary line per archive under the bundle lines —
+`skills/<name>.skill: <n> files, <bytes> bytes` — and the build report gets a
+`## Skill archives` section listing each archive's name, file count and
+compressed bytes. `validate` checks the archives under `<out>/skills/` when
+that folder is there, and says nothing when it is not: `validate` never
+builds, so a tree packaged before this existed simply has none.
+
 ## 6. Validation rules
 
 Error codes reuse Microsoft's where a rule matches; ours are `LQC-…`.
@@ -416,6 +453,11 @@ Errors (fail the build):
 | LQC-M005 | `accentColor` matches `^#[0-9A-Fa-f]{6}$` |
 | LQC-I001 | `color.png` is a PNG of exactly 192×192; `outline.png` exactly 32×32 (read the IHDR chunk) |
 | LQC-Z001 | zip entries are at the root (`manifest.json`, icons, `skills/...`), no `__MACOSX`, no dotfiles |
+| LQC-U001 | a skill archive has `SKILL.md` at its root (an archive that is not a readable zip is the same code) |
+| LQC-U002 | a skill archive is ≤ 10 MB compressed and ≤ 50 MB uncompressed (the Customize-page limits) |
+| LQC-U003 | a skill archive has ≤ 100 entries |
+| LQC-U004 | no skill-archive entry has a `..` segment, an absolute path, a leading dot on any segment, a backslash, or `__MACOSX` |
+| LQC-U005 | the frontmatter `name` in an archived `SKILL.md` equals the archive's base name |
 | LQC-A001 | anchor failure (replace count mismatch, section heading missing, patch failed, overlay base missing) |
 | LQC-B001 | a mirrored bundle derives a skill that has no card under `skills/<name>/`. The message names the skill and says: write a card, or exclude it with a reason. One error per missing card, however many bundles derive it |
 | LQC-K001 | `cowork` missing, or `tier`/`status`/`differs` missing or malformed; `tier` not an integer 0 to 4; `status` not one of the two; a known issue without `id`, `title`, `detail` or `failure`; a workaround without both keys; a duplicate known-issue `id` anywhere in the repository |
@@ -425,6 +467,11 @@ Errors (fail the build):
 is copied, and any of them stops the build there: half a bundle would bury
 them under a manifest's worth of consequential errors. Every one is reported,
 so a run names every card that needs work rather than the first.
+
+`LQC-U001` to `LQC-U005` are read off the `.skill` archives themselves, not
+off the tree they were written from: by `package` as soon as it writes one,
+and by `validate` over every archive in `<out>/skills/`. They carry the skill
+name and `skills/<name>.skill` as their location.
 
 Warnings (printed, and listed in the build report):
 
@@ -457,8 +504,8 @@ Jinja2 and markdown-it-py and nothing else, dev dependencies pytest and black
 
 ```
 uv run --project tools lqcowork build      [--bundle ID | --skill NAME ...] [--report-anchors] [--upstream-path P] [--out DIR]
-uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/ without rebuilding
-uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + trigger tests + report
+uv run --project tools lqcowork validate   [--bundle ID] [--out DIR]   # validates dist/<bundle>/, and dist/skills/*.skill when present, without rebuilding
+uv run --project tools lqcowork package    [--bundle ID] [--out DIR]   # build + validate + zip + skill archives + trigger tests + report
 uv run --project tools lqcowork site       [--out DIR]                # render <out>/site/ from a built <out>/ (section 9)
 uv run --project tools lqcowork bump-upstream [--to REF] [--dry-run] [--report PATH]
 uv run --project tools lqcowork anchor     [--skill NAME]              # set anchored_to = current pin after review
@@ -467,7 +514,8 @@ uv run --project tools lqcowork release-check --tag vX.Y.Z [--out DIR] # does a 
 ```
 
 Exit codes: 0 ok, 1 error, 2 validation/anchor/release-check failure. Every
-command prints a one-line summary per bundle. `--upstream-path` lets
+command prints a one-line summary per bundle; `package` prints one line per
+skill archive under them (section 5b). `--upstream-path` lets
 bump-upstream build against a temporary checkout without moving the pinned
 submodule. `--out DIR` sends a build, and everything read back from it,
 somewhere other than `dist/`, which is what lets two people — or a
@@ -703,6 +751,7 @@ supported way to get one.
 | `upstream/plugin.release.yaml` | what upstream calls each mirrored plugin |
 | `upstream/skills/<group>/<name>/SKILL.md` | the original description, quoted on the skill page |
 | `<out>/<bundle>/skills/<name>/` | the files each skill actually ships; a skill in two bundles is read once |
+| `<out>/skills/<name>.skill` | the size and file count shown beside a skill's upload archive; absent is not an error, and the link is written either way |
 | `<out>/build-report.md` | the warnings table, shown per skill under a disclosure |
 | `docs/INSTALL.md`, `docs/TESTING.md`, `CHANGELOG.md` | rendered through markdown-it-py (CommonMark plus tables, raw HTML escaped) |
 
@@ -715,12 +764,13 @@ says which file it would have rendered and where to read it instead.
 
 | Page | Content |
 | --- | --- |
-| `index.html` | what this is and is not (an independent adaptation, not official, pre-release, nothing exercised in a live tenant); the bundles with skill counts, tier counts and links; the release assets by file name; how Cowork routes (natural language on the description, the Sources picker, no slash grammar); the tester call; links to every other page and every skill |
-| `bundles/<id>.html` | manifest name, ids and descriptions; the `Mirrors upstream plugin …` line with upstream's display name and description; the skills table (name, one-line purpose, tier, status, known-issue count); the trigger-test checklist as a table; the release asset name |
-| `skills/<name>.html` | what it does (the description's first sentence); when to use it (positive triggers); not for (negative triggers with the hand-off the checklist would print); the bundles it ships in; tier, status and bucket badges carrying the rubric; **How it differs from the original** (`cowork.differs`, with `notes` under a "Build notes" disclosure); known issues with failure shape and probe link; the workarounds table; the original description quoted; the upstream link at the pinned SHA; the files shipped; the build warnings; the UAT issue search |
+| `index.html` | what this is and is not (an independent adaptation, not official, pre-release, nothing exercised in a live tenant); the bundles with skill counts, tier counts and links; the release assets by file name; how Cowork routes (natural language on the description, the Sources picker, no slash grammar); the tester call; a download block linking each bundle's zip by its latest-download URL with its skill count, the `.skill` archives through the downloads page, `SHA256SUMS` and the releases page; links to every other page and every skill |
+| `bundles/<id>.html` | manifest name, ids and descriptions; the `Mirrors upstream plugin …` line with upstream's display name and description; the skills table (name, one-line purpose, tier, status, known-issue count); the trigger-test checklist as a table; a **Download** block at the top linking the zip, the trigger-test checklist and `SHA256SUMS`, and a `.skill` link on every row of the skills table |
+| `skills/<name>.html` | what it does (the description's first sentence); when to use it (positive triggers); not for (negative triggers with the hand-off the checklist would print); the bundles it ships in; tier, status and bucket badges carrying the rubric; a **Get this skill** block after the badges with the `.skill` archive, what it is, its size and file count where one was built, and the bundle zips it also ships in; **How it differs from the original** (`cowork.differs`, with `notes` under a "Build notes" disclosure); known issues with failure shape and probe link; the workarounds table; the original description quoted; the upstream link at the pinned SHA; the files shipped; the build warnings; the UAT issue search |
 | `known-issues.html` | every known issue across every card, with its skill, tier, failure shape and probe |
 | `probes.html` | every probe in `probes.yaml`, its prompt verbatim, what a pass and a fail look like, the worst outcome, and what it unlocks |
 | `differences.html` | the capability picture from section 8 in one screen; the mechanical transforms of section 5 in plain words; the claim-words rule with the list from `cowork.yaml`; the bundle structure against upstream's; the tier rubric with a count per tier; a table of every skill with its tier and a one-line `differs` excerpt |
+| `downloads.html` | every published file in two tables: the bundle packages (name, skill count, `<id>.zip`, `<id>-trigger-tests.md`) and all the skill archives (skill, bundles, `<name>.skill`, and its size where one was built); then `SHA256SUMS`, `build-report.md`, the releases page, and the sentence about what "latest" resolves to |
 | `install.html`, `testing.html`, `changelog.html` | the Markdown sources, rendered |
 
 ### Rules the pages keep
@@ -732,6 +782,17 @@ says which file it would have rendered and where to read it instead.
 - **Relative links only.** The site is served under `/lq-plugin-cowork/`, so
   no `href` or `src` is rooted at `/`. A page under `bundles/` or `skills/`
   reaches the root with `../`.
+- **Release assets by their latest-download URL.** Every downloadable file
+  is linked at `https://github.com/houfu/lq-plugin-cowork/releases/latest/download/<asset>`,
+  which GitHub resolves to that asset on the most recent release that is not a
+  pre-release. The assets are `<bundle.id>.zip` and
+  `<bundle.id>-trigger-tests.md` per bundle, `<name>.skill` per skill,
+  `build-report.md` and `SHA256SUMS`. No page names a version in a URL, so a
+  release publishes without rebuilding the site; every download block says in
+  as many words that those links resolve only once the current version is
+  published. A size beside a `.skill` link is read from the built archive in
+  `<out>/skills/`, so it is reproducible and absent rather than guessed when
+  the archive is not there.
 - **No external assets.** One stylesheet at `site/assets/site.css`, and
   nothing else fetched: no font service, no CDN, no image host. Links a reader
   clicks may of course leave the site.

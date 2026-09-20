@@ -1,7 +1,7 @@
 # Thin wrappers around `uv run --project tools lqcowork ...`.
 #
 #   make setup          install the build tooling
-#   make package        build + validate + zip + trigger tests + report
+#   make package        build + validate + zip + .skill archives + report
 #   make site           package, then render the static site into dist/site/
 #   make drift          report what moved upstream, without moving the pin
 #   make fmt-check      black --check, the formatting gate CI runs

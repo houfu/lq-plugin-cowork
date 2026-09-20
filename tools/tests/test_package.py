@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from lqcowork import package as pkg
+from lqcowork import validate as V
 from lqcowork.build import Builder
 from lqcowork.cli import main
 from lqcowork.config import load_cards, load_config
@@ -64,6 +65,112 @@ class TestZip:
         with zipfile.ZipFile(packaged / "dist/test-bundle.zip") as archive:
             shipped = archive.read("NOTICE.md").decode()
         assert shipped == (packaged / "NOTICE.md").read_text()
+
+
+class TestSkillArchives:
+    """One upload-ready `.skill` per skill, next to the bundle zips."""
+
+    def test_one_archive_per_skill(self, packaged):
+        names = sorted(p.name for p in (packaged / "dist/skills").glob("*.skill"))
+        assert names == ["alpha.skill", "beta.skill"]
+
+    def test_contents_are_at_the_archive_root(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            names = archive.namelist()
+        assert names == sorted(names)
+        assert "SKILL.md" in names
+        assert "references/extra.md" in names
+        assert not any(name.startswith("skills/") for name in names)
+        assert not any(
+            part.startswith(".") for name in names for part in name.split("/")
+        )
+
+    def test_it_is_the_built_skill_byte_for_byte(self, packaged):
+        built = packaged / "dist/test-bundle/skills/alpha"
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            shipped = {
+                name: archive.read(name)
+                for name in archive.namelist()
+                if name not in ("LICENSE", "NOTICE.md")
+            }
+        assert shipped == {
+            path.relative_to(built).as_posix(): path.read_bytes()
+            for path in built.rglob("*")
+            if path.is_file()
+        }
+
+    def test_licence_and_notice_travel_with_it(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/alpha.skill") as archive:
+            assert archive.read("NOTICE.md") == (packaged / "NOTICE.md").read_bytes()
+            assert (
+                archive.read("LICENSE") == (packaged / "upstream/LICENSE").read_bytes()
+            )
+
+    def test_entries_are_dated_1980_by_default(self, packaged):
+        with zipfile.ZipFile(packaged / "dist/skills/beta.skill") as archive:
+            stamps = {info.date_time for info in archive.infolist()}
+        assert stamps == {(1980, 1, 1, 0, 0, 0)}
+
+    def test_two_builds_produce_byte_identical_archives(self, fixture_repo, tmp_path):
+        config = load_config(fixture_repo)
+        runs = []
+        for run in ("first", "second"):
+            out = tmp_path / run
+            result = Builder(config, out_dir=out).build()
+            runs.append(
+                [
+                    (archive.name, archive.path.read_bytes())
+                    for archive in pkg.write_skill_archives(config, result, out)
+                ]
+            )
+        assert runs[0] == runs[1]
+
+    def test_a_shared_skill_is_archived_once(self, fixture_repo, monkeypatch):
+        path = fixture_repo / "cowork.yaml"
+        text = path.read_text()
+        second = (
+            text.split("bundles:\n")[1]
+            .replace("id: test-bundle", "id: other-bundle")
+            .replace(
+                "guid: 5d40f9d0-bbfe-5aa7-a4e9-10b4e0b676bf",
+                "guid: f53d5df8-3b69-55e8-a12b-fdf244f3df55",
+            )
+        )
+        path.write_text(text + second, encoding="utf-8")
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        names = sorted(p.name for p in (fixture_repo / "dist/skills").glob("*.skill"))
+        assert names == ["alpha.skill", "beta.skill"]
+
+    def test_the_summary_line(self, fixture_repo, monkeypatch, capsys):
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        archive = fixture_repo / "dist/skills/alpha.skill"
+        with zipfile.ZipFile(archive) as opened:
+            count = len(opened.infolist())
+        out = capsys.readouterr().out
+        assert (
+            f"skills/alpha.skill: {count} files, "
+            f"{archive.stat().st_size:,} bytes" in out
+        )
+
+    def test_the_lines_come_under_the_bundle_lines(
+        self, fixture_repo, monkeypatch, capsys
+    ):
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 0
+        lines = capsys.readouterr().out.splitlines()
+        bundle = next(i for i, line in enumerate(lines) if line.startswith("test-"))
+        archive = next(
+            i for i, line in enumerate(lines) if line.startswith("skills/alpha")
+        )
+        assert bundle < archive
+
+    def test_package_validates_what_it_wrote(self, fixture_repo, monkeypatch, capsys):
+        monkeypatch.setattr(V, "MAX_ARCHIVE_BYTES", 16)
+        monkeypatch.chdir(fixture_repo)
+        assert main(["package"]) == 2
+        assert "LQC-U002" in capsys.readouterr().out
 
 
 class TestTriggerTests:
@@ -181,6 +288,16 @@ class TestBuildReport:
         assert "| Bundle | Skill | Code | File | Reason |" in text
         assert "| test-bundle | alpha | LQC-W010 | references/extra.md |" in text
         assert "upstream-authored authority URL" in text
+
+    def test_skill_archives_section(self, packaged):
+        text = (packaged / "dist/build-report.md").read_text()
+        archive = packaged / "dist/skills/alpha.skill"
+        with zipfile.ZipFile(archive) as opened:
+            count = len(opened.infolist())
+        assert "## Skill archives" in text
+        assert "| Skill | Files | Bytes |" in text
+        assert f"| alpha | {count} | {archive.stat().st_size:,} |" in text
+        assert "| beta |" in text
 
     def test_no_suppressions_says_so(self, packaged):
         text = (packaged / "dist/build-report.md").read_text()

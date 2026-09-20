@@ -28,7 +28,12 @@ from .config import (
 )
 from .release import ReleaseCheckError, check_release
 from .site import build_site
-from .validate import validate_bundle, validate_skill_only
+from .validate import (
+    skill_archives,
+    validate_bundle,
+    validate_skill_archive,
+    validate_skill_only,
+)
 
 EXIT_OK = 0
 EXIT_ERROR = 1
@@ -186,6 +191,16 @@ def cmd_validate(args: argparse.Namespace) -> int:
             status = EXIT_INVALID
     if suppressed:
         _echo(f"{len(suppressed)} warning(s) suppressed by card decisions")
+    # The upload archives are checked where they are, if they are there at
+    # all: `validate` never builds, and a tree packaged before this existed
+    # simply has none.
+    archives = skill_archives(config, out)
+    if archives:
+        issues = [i for path in archives for i in validate_skill_archive(path)]
+        _echo(f"skills: {len(archives)} archives, {len(issues)} errors")
+        _report_issues("errors", issues)
+        if issues:
+            status = EXIT_INVALID
     return status
 
 
@@ -226,12 +241,19 @@ def cmd_package(args: argparse.Namespace) -> int:
 
     if not result.bundles:
         _echo("no bundle was built: the cards below have to be fixed first")
+
+    archives = pkg.write_skill_archives(config, result, out)
+    for archive in archives:
+        all_errors += validate_skill_archive(archive.path)
+        _echo(archive.summary())
+
     report = pkg.write_build_report(
         config,
         result,
         errors=all_errors,
         warnings=all_warnings,
         suppressed=all_suppressed,
+        archives=archives,
         out_dir=out,
     )
     _echo(f"  {_rel(config, report)}")
@@ -355,7 +377,8 @@ def build_parser() -> argparse.ArgumentParser:
     validate.set_defaults(func=cmd_validate)
 
     package = subparsers.add_parser(
-        "package", help="build + validate + zip + trigger tests + report"
+        "package",
+        help="build + validate + zip + skill archives + trigger tests + report",
     )
     package.add_argument("--bundle", help="package only this bundle id")
     package.add_argument("--out", help="output directory (default: dist)")

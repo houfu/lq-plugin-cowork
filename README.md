@@ -43,9 +43,9 @@ need to clone this repository to install one.
 
 | Bundle | Who it suits |
 | --- | --- |
-| `legalquants-litigation-cowork.zip` | Litigators and disputes teams: source-grounded workflows for litigators, with the shared daily-practice tools. Drafting, cite-checking, depositions, discovery, document review, case organisation, client reporting. 15 skills. |
-| `legalquants-transactional-cowork.zip` | Corporate, M&A and commercial teams: contract and deal workflows, with the shared daily-practice tools. Negotiation playbooks, redlines, defined terms, diligence, closing checklists and closing indexes. 14 skills. |
-| `legalquants-companion-cowork.zip` | Any lawyer working out where they stand with AI: your journey with AI as a lawyer — ask, assess, reflect, apply, connect. 8 skills. |
+| [`legalquants-litigation-cowork.zip`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/legalquants-litigation-cowork.zip) | Litigators and disputes teams: source-grounded workflows for litigators, with the shared daily-practice tools. Drafting, cite-checking, depositions, discovery, document review, case organisation, client reporting. 15 skills. |
+| [`legalquants-transactional-cowork.zip`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/legalquants-transactional-cowork.zip) | Corporate, M&A and commercial teams: contract and deal workflows, with the shared daily-practice tools. Negotiation playbooks, redlines, defined terms, diligence, closing checklists and closing indexes. 14 skills. |
+| [`legalquants-companion-cowork.zip`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/legalquants-companion-cowork.zip) | Any lawyer working out where they stand with AI: your journey with AI as a lawyer — ask, assess, reflect, apply, connect. 8 skills. |
 
 The three mirror the three plugins upstream publishes, skill for skill, so a
 skill upstream adds to a group shows up here as a build error rather than as a
@@ -54,11 +54,22 @@ and `lq-start` is one of them and also ships in the companion bundle. Install
 one to start: they can coexist, but a duplicated skill name across two enabled
 plugins is worth reporting.
 
-Each release carries the three zips; `<bundle>-trigger-tests.md` for each, the
-routing acceptance tests generated from the cards; `build-report.md` — skills,
-tiers, statuses, known issues, file counts, adaptation notes and warnings; and
-`SHA256SUMS`. Until a release has a live-tenant result behind it, it is marked a
-GitHub pre-release. See [CHANGELOG.md](CHANGELOG.md) for what changed and
+Every one of the thirty-one skills also ships on its own as a `<name>.skill`
+archive — for example
+[`regulatory.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/regulatory.skill)
+— small enough to upload straight into Cowork without installing a bundle at
+all. [docs/INSTALL.md](docs/INSTALL.md) has the route.
+
+Each release carries the three zips; a `.skill` archive per skill, thirty-one
+of them; `<bundle>-trigger-tests.md` for each, the routing acceptance tests
+generated from the cards; `build-report.md` — skills, tiers, statuses, known
+issues, file counts, adaptation notes and warnings; and
+[`SHA256SUMS`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/SHA256SUMS)
+to check any of them against. `latest` always resolves to the newest release
+that is not a pre-release: v0.1.0 was published as a pre-release, and from
+0.2.0 a release is published as latest unless its tag carries a suffix such as
+`-rc.1`, which marks it a pre-release instead. See
+[CHANGELOG.md](CHANGELOG.md) for what changed and
 [docs/RELEASING.md](docs/RELEASING.md) for how a release is cut.
 
 ## Install
