@@ -1,0 +1,38 @@
+{#- Every page. `base` is the relative prefix back to the site root: "" for a
+    page at the root, "../" for one under bundles/ or skills/. Nothing here
+    resolves outside the published folder except the links a reader clicks. -#}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}{{ site_title }}{% endblock %} — {{ site_title }}</title>
+    <link rel="stylesheet" href="{{ base }}assets/site.css" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="masthead">
+      <nav aria-label="Sections of this site">
+        <ul>
+          {%- for item in nav %}
+          <li>
+            <a href="{{ base }}{{ item.href }}"
+              {%- if item.href == here %} aria-current="page"{% endif %}
+              >{{ item.label }}</a
+            >
+          </li>
+          {%- endfor %}
+        </ul>
+      </nav>
+    </header>
+    <main class="page" id="main">{% block content %}{% endblock %}</main>
+    <footer class="pagefoot">
+      <p>
+        Package version {{ version }} · upstream
+        <a href="{{ upstream_tree_url }}"><code>{{ sha7 }}</code></a> ·
+        Apache-2.0
+      </p>
+      <p>{{ not_official }}</p>
+    </footer>
+  </body>
+</html>

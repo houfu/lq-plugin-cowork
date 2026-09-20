@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Capability probes{% endblock %}
+{% block content %}
+<h1>Capability probes</h1>
+
+{% if probes %}
+<p class="lede">
+  {{ probes | length }} question{{ "" if probes | length == 1 else "s" }}
+  about Microsoft 365 Copilot Cowork that nobody has answered in a live
+  tenant. Each one is something a skill would like to rely on and cannot,
+  stated so a tester can settle it in one fresh conversation with synthetic
+  files.
+</p>
+
+<p>
+  A probe is not a bug report. It is a question whose answer changes what this
+  adaptation may promise: the skills a result unlocks are named under each
+  one. The <em>worst outcome</em> is what a tester has to be ready to spot —
+  a <strong>fluent-fake</strong> answer is a plausible reply to a thing that
+  never happened, and it is the reason every probe says what a pass looks
+  like before you run it.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <caption>The whole list, in order. Each row links to the detail below.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Probe</th>
+        <th scope="col">Question</th>
+        <th scope="col">Worst outcome</th>
+        <th scope="col">Unlocks</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for probe in probes %}
+      <tr>
+        <th scope="row"><a href="#{{ probe.id }}">{{ probe.id }}</a></th>
+        <td>{{ probe.title }}</td>
+        <td>{{ probe.bad_outcome }}</td>
+        <td>
+          {%- if probe.unlocks %}
+          {%- for name in probe.unlocks %}
+          {%- if name in skill_names %}<a href="skills/{{ name }}.html">{{ name }}</a>
+          {%- else %}{{ name }}{% endif %}{{ ", " if not loop.last }}
+          {%- endfor %}
+          {%- else %}<span class="subtle">no tier turns on it</span>{% endif %}
+        </td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% for probe in probes %}
+<h2 id="{{ probe.id }}">{{ probe.id }} — {{ probe.title }}</h2>
+
+<dl class="facts">
+  <dt>Settles</dt>
+  <dd>{{ probe.settles }}</dd>
+  {%- if probe.setup %}
+  <dt>Setup</dt>
+  <dd>{{ probe.setup }}</dd>
+  {%- endif %}
+  <dt>Pass</dt>
+  <dd>{{ probe.passes }}</dd>
+  <dt>Fail</dt>
+  <dd>{{ probe.fails }}</dd>
+  <dt>Worst outcome</dt>
+  <dd>{{ probe.bad_outcome }}</dd>
+  <dt>Unlocks</dt>
+  <dd>
+    {%- if probe.unlocks %}
+    {%- for name in probe.unlocks %}
+    {%- if name in skill_names %}<a href="skills/{{ name }}.html">{{ name }}</a>
+    {%- else %}{{ name }}{% endif %}{{ ", " if not loop.last }}
+    {%- endfor %}
+    {%- else %}Nothing: no card's tier turns on it.{% endif %}
+  </dd>
+</dl>
+
+<p>Type this, exactly:</p>
+<blockquote>
+  {%- for para in paragraphs(probe.prompt) %}
+  <p>{{ para }}</p>
+  {%- endfor %}
+</blockquote>
+
+{% if probe.issues %}
+<p class="subtle">
+  Known issues waiting on it:
+  {%- for issue in probe.issues %}
+  <a href="skills/{{ issue.skill }}.html#{{ issue.id }}"><code>{{ issue.id }}</code></a>{{ ", " if not loop.last }}
+  {%- endfor %}
+</p>
+{% endif %}
+{% endfor %}
+
+<h2 id="reporting">Reporting a result</h2>
+
+<p>
+  A probe result is worth having either way, and a clean pass is worth as much
+  as a failure. <a href="testing.html">The testing guide</a> says where it
+  goes.
+</p>
+{% else %}
+<p class="lede">
+  No probes are defined in this tree: <code>probes.yaml</code> is absent or
+  empty, so there is nothing to list.
+</p>
+{% endif %}
+{% endblock %}

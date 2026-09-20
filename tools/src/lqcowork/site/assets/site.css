@@ -1,0 +1,433 @@
+/* The whole site's stylesheet. No fonts are fetched, no CDN is contacted:
+   everything here resolves inside the published folder, because the site is
+   built from the same sources as the packages and has to render the same way
+   from a file:// copy as from GitHub Pages. */
+
+:root {
+  color-scheme: light dark;
+
+  --ink: #1b1b1d;
+  --ink-soft: #4a4a52;
+  --paper: #fdfdfc;
+  --panel: #f3f2ef;
+  --rule: #d8d6d0;
+  --link: #1c4f9c;
+  --link-visited: #5a3a86;
+  --focus: #b3541e;
+
+  --silent: #8a3a12;
+  --silent-bg: #fbeee5;
+  --loud: #1f5c3d;
+  --loud-bg: #e7f3ec;
+
+  --measure: 48rem;
+  --gutter: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8e7e3;
+    --ink-soft: #b0aea7;
+    --paper: #16161a;
+    --panel: #212127;
+    --rule: #3a3a42;
+    --link: #8db4ef;
+    --link-visited: #c0a4e8;
+    --focus: #f0a86a;
+
+    --silent: #f0b08a;
+    --silent-bg: #3a2418;
+    --loud: #9ddcb8;
+    --loud-bg: #16301f;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+code,
+pre,
+kbd {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", monospace;
+  font-size: 0.9em;
+}
+
+/* Landmarks ------------------------------------------------------------- */
+
+.masthead,
+.page,
+.pagefoot {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding-left: var(--gutter);
+  padding-right: var(--gutter);
+}
+
+.masthead {
+  padding-top: 1.25rem;
+  padding-bottom: 0.5rem;
+}
+
+.masthead nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.15rem 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+}
+
+.masthead nav a[aria-current="page"] {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.page {
+  padding-top: 0.5rem;
+  padding-bottom: 2rem;
+}
+
+.pagefoot {
+  border-top: 1px solid var(--rule);
+  padding-top: 1rem;
+  padding-bottom: 2.5rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.pagefoot p {
+  margin: 0 0 0.4rem;
+}
+
+/* Skip link: off-screen until it takes focus, then the first thing you see. */
+.skip {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 0.5rem 0.75rem;
+  z-index: 10;
+}
+
+.skip:focus {
+  left: 0;
+}
+
+/* Type ------------------------------------------------------------------ */
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: 1.25;
+  margin: 1.8rem 0 0.6rem;
+  overflow-wrap: break-word;
+}
+
+h1 {
+  font-size: 1.7rem;
+  margin-top: 0.8rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  border-top: 1px solid var(--rule);
+  padding-top: 1.2rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+h4 {
+  font-size: 0.95rem;
+}
+
+p,
+ul,
+ol,
+dl {
+  margin: 0 0 0.9rem;
+}
+
+ul,
+ol {
+  padding-left: 1.3rem;
+}
+
+li {
+  margin-bottom: 0.3rem;
+}
+
+.lede {
+  font-size: 1.05rem;
+  color: var(--ink-soft);
+}
+
+.subtle {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+blockquote {
+  margin: 0 0 0.9rem;
+  padding: 0.1rem 0 0.1rem 0.9rem;
+  border-left: 3px solid var(--rule);
+  color: var(--ink-soft);
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--rule);
+  margin: 1.5rem 0;
+}
+
+a {
+  color: var(--link);
+}
+
+a:visited {
+  color: var(--link-visited);
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+/* Panels, badges, definition lists -------------------------------------- */
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.9rem 1rem 0.1rem;
+  margin: 0 0 1.1rem;
+}
+
+.panel > :last-child {
+  margin-bottom: 0.9rem;
+}
+
+.panel h2,
+.panel h3 {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.badge {
+  display: inline-block;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.85rem;
+  background: var(--panel);
+  white-space: nowrap;
+}
+
+.badge[title] {
+  cursor: help;
+}
+
+.badge-silent {
+  color: var(--silent);
+  background: var(--silent-bg);
+  border-color: var(--silent);
+}
+
+.badge-loud {
+  color: var(--loud);
+  background: var(--loud-bg);
+  border-color: var(--loud);
+}
+
+dl.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.2rem 0.8rem;
+  margin: 0 0 1.1rem;
+}
+
+dl.facts dt {
+  color: var(--ink-soft);
+}
+
+dl.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 30rem) {
+  dl.facts {
+    grid-template-columns: 1fr;
+    gap: 0 0;
+  }
+
+  dl.facts dd {
+    margin-bottom: 0.5rem;
+  }
+}
+
+details {
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.5rem 0.9rem;
+  margin: 0 0 1.1rem;
+}
+
+details > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+details[open] > summary {
+  margin-bottom: 0.7rem;
+}
+
+.issue {
+  border: 1px solid var(--rule);
+  border-left: 4px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.8rem 1rem 0.1rem;
+  margin: 0 0 1rem;
+}
+
+.issue h3 {
+  margin-top: 0;
+}
+
+.issue-id {
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+/* Tables: scroll inside their own box rather than widen the page --------- */
+
+.tablewrap {
+  overflow-x: auto;
+  margin: 0 0 1.2rem;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.92rem;
+}
+
+caption {
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  vertical-align: top;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--rule);
+}
+
+thead th {
+  background: var(--panel);
+  white-space: nowrap;
+}
+
+tbody tr:last-child th,
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+td.num,
+th.num {
+  text-align: right;
+}
+
+/* Markdown pages ------------------------------------------------------- */
+
+.doc table {
+  width: auto;
+  min-width: 100%;
+}
+
+.doc pre {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  padding: 0.7rem 0.8rem;
+  overflow-x: auto;
+}
+
+.doc code {
+  overflow-wrap: anywhere;
+}
+
+.doc img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* The known-issues filter, which script.js-less browsers never see ------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem 1rem;
+  align-items: flex-end;
+  margin: 0 0 1rem;
+}
+
+.filters label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.filters select {
+  font: inherit;
+  padding: 0.3rem 0.4rem;
+  background: var(--paper);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+}
+
+.filter-count {
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}

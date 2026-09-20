@@ -2,6 +2,7 @@
 #
 #   make setup          install the build tooling
 #   make package        build + validate + zip + trigger tests + report
+#   make site           package, then render the static site into dist/site/
 #   make drift          report what moved upstream, without moving the pin
 #   make fmt-check      black --check, the formatting gate CI runs
 #   make release-check  does TAG agree with cowork.yaml, CHANGELOG.md and dist/?
@@ -31,7 +32,7 @@ BUNDLE_ARG := $(if $(BUNDLE),--bundle $(BUNDLE),)
 SKILL_ARG := $(if $(SKILL),--skill $(SKILL),)
 REPORT_ARG := $(if $(REPORT),--report $(REPORT),)
 
-.PHONY: setup build validate package triggers drift bump anchor test fmt \
+.PHONY: setup build validate package site triggers drift bump anchor test fmt \
         fmt-check release-check release clean help
 
 help:
@@ -48,6 +49,10 @@ validate:
 
 package:
 	$(LQ) package $(BUNDLE_ARG)
+
+# The site describes a build, so it is never rendered without one.
+site: package
+	$(LQ) site
 
 triggers:
 	$(LQ) triggers $(BUNDLE_ARG)

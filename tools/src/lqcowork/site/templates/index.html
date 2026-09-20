@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Overview{% endblock %}
+{% block content %}
+<h1>{{ site_title }}</h1>
+
+<p class="lede">
+  {{ bundles | length }} plugin package{{ "" if bundles | length == 1 else "s" }}
+  for Microsoft 365 Copilot Cowork, carrying {{ skills | length }} adapted
+  LegalQuants skills. This site says what each one does, how it differs from
+  the original, and what is known to go wrong.
+</p>
+
+<h2 id="what-this-is">What this is, and what it is not</h2>
+
+<p>
+  It <strong>is</strong> an independent adaptation of the open-source
+  LegalQuants skills for Copilot Cowork: the same work, rewritten for a host
+  with no local disk, no bundled scripts and no command line, and packaged as
+  sideloadable plugin zips.
+</p>
+
+<ul>
+  <li>
+    It is <strong>not an official LegalQuants release</strong>, not endorsed by
+    the upstream project, and not supported by it.
+  </li>
+  <li>
+    It is <strong>pre-release</strong>. Version {{ version }} is offered for
+    testing, not for relying on.
+  </li>
+  <li>
+    <strong>Nothing here has been exercised in a live tenant.</strong> Every
+    card is written against Microsoft's documentation and the capability
+    probes below; none of it has been confirmed by running it in Cowork.
+  </li>
+</ul>
+
+<h2 id="bundles">The bundles</h2>
+
+<p>
+  Each bundle is one zip you sideload. A skill that belongs in two bundles is
+  the same skill, built once and shipped in both.
+</p>
+
+{% for bundle in bundles %}
+<div class="panel">
+  <h3>
+    <a href="bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a>
+  </h3>
+  <p>{{ bundle.description_short }}.</p>
+  <dl class="facts">
+    <dt>Skills</dt>
+    <dd>{{ bundle.skills | length }}</dd>
+    <dt>By tier</dt>
+    <dd>{{ bundle.tier_summary }}</dd>
+    <dt>Known issues</dt>
+    <dd>{{ bundle.known_issue_count }}</dd>
+    <dt>Package</dt>
+    <dd><code>{{ bundle.asset }}</code></dd>
+  </dl>
+</div>
+{% endfor %}
+
+<h2 id="get-the-packages">Get the packages</h2>
+
+<p>
+  The zips are attached to the latest release, together with one trigger-test
+  checklist per bundle and the build report:
+  <a href="{{ releases_url }}">{{ releases_url }}</a>
+</p>
+
+<ul>
+  {%- for bundle in bundles %}
+  <li><code>{{ bundle.asset }}</code> — {{ bundle.name_short }}</li>
+  {%- endfor %}
+</ul>
+
+<p>
+  <a href="install.html">Installing a bundle</a> walks through the three ways
+  in: uploading it yourself from the Customize page, an admin deployment, and
+  the <code>atk</code> command line.
+</p>
+
+<h2 id="routing">How a skill gets used</h2>
+
+<p>
+  Cowork routes on the skill's <em>description</em>. You ask for what you want
+  in ordinary words — "go through the tracked changes in this draft and flag
+  what matters" — and Cowork picks the skill whose description fits. There is
+  no slash grammar: nothing here is invoked by typing
+  <code>/name</code> or <code>$name</code>, and a skill cannot be called by
+  name as a command.
+</p>
+
+<p>
+  The conversation's <strong>Sources</strong> picker is where you steer it by
+  hand: it lists the plugins and skills available to the conversation, so you
+  can turn one on for a request rather than hoping the description wins. Which
+  plugins a tenant has at all is the Microsoft 365 administrator's decision.
+</p>
+
+<p>
+  Because routing is a matter of wording, every card ships with trigger tests:
+  prompts that must activate the skill, and adjacent prompts that must not.
+  They are on each bundle's page, and in the release assets.
+</p>
+
+<h2 id="testers">Testers wanted</h2>
+
+<p>
+  Nobody has run these in a live tenant. The most useful thing anyone can do
+  with this release is install one bundle, work through a skill on synthetic
+  files, and report what actually happened — including the boring result that
+  it worked.
+</p>
+
+<ul>
+  <li><a href="testing.html">The testing guide</a> — what to try, and what a pass looks like.</li>
+  <li><a href="probes.html">The capability probes</a> — {{ probes | length }} questions about Cowork that no card can answer for itself.</li>
+  <li>
+    <a href="{{ help_wanted_url }}">Open "help wanted" issues</a> — one per
+    skill, with the synthetic inputs and the pass criteria.
+  </li>
+</ul>
+
+<h2 id="everything">Everything on this site</h2>
+
+<ul>
+  <li><a href="differences.html">How this differs from the original</a> — the capability picture, the transforms, the tier rubric, and every skill's one-line account.</li>
+  <li><a href="known-issues.html">Known issues</a> — {{ known_issues | length }} across all cards, filterable by tier, failure mode and probe.</li>
+  <li><a href="probes.html">Capability probes</a> — {{ probe_span }}, and what each one unlocks.</li>
+  <li><a href="install.html">Install</a> · <a href="testing.html">Testing</a> · <a href="changelog.html">Changelog</a></li>
+  {%- for bundle in bundles %}
+  <li><a href="bundles/{{ bundle.id }}.html">{{ bundle.name_short }}</a> — manifest, skills, trigger tests.</li>
+  {%- endfor %}
+</ul>
+
+<h3 id="skills">Every skill</h3>
+
+<div class="tablewrap">
+  <table>
+    <caption>{{ skills | length }} skills, alphabetically. Tier and status come from the card.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Skill</th>
+        <th scope="col">What it does</th>
+        <th scope="col" class="num">Tier</th>
+        <th scope="col">Status</th>
+        <th scope="col">Bundles</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for skill in skills %}
+      <tr>
+        <th scope="row"><a href="skills/{{ skill.name }}.html">{{ skill.name }}</a></th>
+        <td>{{ skill.purpose_short }}</td>
+        <td class="num">{{ skill.tier_label }}</td>
+        <td>{{ skill.status_label }}</td>
+        <td>{{ skill.bundle_shorts | join(", ") }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}
