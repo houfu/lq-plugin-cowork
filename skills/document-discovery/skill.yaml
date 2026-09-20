@@ -60,6 +60,62 @@ replace:
     to: "The handoff says that any received production and substantive responsiveness or privilege review are out of scope for this skill and need counsel authorization."
     files: ["references/synthetic-samples.md"]
     expect: 1
+  - from: "a source-receipted, lawyer-facing"
+    to: "a source-recorded, lawyer-facing"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "preserve a source receipt with:"
+    to: "preserve a source record with:"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "identify that requirement in the receipt."
+    to: "identify that requirement in the record."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "and its coverage receipt."
+    to: "and its coverage record."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "the legal method and evidence receipt must remain the same"
+    to: "the legal method and evidence record must remain the same"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Authority: [receipt IDs]."
+    to: "Authority: [source-record IDs]."
+    files: ["references/drafting-patterns.md"]
+    expect: 1
+  - from: "judge order, with receipt |"
+    to: "judge order, with a citation to it |"
+    files: ["references/drafting-patterns.md"]
+    expect: 1
+  - from: "This ledger is also a coverage receipt:"
+    to: "This ledger is also a coverage record:"
+    files: ["references/drafting-patterns.md"]
+    expect: 1
+  - from: "burden information, and authority receipt instead of using boilerplate."
+    to: "burden information, and authority support instead of using boilerplate."
+    files: ["references/federal-practice.md"]
+    expect: 1
+  - from: "## Suggested receipt record"
+    to: "## Suggested source-record shape"
+    files: ["references/federal-practice.md"]
+    expect: 1
+  - from: "Keep the served instrument and the receipt separately"
+    to: "Keep the served instrument and the record separately"
+    files: ["references/federal-practice.md"]
+    expect: 1
+  - from: "Keep a source receipt for each material proposition."
+    to: "Keep a source record for each material proposition."
+    files: ["references/preservation-and-legal-holds.md"]
+    expect: 1
+  - from: "governing jurisdiction, authority receipt, responsible humans,"
+    to: "governing jurisdiction, authority record, responsible humans,"
+    files: ["references/preservation-and-legal-holds.md"]
+    expect: 1
+  - from: "Do not add substantive authority receipts, legal conclusions,"
+    to: "Do not add substantive authority records, legal conclusions,"
+    files: ["references/response-shells.md"]
+    expect: 1
 
 sections:
   - match: "## Response documents and objection libraries"
@@ -83,6 +139,59 @@ notes: |
   references are kept. docreview is not in this bundle, so the four hand-offs to
   it in the body and two in the references become an explicit out-of-scope
   boundary instead.
+
+suppress:
+  - code: LQC-W011
+    file: "references/federal-practice.md"
+    reason: >-
+      'proven' at the Rule 37(c)(2) line describes the rule's own trigger --
+      a fact a party denied that is later proven true at trial -- ordinary
+      legal-doctrine vocabulary about what the Federal Rule requires, not a
+      claim this skill makes about its own output.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original kept a growing bank of approved objection wording, curated
+    and reviewed through two small local applications that let you search, tag
+    and select individual grounds before they were assembled into a response.
+    Neither application exists here, so that bank becomes a document you
+    approve and keep yourself, and the skill treats it as reference wording
+    you supply rather than something it maintains or grows on its own.
+    Drafting response shells, itemised objections and the rest of the
+    discovery work product is otherwise unchanged, and a finished draft still
+    comes back as an editable Word file through the built-in Word skill.
+    Reviewing anything the other side has actually produced stays out of scope
+    for this skill rather than being handed off automatically to a separate
+    review skill.
+  known_issues:
+    - id: KI-document-discovery-1
+      title: "No objection-library or objection-review application"
+      detail: >-
+        The two local applications that let you build and curate a
+        searchable bank of approved objection wording, and the tooling that
+        split, deduplicated and source-linked new candidates into it, do not
+        exist here. Treat your objection bank as a document you approve,
+        keep and update yourself — reference wording the skill draws on and
+        adapts, never a library it grows or curates for you.
+      failure: loud
+    - id: KI-document-discovery-2
+      title: "Reviewing an incoming production is a scope boundary, not a hand-off"
+      detail: >-
+        Upstream sent substantive review of anything the other side
+        produced, responsiveness mapping and production-derived privilege
+        review to a separate discovery-review skill. That hand-off does not
+        exist here, so the same work is simply out of scope: ask for it
+        separately. This bundle now ships a discovery-review skill of its
+        own, so this boundary may be relaxed in a later release once the two
+        skills are designed to work together.
+      failure: loud
+  workarounds:
+    - instead_of: "a local application lets you search, tag and select approved objection grounds, then assembles the selections into a response"
+      cowork: "response shells and direct drafting take its place: the skill drafts the objections itself in the conversation, surfacing any approved wording you supply as an option you choose rather than software you click through"
+    - instead_of: "a script assembles the selected wording into a filled Word document"
+      cowork: "the finished draft is handed to the built-in Word skill, which produces the editable file"
 
 triggers:
   positive:

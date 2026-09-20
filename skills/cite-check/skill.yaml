@@ -109,6 +109,26 @@ replace:
     to: "A long document simply takes more passes. Tell the lawyer that up front, and say which units have been reviewed if the review has to stop before the end."
     files: ["references/lawyer-workflow.md"]
     expect: 1
+  - from: "that receipt belongs in the report appendix and is complete accounting."
+    to: "that record belongs in the report appendix and is complete accounting."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "the appendix lists every prepared unit and its receipt state."
+    to: "the appendix lists every prepared unit and its record state."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "keep the source, query, and date in the technical receipt."
+    to: "keep the source, query, and date in the technical record."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "returns a terminal `no_citations_found` receipt and appears in the appendix"
+    to: "returns a terminal `no_citations_found` record and appears in the appendix"
+    files: ["references/document-context.md"]
+    expect: 1
+  - from: "A missing terminal receipt, malformed result, unreadable container"
+    to: "A missing terminal record, malformed result, unreadable container"
+    files: ["references/document-context.md"]
+    expect: 1
 
 sections:
   - match: "## Step 1: prepare, inspect, and recommend"
@@ -120,6 +140,77 @@ sections:
 
 notes: |
   Dropped scripts/ and schemas/ (the packaged runner and its JSON contracts), references/openai-codex-runtime.md (a runner contract for a runtime Cowork does not have) and references/parent-fanout.md (the same fan-out procedure again, expressed entirely in script invocations and run directories). The body's own one-unit-at-a-time path is now the only path: the Step 1, Orchestration and Method sections are rewritten so the model works through prepared units itself, and the normalized-evidence check that the packaged validator performed is stated as a rule the model applies before filling the report. The report is still rendered from the packaged assets/report-template.html, saved as an HTML file for the preview pane. Public case search is rewritten to name Deep Research and Enterprise Search and to spell out that finding a case proves existence only, never the quotation, pincite or proposition. references/lawyer-workflow.md carries the same four edits so the lawyer-facing walkthrough matches.
+
+suppress:
+  - code: LQC-W011
+    file: "references/getting-authorities.md"
+    reason: >-
+      'certified administrative record' names the agency's own certified
+      record in an administrative case -- ordinary administrative-law
+      vocabulary for an artifact the lawyer supplies, like 'certified
+      copy', not a claim this skill makes about its own output.
+
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original resolves a brief's citations by opening a separate,
+    freshly focused review for every paragraph, footnote and table cell in
+    turn, and then runs a second, independent check that each result
+    carries real supporting evidence before colouring it on the report —
+    anything with incomplete evidence is automatically marked amber rather
+    than green. This version reviews the brief the same way, one prepared
+    unit at a time against the same rubric and the same supplied
+    authorities, but works through every unit itself in the one
+    conversation rather than opening a separate review for each, and
+    applies the colour rule to its own findings by the same fixed test —
+    amber whenever the supporting excerpt or locator is missing, or the
+    source is not one of the authorities supplied — rather than having a
+    second, independent check apply it. The lawyer still receives the same
+    colour-coded report in the preview pane. Checking whether a cited case
+    can be found at all now goes through this host's own research and
+    search tools rather than a direct case-law search, and the skill is
+    explicit that finding a case this way only shows that a case with that
+    name exists, never that the quotation, pincite or proposition
+    attributed to it is accurate.
+  known_issues:
+    - id: KI-cite-check-1
+      title: "Existence check depends on web search being enabled"
+      detail: |
+        Checking whether a cited case can be found at all depends on this
+        host's web search or research tools, which your tenant
+        administrator may have turned off. If they are off, the skill says
+        plainly that it could not search rather than reporting a case as
+        found or not found. Ask your administrator whether web search is
+        enabled if you need this check to run.
+      failure: loud
+      probe: P6
+    - id: KI-cite-check-2
+      title: "One-unit-at-a-time review replaces the scripted fan-out"
+      detail: |
+        Each paragraph, footnote and table cell is still reviewed on its
+        own against the full rubric, but by the same conversation working
+        through them in turn rather than a separate run opened for each
+        one. If a unit were ever skipped, it would not announce itself.
+        Check the report's appendix, which is meant to account for every
+        prepared unit, and confirm every unit you expect actually appears
+        there.
+      failure: silent
+    - id: KI-cite-check-3
+      title: "The colour rule is self-applied, not checked by a separate program"
+      detail: |
+        The amber-for-incomplete-evidence rule is applied by the skill to
+        its own findings rather than checked by an independent program, so
+        a green or red result rests on the same judgment that produced the
+        finding. Amber is the safe default for anything the report does
+        not fully support, so treat an amber row as unverified and check
+        the supporting excerpt and locator behind any citation you rely on.
+      failure: silent
+  workarounds:
+    - instead_of: "a packaged program validated each unit's evidence and rendered the colour-coded HTML report"
+      cowork: "the skill fills the same packaged HTML report template directly with the validated results and saves it as a file the lawyer opens in the preview pane"
+    - instead_of: "a direct, script-driven search of a public case-law source to confirm a case exists"
+      cowork: "the Deep Research and Enterprise Search skills check whether a cited case can be found, and the result is reported as existence only, never as proof of the quotation, pincite or proposition"
 
 triggers:
   positive:

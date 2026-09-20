@@ -107,6 +107,10 @@ replace:
 - from: Read only confirmed `[timenarratives]` entries in `lqplaybook.md`, if available. Never read the journey profile for work product. Use a concise neutral default when no style is configured; do not delay the draft for setup. Offer a one-time style choice alongside the first useful draft, or when the user requests it. Show the exact proposed preference and persist it only after explicit agreement.
   to: 'Read only confirmed `[timenarratives]` entries from an `lqplaybook.md` the lawyer has attached or put in the session''s Input folder; they carry style preferences only. Read no other preference or profile file. Use a concise neutral default when no style is configured; do not delay the draft for setup. Offer a one-time style choice alongside the first useful draft, or when the user requests it. Never write to `lqplaybook.md` yourself: once the lawyer agrees a preference, give them one exact line they can paste into their own file.'
   expect: 1
+- from: "An LQ skill's report or tool receipt records the operation it actually performed."
+  to: "An LQ skill's report or other tool output records the operation it actually performed."
+  files: ["SKILL.md"]
+  expect: 1
 notes: |
   Dropped the forty-module script layer, the schemas and references/cli-contract.md
   (a script-invocation contract with no host-native meaning). The skill is now
@@ -120,6 +124,50 @@ notes: |
   out, only on request, as Markdown or a Word document through the built-in Word
   skill. The attribution rules, evidence rules and the scope sentence are
   unchanged.
+
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original ran your time entries through a validating pipeline: dozens
+    of script modules that bound every quote to a checked location in the
+    source, and could reach into other related conversations on their own
+    within an agreed scope, before publishing a finished draft. None of that
+    machinery exists here. The model reads the current conversation and
+    whatever you attach or describe, copies your own words and your documents'
+    words exactly, and shows you the draft directly in the reply, labelled an
+    unvalidated preview because the checking step that used to stand between
+    the draft and you is gone. It does not go looking through your other
+    conversations for supporting work; anything outside this one has to be
+    given to it directly. A written copy, as Markdown or as a Word document,
+    is produced only if you ask for one.
+  known_issues:
+    - id: KI-timenarratives-1
+      title: "Every draft is an unvalidated preview"
+      detail: >-
+        Upstream ran a validating script layer over every draft before
+        publishing it; that layer does not exist here, so every draft you
+        see is labelled Unvalidated preview rather than copy-ready or final.
+        The quotes are copied exactly from what you said or supplied, but
+        nothing has checked the entries beyond that.
+      failure: loud
+    - id: KI-timenarratives-2
+      title: "Scope is this conversation plus what you attach, not your other chats"
+      detail: >-
+        The skill does not go looking through your other conversations for
+        supporting work, even ones on the same matter; it drafts from the
+        current conversation and whatever you attach, paste or describe. If
+        work happened somewhere else, tell it or attach the record. Whether
+        a resumed session would let it see further back is not yet settled,
+        so treat every session as starting from what is in front of it.
+      failure: loud
+      probe: P5
+  workarounds:
+    - instead_of: "an anchoring script computes a byte span and hash binding every quote to its exact location in the source"
+      cowork: "the model reads the source itself and copies the exact quote, character for character, naming the source it came from"
+    - instead_of: "validated JSON and Markdown artifacts are published once the checking layer passes"
+      cowork: "the draft is shown in the reply first, labelled Unvalidated preview, and written out only on request as Markdown or as a Word document through the built-in Word skill"
+
 triggers:
   positive:
   - Do my time entries for the work we just did on the Cedar matter.

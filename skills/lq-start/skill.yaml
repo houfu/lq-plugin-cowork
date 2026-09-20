@@ -5,7 +5,7 @@ anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
 description: |
   Names the one LegalQuants skill that fits the work in front of the lawyer,
   with the sentence to type, or lays out the whole map of the LegalQuants
-  skills for both bundles.
+  skills across all three bundles.
   Use when the user asks "which skill should I use for this", "what
   LegalQuants skills do I have here", "what can you do with these skills",
   "is there something for checking a contract against our house positions",
@@ -14,6 +14,7 @@ description: |
   skill that does the work instead. Do not use for finding files or research
   across the tenant (use the Enterprise Search skill) or for a briefing on
   outside material (use the Deep Research skill).
+
 exclude:
 - scripts/**
 files: files
@@ -22,15 +23,51 @@ notes: |
   splits references/map.md by its output; neither is possible here, so the overlay
   is a static router and ships its own Cowork map.md. Dropped the script, the
   catalogue step, the invocation grammar, the not-installed-plugin block and the
-  other-plugin sales line. The map carries both Cowork bundles in full, every entry
-  labelled with the bundle it ships in, and the overlay adds one neutral sentence
-  that a skill responds only if its bundle is available in the tenant and that
-  plugin availability is managed by the Microsoft 365 administrator. The skill does
-  not claim to know which bundle is installed and does not claim a typed skill
-  menu; deliberate selection is the conversation's Sources picker. The map omits
-  every LegalQuants skill that is not in a Cowork bundle rather than naming it as
-  unavailable, and each entry is written against that skill's own description
-  limits. The closing sign-off is the vendor-neutral line from the contract.
+  other-plugin sales line. The map carries all three Cowork bundles in full - every
+  one of the thirty-one skills, grouped as upstream groups them (shared daily
+  practice, litigation, transactional, companion) and each entry labelled with the
+  bundle or bundles it ships in - and the overlay adds one neutral sentence that a
+  skill responds only if its bundle is available in the tenant and that plugin
+  availability is managed by the Microsoft 365 administrator. The skill does not
+  claim to know which bundle is installed and does not claim a typed skill menu;
+  deliberate selection is the conversation's Sources picker. Since this card ships
+  in all three bundles, the overlay itself names no sibling skill: the "how have I
+  been working with AI" and "pick me up where I left off" requests are answered
+  with a scope statement pointing at the map's companion group rather than a skill
+  name, which is what keeps LQC-W003 quiet without a suppression. Each entry is
+  written against that skill's own description limits, and the closing sign-off is
+  the vendor-neutral line from the contract.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original keeps a small program that scans every LegalQuants plugin
+    actually installed on the lawyer's machine and builds its recommendation
+    from that live, up-to-date list, so it never points to a skill that is
+    not there. This version cannot run that scan, so it works from a fixed
+    map of every skill in the three Cowork bundles instead, with each entry
+    labelled by the bundle or bundles it ships in, and it says plainly that a skill
+    only responds if that bundle is installed in the lawyer's tenant, which
+    their Microsoft 365 administrator controls rather than this skill. The
+    lawyer still gets one skill named with the sentence to type, or the
+    whole map on request; what changed is that the pick comes from a
+    printed list rather than a live check of what is actually installed.
+  known_issues:
+    - id: KI-lq-start-1
+      title: "Cannot see which bundles are actually installed"
+      detail: |
+        The skill cannot check which LegalQuants bundle is installed in
+        your tenant, so it may point you to a skill from a bundle you do
+        not have. It says this limitation plainly whenever it makes a
+        recommendation, rather than assuming its map matches what you
+        actually have. If a named skill does not respond, ask your
+        Microsoft 365 administrator whether that bundle is installed.
+      failure: loud
+  workarounds:
+    - instead_of: "a bundled program scans every LegalQuants plugin installed on the machine and builds the map from that live list"
+      cowork: "a static map lists all three Cowork bundles' skills in full, each entry labelled with the bundle or bundles it ships in"
+
 triggers:
   positive:
   - Which of these skills should I use for a contract I just got back from the other side?

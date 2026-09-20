@@ -1,0 +1,337 @@
+name: my-lq-moment
+upstream: companion/my-lq-moment
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Judges one piece of work in this session against a fixed bar and, only when
+  it clears it, writes up what the lawyer did, what it took and what it
+  changed — with a post in their own voice and a cover card that opens in the
+  preview pane. Use when the user asks "was that an LQ Moment", "was this
+  session the good kind, write it up", "did I just do something good, or am I
+  flattering myself", "share this win", or "is this worth posting about".
+  Borderline means not earned, and a session it cannot see enough of is
+  refused rather than marked down. Do not use for a reading of the lawyer
+  themselves — "assess me", "what's my archetype", "where am I with AI" (use
+  the lq-mirror skill) — or for going back over a piece of work to find the
+  one thing to change next time (use the lq-reflect skill). The cover here is
+  part of this write-up and nothing else; do not use this skill to lay out a
+  document, build a one-pager, or make a polished page for the preview pane.
+exclude:
+- scripts/**
+sections:
+- match: '## First run? One marker, once ever'
+  delete: true
+- match: '## The ending — where moments compound'
+  file: sections/ending.md
+replace:
+# The title anchor is the post-transform text: upstream writes
+# '# /my-lq-moment — ...' and the mechanical skill-token rewrite drops the
+# slash before card replacements run (CONTRACT section 5, steps 5 and 6).
+# The lq-mirror card anchors its title the same way.
+- from: |
+    # my-lq-moment — what should I celebrate?
+  to: |
+    # What should I celebrate?
+  expect: 1
+- from: |
+    Say what that covers — this session's conversation, the tool and skill
+    events, the workspace artifacts (files edited or created, tests and
+    validation results) — and wait for a yes.
+  to: |
+    Say what that covers — this session's conversation, the tool and skill
+    events, the workspace artifacts (files edited or created, tests and
+    validation results) — and wait for a yes. Then say which of those you can
+    actually see here, and name anything on that list you cannot see rather
+    than assuming it: what you cannot see is not evidence.
+  expect: 1
+- from: |-
+    Scope is the **current session only**: no history, no transcripts of other
+    sessions, no `~/.lq/`, no profile or playbook reads.
+  to: |-
+    Scope is the **current session only**: no history, no other sessions, no
+    stored profile, and no playbook or preference files.
+  expect: 1
+- from: |2
+       Then the cover, built to `references/cover.md`: the skill's own template
+       (`assets/cover-template.png`) is the foundation, with two short sentences
+       from the receipt set over it as the hero, and nothing else added. The
+       cover is rendered by the skill's own script, never by an image model:
+       draft the two sentences short (eight to ten words each; the script
+       refuses more than twelve), get the lawyer's yes on them, then run
+       `scripts/render_cover.py --before "…" --after "…" --out-dir outputs`
+       (`../my-lq-moment/scripts/` resolves the same way in a packaged plugin).
+       It writes `my-lq-moment-cover.svg` and, where the host has any SVG
+       renderer, `my-lq-moment-cover.png`, and prints where they are. If it
+       reports no PNG, read its `attempts` and `message`: on a sandboxed host
+       the renderers may be present but blocked, so ask for permission to re-run
+       the same command with the host's elevated execution capability. Only
+       if that also fails, say so, hand over the SVG and the approved text, and
+       give the one-line conversion (open the SVG in a browser or Preview and
+       export a 1200 by 1200 PNG). Do not draw anything yourself, ask an image
+       model, or claim a PNG exists.
+       If it refuses a sentence as too long, shorten it and offer the shorter
+       version; never ask the lawyer to fit or format text. Show everything
+       verbatim; they edit the wording freely within the briefs and you re-run
+       the script on their final sentences.
+  to: |2
+       Then the cover, built to `references/cover.md`: the skill's own template
+       (`assets/cover-template.png`) is the foundation, with two short sentences
+       from the receipt set over it as the hero, and nothing else added. The
+       cover is a page you build yourself, never an image model's drawing:
+       draft the two sentences short — eight to ten words each, and never more
+       than twelve words or ninety characters. Count the words yourself, and if
+       one is too long, shorten it and show the shortened version in the reply
+       ("I shortened this to nine words; here it is"); never ask the lawyer to
+       fit or format text. Get their yes on the two sentences, then build the
+       cover as one HTML page, square, that carries the packaged template as
+       its background and sets the before sentence in medium weight at reduced
+       opacity and the after sentence in bold white over the open upper area.
+       Write it to the session's Output folder as `my-lq-moment-cover.html`,
+       say where it is, and show it in the preview pane.
+
+       Say which form of the cover you produced, every time, and never claim a
+       form you did not produce. If the packaged template does not come
+       through into the page, do not pretend it did: build the same two
+       sentences as a plain styled card on a near-black ground, say in one
+       line that the template image is not in it, and offer the third form —
+       one square slide through the built-in PowerPoint skill — if they would
+       rather have that. Whichever form it takes, the image is theirs to make:
+       give the one-line conversion (open the page and export or capture it as
+       a square image). Do not draw anything yourself, ask an image model, or
+       claim a PNG exists. Show everything verbatim; they edit the wording
+       freely within the briefs and you rebuild the page on their final
+       sentences.
+  expect: 1
+- from: |
+    5. **One line may stay — on yes.** No evidence is sent back to LQ; the
+       moment lives in their hands. The one thing that may be kept: after their
+       explicit yes, one shape-only line — the kept moment: the technique and
+       the receipt's shape, never matter substance — shown verbatim before
+       writing. Save through `../lq-reflect/scripts/profile_store.py` using the
+       `save --confirmed` contract in
+       `../lq-reflect/references/store-contract.md`, with exactly one `lq_moment`
+       event whose source is `user`, `what` is the shown line, and `technique` is
+       the technique in one clause. Use a fresh operation ID. If this creates the
+       store, obtain the required quoting posture first. If the store refuses the
+       line as carrying substance, say so, write nothing, and do not reword it to
+       slip past the check. No profile reads and no other store events.
+  to: |
+    5. **One line may stay — in their hands.** No evidence is sent back to LQ;
+       the moment lives in their hands. This skill writes no store, no profile
+       and no record of its own, and it carries nothing into another session.
+       The one thing that may be kept: after their explicit yes, one shape-only
+       line — the kept moment: the technique and the shape of the account,
+       never matter substance — written out in the reply exactly as it stands,
+       for them to paste into whatever notes they keep themselves. If the line
+       cannot be written without matter substance, say so, offer nothing in its
+       place, and do not reword it to slip past the check. No profile reads and
+       nothing else kept.
+  expect: 1
+- from: |-
+    If they request a practice cover, run the same renderer with `--practice` so
+    the fixed training label appears on the image.
+  to: |-
+    If they request a practice cover, build the same page with the fixed label
+    "Practice example — fictional training" set above the two sentences, where
+    it cannot be cropped off; a practice cover without that label is never
+    shown.
+  expect: 1
+- from: |-
+    The §3.5
+    retention line is for earned moments only.
+  to: |-
+    The one line that may
+    stay is for earned moments only, and even then it is handed over, not saved.
+  expect: 1
+- from: |
+    - The cover comes from `scripts/render_cover.py` on the template, or not
+      at all: never from an image model, never hand-drawn, never a placeholder.
+  to: |
+    - The cover is the page this skill builds on the template, or the announced
+      plain card, or not at all: never from an image model, never hand-drawn,
+      never a placeholder, and never a PNG claimed rather than produced.
+  expect: 1
+- from: |
+    - Never read the profile or playbook. Retention uses only the exact line the
+      user approved through the store contract.
+  to: |
+    - Never read a profile or a playbook. The one line that may stay is written
+      out for the lawyer to keep; this skill keeps nothing itself.
+  expect: 1
+- from: |
+    - Never publish or transmit. Retention is the one shape-only line of §3.5—an
+      earned moment only, shown verbatim and saved only after explicit consent.
+  to: |
+    - Never publish or transmit. The one shape-only line of §3.5 is for an
+      earned moment only, shown verbatim and handed over only after explicit
+      consent.
+  expect: 1
+- from: |-
+    The lawyer approves the two cover sentences, but `render_cover.py` reports
+    that the host has no SVG renderer, or the script cannot run at all. Say so,
+    hand over the SVG the script wrote (if any) and the approved text, and
+    stop.
+  to: |-
+    The lawyer approves the two cover sentences, but the packaged template does
+    not come through into the page. Say so, give the plain styled card with the
+    same two sentences, say the template image is not in it, offer a square
+    slide instead, and stop.
+  files:
+  - references/examples.md
+  expect: 1
+- from: |-
+    and do not pass any of those details to the cover
+    script.
+  to: |-
+    and do not pass any of those details to the cover.
+  files:
+  - references/examples.md
+  expect: 1
+- from: |-
+    **Unearned.** "I used the docx skill to read a document and translate it."
+  to: |-
+    **Unearned.** "I used the Word skill to read a document and translate it."
+  files:
+  - references/rubric.md
+  expect: 1
+files: files
+notes: |
+  Dropped scripts/ — the cover renderer shelled out to local image binaries and
+  nothing here does that — and deleted the cold-open onboarding call to a
+  companion skill's script. The rubric, the five tests, the four outcomes, the
+  evidence account, the confidentiality pass, the post brief, the practice
+  exclusion and every prohibition around the cover survive unchanged; this is a
+  re-plumbing, not a re-scope. The cover becomes a square HTML page built on the
+  packaged template and shown in the preview pane, written to the Output folder
+  as my-lq-moment-cover.html, with two announced degrades in order: a plain
+  styled card carrying the same two sentences without the template image, and a
+  square slide through the built-in PowerPoint skill. The skill must say which
+  form it produced and may never describe a form it did not produce; the lawyer
+  makes the image themselves, which is upstream's own documented conversion
+  path. The twelve-word limit that the script used to enforce is now counted by
+  the skill and made visible by showing the shortened sentence. The one line
+  that may be kept is written out in the reply for the lawyer's own notes
+  instead of being saved through the reflection store, so the skill writes
+  nothing and reads no profile or playbook. The consent gate now also says
+  which of the listed evidence is actually visible in this session, so that an
+  invisible tool-and-skill event list is named rather than assumed; the
+  insufficient-evidence refusal is untouched and is what catches it. Removed
+  the parent-relative store and endings references and the invocation-grammar
+  tokens. Companion changes: cover.md is replaced wholesale for the page form
+  (upstream's version is a brief for a renderer that does not ship);
+  assets/README.md is replaced to drop the script flag and the parent-relative
+  link and to state the degrade; examples.md loses the renderer contrast and
+  gains the template-did-not-come-through one; rubric.md's fixture names a
+  Cowork built-in instead of another host's. assets/cover-template.png ships
+  unchanged, 583 KB of a documented 10 MB per-skill budget. Closing sign-off
+  replaced with the vendor-neutral line.
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original judged the session against the same bar and, when the work
+    earned it, produced a cover image: a square PNG with your two sentences set
+    over the supplied artwork, made by a small program packaged with the skill
+    that called the image tools on your own computer. There is no such program
+    here. Everything about the judgement is unchanged — the five tests, the
+    fixed bar, the insufficient-evidence refusal, the confidentiality pass, the
+    post in your own voice, the rule against drawing or inventing an image —
+    but the cover is now a page rather than a picture: a square HTML file
+    written to your Output folder that opens in the preview pane, with the
+    supplied artwork behind your two sentences. If the artwork does not come
+    through into the page, you get the same two sentences on a plain dark card
+    and the skill says so in one line; you can also ask for the cover as a
+    single slide instead. Whichever form it takes, you make the image yourself
+    from the page — the skill will give you the one line that says how, and it
+    will never tell you a PNG exists when it does not. The other change is that
+    nothing is kept. The original could save one shape-only line about the
+    technique to a private store on your machine; here that line is written out
+    in the reply for you to paste into your own notes, and the skill keeps no
+    record of its own from one session to the next.
+  known_issues:
+  - id: KI-my-lq-moment-1
+    title: "The cover is a page or a slide, not a PNG"
+    detail: >-
+      Nothing documents whether a file packaged inside a skill reaches a file
+      the skill produces, so the cover may open with the supplied artwork
+      behind the text or without it. Either way it is an HTML page, not the
+      image the original made; you export or capture the image yourself. The
+      skill is required to say which form it produced and never to claim a PNG.
+      A missing background in a preview pane is visible immediately, which is
+      why this ships now rather than waiting: the value of the cover is the two
+      sentences. The P7 probe's second arm, on a packaged binary image, settles
+      whether the artwork can be relied on.
+    failure: loud
+    probe: P7
+  - id: KI-my-lq-moment-2
+    title: "The session may show the skill less than it needs"
+    detail: >-
+      The skill judges what it can see of this session: the conversation, the
+      files in the Input and Output folders, and whatever the run itself made
+      visible. Nothing documents that a skill can enumerate the tools and
+      skills a session used, so that part of the evidence may simply not be
+      there. The skill names what it can actually see before it judges, and an
+      evidence list it cannot see enough of is an automatic refusal — it says
+      so and stops rather than lowering the bar. The cost is a refusal on work
+      that may well have earned it; the alternative would be an award on a
+      session the skill could not read. The P11 probe settles what a skill can
+      see and quote of its own session.
+    failure: loud
+    probe: P11
+  - id: KI-my-lq-moment-3
+    title: "The length rule on the cover sentences is applied by the model"
+    detail: >-
+      The original's program refused a cover sentence longer than twelve words;
+      here the skill counts the words itself, which means a run that quietly
+      skipped the count produces a cover that looks exactly like one that did
+      not. The mitigation is that shortening is done out loud — "I shortened
+      this to nine words; here it is" — so a sentence that was silently left
+      long is visible to you as a sentence you never approved in that form.
+      Count the two sentences yourself if the cover matters.
+    failure: silent
+  - id: KI-my-lq-moment-4
+    title: "Nothing is kept between sessions"
+    detail: >-
+      The one shape-only line about the technique is handed to you in the reply
+      instead of being saved. There is no private store here and the skill
+      writes no record of its own, so a later session starts from nothing and
+      cannot count your moments. Keep the line in your own notes if you want it
+      to survive, and attach it to a later session if you want it read back.
+    failure: loud
+  workarounds:
+  - instead_of: "a packaged program sets the two sentences over the template and rasterises a PNG through the image tools on the lawyer's computer"
+    cowork: "a square HTML page carrying the packaged template as its background, written to the Output folder and shown in the preview pane, from which the lawyer exports the image"
+  - instead_of: "if no PNG can be made, hand over the SVG and a one-line conversion"
+    cowork: "two announced degrades, in order: the same two sentences as a plain styled card with no template image, or one square slide through the built-in PowerPoint skill — and the skill says which form it produced"
+  - instead_of: "the program refuses a cover sentence of more than twelve words"
+    cowork: "the skill counts the words itself and shows the shortened sentence it produced, so the rule is visible rather than assumed"
+  - instead_of: "a --practice flag writes the fictional-training label onto the image"
+    cowork: "the label is written into the page and into the post by the skill, above the two sentences, where it cannot be cropped off"
+  - instead_of: "one shape-only line is saved through the reflection skill's store"
+    cowork: "the exact line is written out in the reply for the lawyer to keep in their own notes; nothing is saved and no profile or playbook is read"
+  - instead_of: "a once-ever marker file decides whether the introduction is shown"
+    cowork: "the skill explains itself and the practice exclusion each session before asking for consent"
+suppress:
+- code: LQC-W011
+  reason: >-
+    The skill's word for the evidence account it gives the lawyer is "receipt",
+    upstream's own term, and it is load-bearing: test 4 of the rubric is
+    "Verifiable receipt", and the word names a private write-up whose every
+    claim is tied to something visible in this session. It is never used for a
+    completeness or coverage claim, which is what the rule guards against, and
+    the adaptation adds no new use of it. Changing the vocabulary would mean
+    rewriting the rubric, the examples and the post brief around a word the
+    lawyer never sees as a guarantee. See the alternatives research, consistency
+    ruling R7.
+triggers:
+  positive:
+  - Was that an LQ Moment? I think I just did something good.
+  - Was this session the good kind? Write it up if it was.
+  - I'd like to share this win. Is it actually worth posting about?
+  - Did I just do something impressive, or am I flattering myself?
+  - Check this session against the bar and give me the post and the cover if it clears.
+  negative:
+  - Where do I stand with AI compared to other lawyers? Assess me. -> lq-mirror
+  - Go back over how I handled that draft and tell me what to change next time. -> lq-reflect
+  - Lay this advice note out as a one-pager for the preview pane. -> legaldesign
+  - Turn what I've done this year into a CV entry. -> lq-apply

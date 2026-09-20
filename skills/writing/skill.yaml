@@ -6,6 +6,23 @@ anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
 description: |
   Drafts and revises U.S. litigation, hearing and regulator advocacy — pleadings, motions, briefs, hearing outlines, regulator comments — and neutral client legal analysis such as memoranda, options papers and risk assessments. Decides advocacy or neutral analysis before writing, and ties every material proposition to the supplied record. Use when the user asks to "draft the argument section of this brief", "write a motion to dismiss on these facts", "turn my notes into a memo on whether we can terminate", "revise this brief so it reads more directly", "prepare an outline for Thursday's hearing", or "draft our response to the regulator's information request". Do not use for letters or emails (use the correspondence skill), client status reporting (use the client-update skill), deposition outlines or witness preparation (use the depositions skill), verifying the authorities in a finished draft (use the cite-check skill), or finding the holes in an existing draft (use the pressuretest skill).
 
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    The original drafts and revises litigation advocacy and neutral legal
+    analysis exactly the same way here: it classifies the request as
+    advocacy or neutral analysis before writing, and ties every material
+    proposition to the record supplied. That method is unchanged. What
+    differs is around the edges: there is no typed command to start it, so
+    the lawyer describes what they need and this host matches the request
+    to the skill from its description; and rather than checking a private
+    preferences store on its own, the skill reads a lawyer's saved
+    preferences only if they have attached that file or placed it in the
+    session's input folder, and it never writes to it.
+  known_issues: []
+  workarounds: []
+
 replace:
   - from: "Read only confirmed `[writing]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[writing]` line, but it affects future work only after the user explicitly confirms it."
     to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[writing]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[writing]` line the lawyer can add to their own file; it shapes future work only once they have added it."

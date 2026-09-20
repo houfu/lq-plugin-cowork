@@ -1,0 +1,193 @@
+name: lq-ask
+upstream: companion/lq-ask
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Answers a lawyer's question about how other lawyers work with AI from a
+  library of LegalQuants' published work that ships inside this skill and is
+  dated 5 September 2026. It cites by title and date, never by web address,
+  says at the top and the bottom which dated library the answer rests on, and
+  says plainly when the library has nothing rather than producing an answer
+  anyway. Use when the user asks "has anyone worked out a good way to do
+  this", "what has the community published about AI in litigation", "is there
+  a tool for this", "what do other lawyers think about vibe coding in law", or
+  "what has LegalQuants written about this". Do not use for research into
+  outside material, current law, or anything published since the library's
+  date (use the Deep Research skill), for finding a colleague who has done
+  this (use the lq-connect skill), for documents inside the organisation (use
+  the Enterprise Search skill), or for applying an answer to the matter in
+  hand.
+
+exclude:
+  - "scripts/**"
+  - "references/service-contract.md"
+  - "references/sources.md"
+
+files: files
+
+replace:
+  - from: "# lq-ask — what the community actually knows"
+    to: "# What other lawyers have published on this"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      A lawyer asks; you answer from the LegalQuants corpus, with receipts. The
+      value of the answer is that it is real: something a community of practising
+      lawyers found, argued about, and wrote down — not vendor copy, and not a
+      generic model answer with confidence painted on.
+    to: |-
+      A lawyer asks; you answer from a dated library of what LegalQuants has
+      published, and you name where each part of the answer came from. The value
+      of the answer is that it is real: something a community of practising
+      lawyers found, argued about, and wrote down — not vendor copy, and not a
+      generic model answer with confidence painted on.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      **The fidelity rule (the whole skill hangs on this):** your job is fidelity
+      to the corpus, not coverage. "We don't have anything on this — that's the
+      honest answer" is a first-class outcome, never a failure. A forced answer
+      teaches the user to distrust every other answer; an honest miss is itself
+      useful information — and, said once and gently, it is exactly the kind of
+      question the community ends up digging into.
+    to: |-
+      **The fidelity rule (the whole skill hangs on this):** your job is fidelity
+      to the library, not coverage. "We don't have anything on this — that's the
+      honest answer" is a first-class outcome, never a failure. A forced answer
+      teaches the user to distrust every other answer; an honest miss is itself
+      useful information, and it is where the library's own edges become
+      visible.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      - Cite inline, specifically: the essay title, the digest week, the video,
+        the profile — never "the community says". If the corpus disagrees with
+        itself, say that; the argument is often the answer.
+    to: |-
+      - Cite inline, specifically: the essay title and the library's date, the
+        video and its date, the named project — never "the community says", and
+        never a web address. If the library disagrees with itself, say that; the
+        argument is often the answer.
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## First run? One marker, once ever"
+    delete: true
+  - match: "## 1. Find the corpus — and say which rooms you searched"
+    file: sections/library.md
+  - match: "## 3. When the corpus is silent"
+    file: sections/silent.md
+  - match: "## 4. Boundaries"
+    file: sections/boundaries.md
+  - match: "## The ending — where the deeper material lives"
+    file: sections/ending.md
+
+notes: |
+  Dropped the cold-open call to a companion skill's onboarding script and the
+  once-ever marker; the introduction and the consent for it are a line in the
+  conversation each session. The skill's own documented degrade is promoted to
+  the whole skill: upstream said, when no live corpus is reachable, to say so in
+  one plain line and work from the published surfaces, and that branch is now
+  the only branch. Section 1 is rewritten around it — the connector query, the
+  capability check through a bundled script, the live repository fetch and the
+  live builds-directory search all go, and in their place the body names the one
+  file it may cite, requires a title-and-date citation with no web address, and
+  forbids describing an item beyond what its entry carries. references/
+  service-contract.md is excluded: it describes an authenticated service
+  connection that does not exist here. references/sources.md is replaced: it was
+  a pointer list of addresses and is now the evidence itself, a dated index with
+  every URL and bare domain removed, an explicit statement of what it does and
+  does not contain, and two sections deleted — the member directory and the live
+  builds directory, both of which were live-search entries with nothing behind
+  them here. One essay title is dropped from the index because it names another
+  vendor's product, and one repository description is reworded for the same
+  reason; a second repository description is reworded to avoid a term this
+  repository treats as host machinery. The library's date, 5 September 2026, is
+  the verification date the upstream reference carried; the repository section
+  keeps its own later check date of 6 September 2026 in place. The member-only
+  paywall boundary and the closing door to a paid newsletter go, and with them
+  every external link. The honest-miss path, the label-general-knowledge rule
+  and the no-fabrication rule are kept as upstream wrote them.
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original went and looked. It queried a live connection to the community's
+    own corpus, searched public repositories and a live directory of what members
+    had built, and quoted what it found at the moment it answered. None of that
+    is reachable from a skill here, so what ships instead is the library itself:
+    a dated index of LegalQuants' published work, packed inside the skill, which
+    the answer is built from and cited to by title and date rather than by a web
+    address. Every answer opens and closes by naming the library's date, because
+    that date is the honest limit of what it knows: nothing published since is in
+    it, and the skill has no way to check whether anything has changed. The index
+    carries titles, dates and short descriptions, not the writing itself, so a
+    question that needs to know what an essay argued gets the title, the date and
+    a plain statement that the argument is not in the library. When the library
+    has nothing, it says so in one sentence and offers general knowledge labelled
+    as such, which is what the original did too. What has gone is anything the
+    community discussed in private, anything that happened after the date, and
+    every link out.
+  known_issues:
+    - id: KI-lq-ask-1
+      title: "A confident answer that is as old as the library"
+      detail: >-
+        The library is a snapshot, and a lawyer cannot tell from the prose that
+        a well-made answer is six months out of date. The skill cannot refresh
+        itself and has no way to know whether anything in it has been
+        superseded. What is meant to keep this visible is the date: it is in the
+        description, in the first line of every answer and in the closing scope
+        line, and the body forbids "currently", "at the moment" and "the
+        community now thinks". Treat every answer as being about what had been
+        published by the stated date, and check anything time-sensitive
+        yourself.
+      failure: silent
+    - id: KI-lq-ask-2
+      title: "A title read as though it were the argument"
+      detail: >-
+        The library holds what each piece is called and when it appeared, not
+        what it said. Asked what a named essay concluded, a model can produce a
+        fluent account of a piece it has only ever seen the title of. The body's
+        rule is that a title is evidence the work exists and what it is called,
+        and nothing more, and that the skill must say so rather than
+        reconstruct. If an answer characterises the contents of a specific essay
+        or video at any length, treat that characterisation as unsupported.
+      failure: silent
+    - id: KI-lq-ask-3
+      title: "Something from elsewhere folded into the library's voice"
+      detail: >-
+        Where a tenant has web search enabled, material from outside can arrive
+        in an answer and read exactly like a library citation, which is the one
+        thing this skill is built not to do. The body forbids it directly: the
+        skill does not look, it says so, it invites the lawyer to ask the Deep
+        Research skill themselves, and anything from there is never folded in or
+        cited as library material. If a citation carries no title and date from
+        the library, it did not come from the library.
+      failure: silent
+      probe: P6
+  workarounds:
+    - instead_of: "a bundled script gates the first-run introduction on a once-ever marker"
+      cowork: "the introduction and the consent for it are one line in the conversation, each session"
+    - instead_of: "a live connection to the community corpus is queried, with a bundled script checking the authority for member material"
+      cowork: "the skill says in one plain line that no live corpus is reachable and answers from the dated library it ships with, which is upstream's own written degrade made the whole skill"
+    - instead_of: "public repositories and a live directory of member builds are searched at answer time"
+      cowork: "both are named as not reachable in any answer that would have needed them, and the repositories appear in the library only as names and dated descriptions"
+    - instead_of: "each citation carries the address of the page that was read"
+      cowork: "each citation is a title and a date, which is what the library carries, and no web address appears anywhere"
+    - instead_of: "the answer ends by pointing at a paid newsletter for the deeper material"
+      cowork: "the answer ends by naming the parts of the library it used, the library's date, and what the library does not contain"
+
+triggers:
+  positive:
+    - "Has anyone worked out a decent way to run a redline review with AI? What's been written about it?"
+    - "What has LegalQuants published about AI in litigation?"
+    - "Is there a community project for statutory knowledge graphs, or would I be building it from scratch?"
+    - "What's the argument about vibe coding in law? Point me at what's been written."
+  negative:
+    - "Find the regulator's latest guidance on AI disclosure and summarise it. -> Deep Research"
+    - "Who in my firm has actually done one of these before? -> lq-connect"
+    - "Which of these skills should I use to check a contract? -> lq-start"
+    - "Where do I stand with AI compared to other lawyers? -> lq-mirror"

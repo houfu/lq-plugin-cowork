@@ -1,0 +1,1129 @@
+name: regulatory
+upstream: core/regulatory
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Answers a regulation question from the official text itself: names the
+  instrument and the publisher to get it from, waits for the lawyer to put that
+  document in the Input folder, reads the version statement off it, and returns
+  a note quoting the provisions verbatim with the source filename and a
+  provenance block. Also refreshes earlier research against today's text.
+  Nothing is quoted that did not come from the publisher's own document. Use
+  when the user asks "what does this regulation require", "find me the actual
+  text of this rule", "is the copy we hold still current", "has this changed
+  since we advised", or "where does this launch plan land". Do not use for
+  open-ended research, or where no official document will be supplied (use the
+  Deep Research skill), or to find what the firm already holds on a topic (use
+  the Enterprise Search skill). Do not use to check the citations in a brief
+  against the authorities supplied for it; this skill reads statutes and
+  regulations from the publisher's own document.
+exclude:
+  - "scripts/**"
+  - "schemas/**"
+
+files: files
+
+sections:
+  - match: "## Profile & playbook (per AGENTS.md — clean separation)"
+    file: sections/preferences.md
+  - match: "## What this produces"
+    file: sections/what-this-produces.md
+  - match: "## Intake"
+    file: sections/intake.md
+  - match: "### 2. Confirm with the user before fetching"
+    file: sections/step-2.md
+  - match: "### 3. Fetch from the official publisher"
+    file: sections/step-3.md
+  - match: "### 4. Check the version"
+    file: sections/step-4.md
+  - match: "### 5. Extract the provisions"
+    file: sections/step-5.md
+  - match: "### 7. Check the quotes before the note goes out"
+    file: sections/step-7.md
+  - match: "### refresh — \"Is the research we already did still right?\""
+    file: sections/refresh.md
+  - match: "## Scripts reference"
+    file: sections/checks-of-its-own.md
+  - match: "## Source failure and delivery gate"
+    file: sections/delivery-gate.md
+
+replace:
+  # --- SKILL.md, outside the overlaid sections -----------------------------
+  - from: |-
+      Read `references/version-check.md` and `references/jurisdictions/index.md`
+      every run, then the entry for the jurisdiction in play. If there is no entry,
+      read `references/jurisdictions/_unmapped.md` and follow it — do not guess a
+      publisher.
+    to: |-
+      Read `references/version-check.md` and `references/jurisdictions/index.md`
+      every run, then the entry for the jurisdiction in play. If there is no entry,
+      read `references/jurisdictions/_unmapped.md` and follow it — do not guess a
+      publisher. The registry entries are a snapshot written on a stated date and
+      they tell the lawyer where to go, never what the law says; each one carries
+      its own "as at" line. Where a page has moved, say that the entry is out of
+      date and work it out from the publisher's own site rather than guessing.
+    expect: 1
+  - from: |-
+      Get to a specific instrument: name, number, year, jurisdiction. Search and
+      trackers are fine here — this is finding, not sourcing. If the user described a
+      problem rather than a law, name the candidates and go to step 2.
+    to: |-
+      Get to a specific instrument: name, number, year, jurisdiction. Search,
+      trackers and whatever research surface this tenant offers are fine here —
+      this is finding, not sourcing, and none of what they return is ever quoted.
+      If the user described a problem rather than a law, name the candidates and go
+      to step 2.
+    expect: 1
+  - from: |-
+      Per `references/construction-rubric.md`. Quote verbatim from the fetched text.
+      Give the provision and the version each quote came from. Lay the note out as
+      `references/run-format.md` describes — the format is what makes step 7 possible.
+    to: |-
+      Per `references/construction-rubric.md`. Quote verbatim from the supplied
+      document. Give the provision and the version each quote came from. Lay the
+      note out as `references/run-format.md` describes — the format is what makes
+      step 7 possible.
+    expect: 1
+  - from: |-
+      Output is one row per test, one column per jurisdiction, each cell citing that
+      jurisdiction's provision and its own version. Never merge two jurisdictions'
+      text into a single statement, and never let the jurisdiction you fetched first
+      set the frame for the others. `references/run-format.md` gives the table's
+      shape and the worked example.
+
+      Step 7 runs per jurisdiction too: each column's quotes are checked against that
+      jurisdiction's own `provisions.json`.
+    to: |-
+      Output is one row per test, one column per jurisdiction, each cell citing that
+      jurisdiction's provision and its own version. Never merge two jurisdictions'
+      text into a single statement, and never let the jurisdiction whose document
+      arrived first set the frame for the others. `references/run-format.md` gives
+      the table's shape and the worked example.
+
+      Ask for one official document per jurisdiction, and give each its own
+      provenance block. Step 7 runs per jurisdiction too: each column's quotes are
+      found again in that jurisdiction's own document, never in a neighbour's.
+    expect: 1
+  - from: |-
+      instrument and ask what it says; this one starts from conduct and has to work
+      out which instruments are even in play. So the questions that select them come
+      before the fetch, and the version finding lands later than usual. Say so when
+      you ask — the user is being asked more before they see anything back, and
+      knowing why is the difference between intake and interrogation.
+    to: |-
+      instrument and ask what it says; this one starts from conduct and has to work
+      out which instruments are even in play. So the questions that select them come
+      before you ask for any document, and the version finding lands later than
+      usual. Say so when you ask — the user is being asked more before they see
+      anything back, and knowing why is the difference between intake and
+      interrogation.
+    expect: 1
+  - from: |-
+      **Discovery is its own phase, with its own gate.** Once the conduct is
+      described, read `references/discovery.md` and work it before fetching anything:
+      model the activity on its dimensions — actor, object, action, affected people,
+      place, lifecycle stage, failure mode — and generate candidate instruments from
+      every populated one. Ask what could prohibit, license, recall or penalise the
+      conduct, not only which subject headings apply. Name the plausible regulators
+      before settling on instruments, and check their lists, registers and orders as
+      well as their statutes. Prefer false positives here: the spine kills a weak
+      candidate against the official text, but nothing downstream can resurrect the
+      instrument nobody named. A verified note is not a complete note — the discovery
+      coverage receipt is what closes the gap between the two.
+    to: |-
+      **Discovery is its own phase, with its own gate.** Once the conduct is
+      described, read `references/discovery.md` and work it before asking for any
+      document: model the activity on its dimensions — actor, object, action,
+      affected people, place, lifecycle stage, failure mode — and generate candidate
+      instruments from every populated one. Ask what could prohibit, license, recall
+      or penalise the conduct, not only which subject headings apply. Name the
+      plausible regulators before settling on instruments, and check their lists,
+      registers and orders as well as their statutes. Prefer false positives here:
+      the spine kills a weak candidate against the official text, but nothing
+      downstream can resurrect the instrument nobody named. A note whose quotations
+      all check out still only covers the instruments somebody named — the discovery
+      coverage record is what shows which ground was searched.
+    expect: 1
+  - from: |-
+      **Say what you did not check.** This is the only workflow whose failure is a
+      false negative, and the spine cannot protect against it: it proves the text you
+      fetched, never the instrument nobody thought of. So the note carries the
+      discovery coverage receipt from `references/discovery.md` — the search surface,
+      row by row, with unworked branches marked unresolved rather than left silent —
+      and every negative finding states which of the four kinds of nothing it is:
+      expressly excluded, test not met on the supplied facts, nothing found after the
+      searches named, or not investigated. Run the omission challenge before
+      delivery. "We found nothing that catches this" is a sentence this skill must
+      never produce on its own.
+
+      Then check the receipt the way you check the quotes:
+
+          python3 scripts/check_receipt.py <dir>/note.md
+
+      It audits the receipt, never the research. It cannot know whether the right
+      regulators were named; it knows that the regulators row was filled in, that a
+      dynamic source carries the date that makes it a dated fact, that a negative
+      says which kind of nothing it is, and that the challenge came back with an
+      answer. Those are the omissions that survive review, because an incomplete
+      receipt reads exactly like a complete one.
+    to: |-
+      **Say what you did not check.** This is the only workflow whose failure is a
+      false negative, and the spine cannot protect against it: it settles the text
+      the lawyer supplied, never the instrument nobody thought of. So the note
+      carries the discovery coverage record from `references/discovery.md` — the
+      search surface, row by row, with unworked branches marked unresolved rather
+      than left silent — and every negative finding states which of the four kinds
+      of nothing it is: expressly excluded, test not met on the supplied facts,
+      nothing found after the searches named, or not investigated. Run the omission
+      challenge before delivery. "We found nothing that catches this" is a sentence
+      this skill must never produce on its own.
+
+      Then go back over the record the way you go back over the quotes. Read it
+      against sections 6, 7 and 8 of `references/discovery.md` and check four
+      things: every dimension has a row and a status; every dynamic source carries
+      the date it was consulted; every negative says which kind of nothing it is;
+      and the omission challenge came back with an answer. That check is about the
+      record, never about the research — it cannot know whether the right regulators
+      were named. Run it anyway, because an incomplete record reads exactly like a
+      full one, and say in the note that you ran it on your own work.
+    expect: 1
+
+  # --- references/construction-rubric.md -----------------------------------
+  - from: |-
+      `extract_provisions.py` classes every provision, so this is mechanically
+      checkable: **nothing classed `recital` may be quoted in an operative position.**
+    to: |-
+      Step 5 classes every provision as you read it, so this is checkable against
+      your own list: **nothing classed `recital` may be quoted in an operative
+      position.**
+    files: ["references/construction-rubric.md"]
+    expect: 1
+
+  # --- references/discovery.md ---------------------------------------------
+  - from: |-
+      Discovery is a separate phase with its own gate. A `check` note whose quotes all
+      verify is still not complete unless the discovery receipt below is in it.
+    to: |-
+      Discovery is a separate phase with its own gate. A `check` note whose
+      quotations have all been found again in their sources is still not ready
+      unless the coverage record below is in it.
+    files: ["references/discovery.md"]
+    expect: 1
+  - from: "## 6. The discovery coverage receipt"
+    to: "## 6. The discovery coverage record"
+    files: ["references/discovery.md"]
+    expect: 1
+  - from: |-
+      `scripts/check_receipt.py <note>` audits the finished table against this
+      section, section 7 and section 8. It is the same kind of gate as the quote
+      check: it proves the receipt is whole, and says nothing about whether the
+      research behind it was right.
+    to: |-
+      Before delivery, read the finished table back against this section, section 7
+      and section 8: every dimension has a row and a status, every dynamic source
+      carries its access date, every negative says which kind of nothing it is, and
+      the omission challenge has an answer. It is the same kind of check as the
+      quotation pass — it is about whether the record is whole, and says nothing
+      about whether the research behind it was right, and you are the one running
+      it on your own work.
+    files: ["references/discovery.md"]
+    expect: 1
+  - from: |-
+      3. **No responsive instrument identified after specified searches** — a
+         bounded result. The bound is the searches in the receipt, and the sentence
+         says so.
+      4. **Not investigated** — no inference permitted. This is a receipt row, not a
+         footnote.
+    to: |-
+      3. **No responsive instrument identified after specified searches** — a
+         bounded result. The bound is the searches in the record, and the sentence
+         says so.
+      4. **Not investigated** — no inference permitted. This is a row in the record,
+         not a footnote.
+    files: ["references/discovery.md"]
+    expect: 1
+  - from: |-
+      Before delivery, put the coverage receipt and the one-line conduct description
+      — never the draft answer — to a fresh-context reviewer (a subagent where the
+      host has one; a cold re-read against sections 1–4 of this file where it does
+      not) with one question: *name the regulator or regime most likely to be
+      missing.* Record the answer in the note, either as a new branch worked or as a
+      named gap. An unanswered challenge is a gap in the receipt.
+    to: |-
+      Before delivery, put the coverage record and the one-line conduct description
+      — never the draft answer — to a cold re-read against sections 1–4 of this
+      file, with one question: *name the regulator or regime most likely to be
+      missing.* Record the answer in the note, either as a new branch worked or as a
+      named gap. An unanswered challenge is a gap in the record.
+    files: ["references/discovery.md"]
+    expect: 1
+
+  # --- references/version-check.md ------------------------------------------
+  - from: |-
+      Mechanically first, because a reader who came for Article 6 does not read
+      banners and a model reading a page can miss one:
+
+          python3 scripts/fetch_source.py <url> <dir> --publisher <host> --label "<version>" \
+              --jurisdiction <code> --profile <profile> --instrument-id <stable-id>
+          python3 scripts/read_version.py <dir>/source.html --jurisdiction <code> --json <dir>/version.json
+
+      Non-zero exit means a marker says this text is not what you should be quoting.
+      **Refetch the version the marker names.** Do not carry on and caveat it — a
+      caveat on a stale quote is still a stale quote.
+
+      No marker matched is not a pass. It means the page did not carry the
+      markers the registry expects, which usually means the publisher moved its
+      furniture. Establish the version by hand and fix the registry entry.
+
+      The script records this state as `unresolved` and exits non-zero. Downstream
+      reliance remains blocked. A superseded version may proceed only when the dated
+      research question and the selected historical effective date are both recorded;
+      that state is `historical_selected`, not `confirmed` current law.
+    to: |-
+      Markers first, because a reader who came for Article 6 does not read banners
+      and it is easy to miss one. Search the supplied document for the marker text
+      the registry entry lists for that jurisdiction, and quote what you find rather
+      than summarising it.
+
+      A marker that says this text is superseded or incomplete means this is not the
+      text to quote. **Ask for the version the marker names.** Do not carry on and
+      caveat it — a caveat on a stale quote is still a stale quote.
+
+      No marker at all is not a pass. It means the document did not carry the markers
+      the registry expects, which usually means the publisher moved its furniture, or
+      that the entry is older than the page. Establish the version by reading, say
+      that is what you did, and note that the entry needs fixing.
+
+      Record that state as unresolved, and treat reliance as blocked: take the
+      provisional route at the delivery gate rather than quoting undated words as
+      current law. A superseded version may be used only when the dated research
+      question and the selected historical effective date are both recorded, and that
+      is an explicit historical selection, not confirmed current law.
+    files: ["references/version-check.md"]
+    expect: 1
+  - from: |-
+      > **Text:** EU AI Act, consolidated to 27/07/2026 (`02024R1689-20260727`),
+      > retrieved from eur-lex.europa.eu on 2026-08-24, sha256 `afb574cf424f`.
+      > Recitals are not in this version; recital citations are to the OJ text,
+      > OJ L, 2024/1689, 12.7.2024.
+    to: |-
+      > **Text:** EU AI Act, consolidated to 27/07/2026 (`02024R1689-20260727`),
+      > file `eu-ai-act-consolidated-20260727.pdf` in the Input folder, downloaded
+      > from eur-lex.europa.eu by the lawyer on 2026-08-24.
+      > Recitals are not in this version; recital citations are to the OJ text,
+      > OJ L, 2024/1689, 12.7.2024.
+    files: ["references/version-check.md"]
+    expect: 1
+
+  # --- references/citation-handoff.md ---------------------------------------
+  - from: |-
+      Use for statute, regulation or rule units referred by a citation-review workflow.
+      This is the receiving contract; enabling automatic routing in cite-check is a
+      separate change for that skill's maintainer. No worker runtime is required.
+    to: |-
+      Use for statute, regulation or rule units referred by a citation-review
+      workflow. This is the receiving side of that hand-off; the referring workflow
+      decides when to send a unit here, and nothing in this file routes on its own.
+    files: ["references/citation-handoff.md"]
+    expect: 1
+  - from: |-
+      Dedupe by jurisdiction + stable instrument id + requested date + provision;
+      share one publisher retrieval/version record across provisions of that same
+      instrument, date and language. Do not merge different dates or instruments.
+      Keep the run-local cache in the workspace and remove it on completion unless
+      retention is requested. Retry at most two alternative official endpoints per
+      source after a failed fetch. No full research memo, broad research fan-out or
+      case-law investigation is needed.
+    to: |-
+      Dedupe by jurisdiction + stable instrument id + requested date + provision;
+      share one supplied document and one version finding across provisions of that
+      same instrument, date and language, so the lawyer is asked for one download,
+      not five. Do not merge different dates or instruments. Ask for at most two
+      alternative official pages per source before treating it as unavailable. No
+      full research memo and no case-law investigation is needed.
+    files: ["references/citation-handoff.md"]
+    expect: 1
+  - from: |-
+      Return `unit_id`, `canonical_instrument_id`, `requested_date`, `provision`,
+      `existence` (confirmed / not-found-in-verified-scope / unresolved), `version`
+      (confirmed-for-date / wrong-date / unresolved), `quotation` (matched /
+      mismatch / attribution-unverified / not-requested), `coverage`, `source_url`,
+      `evidence_paths`, and `unresolved_reason` where applicable. Link duplicate units
+      to the shared evidence, retaining each original unit id.
+    to: |-
+      Return `unit_id`, `canonical_instrument_id`, `requested_date`, `provision`,
+      `existence` (confirmed / not-found-in-verified-scope / unresolved), `version`
+      (confirmed-for-date / wrong-date / unresolved), `quotation` (matched /
+      mismatch / attribution-unverified / not-requested), `coverage`, the address the
+      lawyer took the document from, the source filename in the Input folder, and
+      `unresolved_reason` where applicable. Link duplicate units to the shared
+      evidence, retaining each original unit id.
+    files: ["references/citation-handoff.md"]
+    expect: 1
+
+  # --- references/run-format.md ---------------------------------------------
+  - from: |-
+      The quoting rules below are not a style preference. `verify_quotes.py` enforces
+      them mechanically, without a model in the loop, and a run that fails them is not
+      delivered.
+    to: |-
+      The quoting rules below are not a style preference. They are what makes step 7
+      possible: each one exists so that a quotation can be found again in the supplied
+      document by anybody, in seconds. A note that fails them is not delivered.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      Version history leads only when it changes or prevents an answer; otherwise keep
+      its qualification brief. Store hashes, receipts, extraction diagnostics and full
+      amendment history in the verification record.
+    to: |-
+      Version history leads only when it changes or prevents an answer; otherwise keep
+      its qualification brief. Put the provenance block, the version findings, the
+      reading notes and the full amendment history in the verification record.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      - **The discovery coverage receipt** — the table from `references/discovery.md`,
+        in the Supporting analysis, with its method version line (`discovery/v1`) and
+        an access date for every dynamic source consulted. Unworked branches say
+        **unresolved**; a first-pass receipt with nothing unresolved deserves
+        suspicion, not celebration.
+    to: |-
+      - **The discovery coverage record** — the table from `references/discovery.md`,
+        in the Supporting analysis, with its method version line (`discovery/v1`) and
+        an access date for every dynamic source consulted. Unworked branches say
+        **unresolved**; a first-pass record with nothing unresolved deserves
+        suspicion, not celebration.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      **Every run ends with the links.** Not on request, not in the saved package
+      only, not "available if you want them" — in the note, every time, including when
+      the note is only going on screen. Cites name provisions; they do not tell a
+      reader where to go and read one. The addresses are already in the fetch
+      receipts, so this is transcription, and making the reader ask for it — even
+      once, even cheaply — spends their time to save none of yours.
+
+      `verify_quotes.py` fails a note that does not carry the address its text was
+      fetched from. That check covers the official half only, because it is the half a
+      receipt can prove.
+    to: |-
+      **Every run ends with the links.** Not on request, not in the saved set only,
+      not "available if you want them" — in the note, every time, including when the
+      note is only going on screen. Cites name provisions; they do not tell a reader
+      where to go and read one. The addresses are already in the provenance block, so
+      this is transcription, and making the reader ask for it — even once, even
+      cheaply — spends their time to save none of yours.
+
+      A note that does not carry the address its text came from is not finished. The
+      official half is the half the provenance block stands behind; everything else
+      goes under "Also consulted" and is never the ground for a quotation.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      - **A link is the address the bytes came from.** Take it from `fetch.json`, not
+        from memory and not from the search result that led you there. A retyped URL
+        is a citation to a page you did not read.
+      - **Dead ends are listed.** The fetch that returned a real statute which did not
+        contain the provision is the most useful line in the section: it is the one
+        that stops the next person repeating it, and its absence is what makes a wrong
+        first attempt look like it never happened.
+    to: |-
+      - **A link is the address the document came from.** Take it from the provenance
+        block the lawyer confirmed, not from memory and not from the search result
+        that led you there. A retyped address is a citation to a page nobody read.
+      - **Dead ends are listed.** The download that returned a real statute which did
+        not contain the provision is the most useful line in the section: it is the
+        one that stops the next person repeating it, and its absence is what makes a
+        wrong first attempt look like it never happened.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      For `check`, the discovery receipt's evidence cells carry their own dated links.
+      The Sources section still lists every official fetch, so there is one place to
+      look, and the receipt is not silently doing two jobs.
+    to: |-
+      For `check`, the discovery record's evidence cells carry their own dated links.
+      The Sources section still lists every official document supplied, so there is
+      one place to look, and the record is not silently doing two jobs.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      ### The quote must be in the fetched bytes
+
+      Not from a search result, not from a web-fetch rendering, not from memory. A
+      web-fetch rendering is a model's version of the page, and a paraphrase of a
+      statutory provision reads exactly as well as the provision. That is the whole
+      reason this check is mechanical.
+    to: |-
+      ### The quote must be in the supplied document
+
+      Not from a search result, not from a browser's rendering of the page, not from
+      memory. A rendering is a model's version of the page, and a paraphrase of a
+      statutory provision reads exactly as well as the provision. That is the whole
+      reason every quotation is located again before the note goes out.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      Checked against `provisions.json`. Paragraph/subparagraph attribution is checked
+      only where explicit, unambiguous subdivision markers can be located; otherwise
+      the checker returns attribution-unverified and requires a separate check.
+      A match at article level alone must never be called paragraph verification. This is the error that survives review, because both
+      halves look right on their own.
+    to: |-
+      Checked against the provision list from step 5. Paragraph and subparagraph
+      attribution holds only where explicit, unambiguous subdivision markers can be
+      located; otherwise record it as attribution-unverified and say so. A match at
+      article level alone must never be called paragraph verification. This is the
+      error that survives review, because both halves look right on their own.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      A code span, bold, or a bare run of five words or more lifted from the
+      instrument is a quotation with the marks taken off. `verify_quotes.py` scans
+      code spans and reports `unquoted-instrument-text` when the words turn out to be
+      the instrument's own, in either edition.
+
+      This is a rule about repair, not about typography. A quotation that fails is
+      fixed or cut; restyling it does neither, and it is worse than leaving the
+      failure in place, because the run then exits 0 over fewer checked quotations
+      than it began with and nothing anywhere says the coverage fell.
+    to: |-
+      A code span, bold, or a bare run of five words or more lifted from the
+      instrument is a quotation with the marks taken off. Treat those as quotations
+      in step 7 — in either edition — and put the marks back rather than leaving the
+      words loose.
+
+      This is a rule about repair, not about typography. A quotation that fails is
+      fixed or cut; restyling it does neither, and it is worse than leaving the
+      failure in place, because the note then carries fewer checked quotations than
+      it began with and nothing anywhere says the coverage fell.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      Pass the earlier run so both editions can be checked:
+
+          python3 scripts/verify_quotes.py <later>/note.md <later>/provisions.json \
+              --earlier <earlier>/provisions.json
+
+      The cite has to mark superseded text — *as it read*, *former*, *before the
+      amendment*, *repealed*, *previously*. Words that live only in the earlier run
+      and are cited without one of those fail as `superseded-as-current`. Repealed
+      words presented as current law are worse than a misquote: every word is genuine,
+      so nothing about them reads wrong.
+
+      Without `--earlier` the same quotation fails as `not-in-text` — the words are
+      real and the checker has only been shown one edition of the instrument. That
+      message is wrong, and it is the one that invites the note to be reshaped rather
+      than the check to be run properly.
+    to: |-
+      Keep the earlier provision list open beside today's, so a superseded quotation
+      is located in the run it actually belongs to. Say in the verification record
+      which of the two each quotation was found in.
+
+      The cite has to mark superseded text — *as it read*, *former*, *before the
+      amendment*, *repealed*, *previously*. Words that live only in the earlier run
+      and are cited without one of those are superseded text presented as current
+      law, which is worse than a misquote: every word is genuine, so nothing about
+      them reads wrong.
+
+      A quotation of the earlier edition that cannot be found in today's document is
+      not a failed quotation. It is a quotation of the other edition, and the fix is
+      to check it there and cite it as such, never to reshape the note until nothing
+      objects.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      ## Verifying
+
+          python3 scripts/verify_quotes.py <note.md> <dir>/provisions.json \
+              --manifest <dir>/run.json
+
+      Exit 0 means every quote is verbatim, cited, and cited to the right place. Exit 1
+      lists what failed and where.
+
+      Run it on the note before the note goes to the lawyer — including when the note
+      is only going on screen. A quote that cannot be verified is deleted or fixed, not
+      caveated — and not restyled, not weakened to a vaguer pinpoint, and not moved
+      out of quotation marks. Those all end the complaint without touching the
+      problem, and they end it silently.
+
+      ## What gets saved
+
+      Temporary verification uses a workspace run folder. Retain the package only
+      when the user asks or agrees; otherwise remove temporary files after delivery
+      and disclose that the package has not been retained.
+
+      When it is saved, one folder per instrument, inside the lawyer's own repo:
+
+      ```
+      <instrument>/
+        source.html        the publisher's bytes, exactly as served
+        fetch.json         URL, publisher, HTTP date, retrieval time, sha256
+        transformation.json  optional publisher-bytes to derived-text receipt
+        version.json       the markers found and what they mean
+        provisions.json    provisions, classes, hashes, defined terms, provenance
+        note.md            the note as delivered
+        run.json           the manifest — which provisions the note rests on
+      ```
+
+      ## The manifest
+
+      `run.json` is written by `verify_quotes.py --manifest`, and only from a note in
+      which every quote and the complete source lineage verified. It records the
+      complete preserved provision set, the provisions actually quoted, and the
+      unquoted semantic dependencies supplied with `--depends-on id=reason`.
+
+      `refresh` assesses the complete preserved provision set, then highlights quoted
+      and dependency provisions. It refuses different instrument identities and does
+      not claim that unchanged quotations preserve the earlier legal conclusion.
+
+      A quotation verified against the earlier run is not reliance on the later one,
+      so it is left out of the manifest. The manifest records what the note rests on
+      as current law, and a later `refresh` filtered by it would otherwise re-check
+      provisions this note only ever quoted in the past tense.
+
+      `source.html` is never edited. It is the thing every later claim is checked
+      against, and an edited copy is worth less than no copy.
+
+      Fetch again into a new dated folder rather than overwriting; `refresh` compares the
+      two, and it can only compare what is still there.
+
+      For derived text, `transformation.json` uses integrity schema
+      `regulatory-integrity/v1` and records `publisher_bytes_sha256`,
+      `derived_text_sha256`, `derived_name`, `method`, and the exact tool/version used.
+      The receipt binds the conversion; it does not claim the derivative is identical
+      to the publisher file.
+    to: |-
+      ## Going back over the quotes
+
+      Before the note goes to the lawyer — including when it is only going on screen
+      — find every quotation again in the supplied document and record the provision
+      label and where in the file it sits. A quote that cannot be found is deleted or
+      fixed, not caveated — and not restyled, not weakened to a vaguer pinpoint, and
+      not moved out of quotation marks. Those all end the complaint without touching
+      the problem, and they end it silently.
+
+      Say once, in the verification record, that this pass was run by the same reader
+      who wrote the note, and name the file the lawyer would open to repeat it.
+
+      ## What gets written out
+
+      One set per instrument in the session's Output folder, each name carrying the
+      instrument and the date of the run:
+
+      ```
+      <instrument>-<date>-note.md          the note as delivered
+      <instrument>-<date>-provisions.md    provisions, classes, defined terms
+      <instrument>-<date>-record.md        provenance block, version findings,
+                                           what was quoted and what it rests on
+      ```
+
+      The publisher's document stays where the lawyer put it, in the Input folder,
+      unedited. It is the thing every later claim is checked against, and an edited
+      copy is worth less than no copy. Nothing written here can be deleted, so write
+      what the work needs and name the files when you deliver.
+
+      Ask for the document again into a new dated set rather than writing over the
+      old one; `refresh` compares the two, and it can only compare what the lawyer
+      still has.
+
+      ## What the record holds
+
+      The record names the complete provision set read, the provisions the note
+      actually quotes, and the unquoted provisions the analysis depends on — a
+      definition, an exception, a commencement provision — with one line each saying
+      why. Those are what a later `refresh` has to watch, and they are invisible in
+      the note otherwise.
+
+      A `refresh` reads the whole preserved set, then leads with the quoted and
+      dependency provisions. It compares only the same instrument, and unchanged
+      quotations never stand as proof that the earlier legal conclusion survives.
+
+      A quotation found in the earlier run rather than today's is not reliance on
+      today's text, so it is marked as such in the record and left out of what the
+      note rests on as current law.
+
+      Where a publisher file had to be converted before it could be read, the record
+      says which file, what produced the text, and on what date. It binds the
+      conversion to the source; it does not claim the derived text is identical to
+      the publisher's file.
+    files: ["references/run-format.md"]
+    expect: 1
+
+  # --- references/jurisdictions/: the dated "as at" line on every registry ---
+  - from: "# Jurisdiction registry — index"
+    to: |-
+      # Jurisdiction registry — index
+
+      **As at 16 September 2026.** Every entry in this folder is a snapshot of where
+      the official text lived on that date. It is a pointer to a publisher, never the
+      law and never evidence of what the law says. Publishers move pages, rename
+      editions and change their furniture, so an entry may send you somewhere that
+      has gone. Say so when it does, find the publisher's own page, and note that the
+      entry needs fixing. Never describe an entry, or anything read out of one, as
+      current, the latest or still good.
+    files: ["references/jurisdictions/index.md"]
+    expect: 1
+  - from: "# When there is no registry entry"
+    to: |-
+      # When there is no registry entry
+
+      **As at 16 September 2026.** This folder is a snapshot of where official text
+      lived on that date. It is a pointer to a publisher, never the law and never
+      evidence of what the law says, and an entry may send you somewhere that has
+      moved. Never describe an entry, or anything read out of one, as current, the
+      latest or still good.
+    files: ["references/jurisdictions/_unmapped.md"]
+    expect: 1
+  - from: "# European Union — EUR-Lex"
+    to: |-
+      # European Union — EUR-Lex
+
+      **As at 16 September 2026.** This entry is a snapshot of where the official text
+      lived on that date. It is a pointer to a publisher, never the law and never
+      evidence of what the law says. If an address here does not resolve, say the
+      entry is out of date and find the publisher's own page. Never describe this
+      entry, or anything read out of it, as current, the latest or still good.
+    files: ["references/jurisdictions/eu.md"]
+    expect: 1
+  - from: "# United Kingdom — legislation.gov.uk"
+    to: |-
+      # United Kingdom — legislation.gov.uk
+
+      **As at 16 September 2026.** This entry is a snapshot of where the official text
+      lived on that date. It is a pointer to a publisher, never the law and never
+      evidence of what the law says. If an address here does not resolve, say the
+      entry is out of date and find the publisher's own page. Never describe this
+      entry, or anything read out of it, as current, the latest or still good.
+    files: ["references/jurisdictions/uk.md"]
+    expect: 1
+  - from: "# Singapore — Singapore Statutes Online"
+    to: |-
+      # Singapore — Singapore Statutes Online
+
+      **As at 16 September 2026.** This entry is a snapshot of where the official text
+      lived on that date. It is a pointer to a publisher, never the law and never
+      evidence of what the law says. If an address here does not resolve, say the
+      entry is out of date and find the publisher's own page. Never describe this
+      entry, or anything read out of it, as current, the latest or still good.
+    files: ["references/jurisdictions/sg.md"]
+    expect: 1
+  - from: "# California — California Legislative Information"
+    to: |-
+      # California — California Legislative Information
+
+      **As at 16 September 2026.** This entry is a snapshot of where the official text
+      lived on that date. It is a pointer to a publisher, never the law and never
+      evidence of what the law says. If an address here does not resolve, say the
+      entry is out of date and find the publisher's own page. Never describe this
+      entry, or anything read out of it, as current, the latest or still good.
+    files: ["references/jurisdictions/us-ca.md"]
+    expect: 1
+  - from: "# United States (federal) — eCFR, govinfo, Federal Register"
+    to: |-
+      # United States (federal) — eCFR, govinfo, Federal Register
+
+      **As at 16 September 2026.** This entry is a snapshot of where the official text
+      lived on that date. It is a pointer to a publisher, never the law and never
+      evidence of what the law says. If an address here does not resolve, say the
+      entry is out of date and find the publisher's own page. Never describe this
+      entry, or anything read out of it, as current, the latest or still good.
+    files: ["references/jurisdictions/us-federal.md"]
+    expect: 1
+
+  # --- references/jurisdictions/: what the entries say about getting the text
+  - from: |-
+      Each entry carries the official publisher, the URL forms that work, the version
+      markers `read_version.py` matches against the fetched bytes, and the traps that
+      jurisdiction sets. Entries are written only after their markers have been
+      verified against two versions of a real instrument.
+    to: |-
+      Each entry carries the official publisher, the address forms that work, the
+      version markers to look for in the document once it is in the Input folder, and
+      the traps that jurisdiction sets. Entries were written only after their markers
+      had been watched against two versions of a real instrument.
+    files: ["references/jurisdictions/index.md"]
+    expect: 1
+  - from: |-
+      ## How this is used
+
+          python3 scripts/fetch_source.py <url> <outdir> --publisher <publisher> --label "<version>"
+          python3 scripts/read_version.py <outdir>/source.html --jurisdiction <code>
+
+      `--publisher` comes from this registry, and `fetch_source.py` refuses to save
+      anything that redirects off that host. `read_version.py` exits non-zero when a
+      marker says the text is superseded or incomplete. When it does, refetch the
+      version the marker names — do not carry on and caveat it.
+
+      Exit 0 with no markers matched is **not** a clean bill of health. It means the
+      page did not carry the markers the entry expects, which usually means the
+      publisher changed its furniture. Establish the version by hand and fix the entry.
+    to: |-
+      ## How this is used
+
+      The publisher named here is the one to send the lawyer to, and the address forms
+      are what puts them on the right page. They download the document; it arrives in
+      the session's Input folder; you read it. Check that the page they used is on the
+      publisher named here, and record it in the provenance block. A document that
+      came from somewhere else is not the official text, whatever it looks like.
+
+      Then look for this entry's version markers in the document itself. A marker that
+      says the text is superseded or incomplete means this is not the text to quote:
+      ask for the version the marker names rather than carrying on and caveating it.
+
+      No marker at all is **not** a clean bill of health. It means the document did not
+      carry the markers this entry expects, which usually means the publisher changed
+      its furniture, or that the entry is older than the page. Establish the version by
+      reading, say that is what you did, and note that the entry needs fixing.
+    files: ["references/jurisdictions/index.md"]
+    expect: 1
+  - from: |-
+      So: pick an instrument that has been amended, fetch both versions with
+      `fetch_source.py`, extract the marker text from the saved bytes, and write only
+      the patterns that separate the two.
+    to: |-
+      So: pick an instrument that has been amended, download both versions from the
+      publisher, take the marker text out of the two documents, and write only the
+      wording that separates them.
+    files: ["references/jurisdictions/_unmapped.md"]
+    expect: 1
+  - from: |-
+      instrument put a sentence where it is — and `extract_provisions.py` keeps it in
+      the text it stores.
+
+      It is stripped before hashing, because it appears in every Article of a
+      consolidated text and in none of an OJ text. Left in, the comparison above
+      reports all 113 shared Articles as changed, which buries the 48 that are. Read
+      that way the two-text problem looks like total divergence, and a tool that
+      reports everything as changed is one the lawyer stops reading.
+    to: |-
+      instrument put a sentence where it is — so keep it when you write the provision
+      list, and quote around it rather than through it.
+
+      Ignore it when you compare two editions. It appears in every Article of a
+      consolidated text and in none of an OJ text, so a comparison that counts it
+      reports all 113 shared Articles as changed and buries the 48 that are. Read that
+      way the two-text problem looks like total divergence, which is a report the
+      lawyer stops reading.
+    files: ["references/jurisdictions/eu.md"]
+    expect: 1
+  - from: |-
+      The **query-string forms** (`/legal-content/EN/TXT/?uri=CELEX:...`) answer
+      **HTTP 202 with an empty body** when no `Accept` header is sent. That reads as a
+      dead document and is not one. `fetch_source.py` sends the right headers; if you
+      ever fetch EUR-Lex by another route and get nothing back, this is why. Do not
+      conclude the text is unavailable, and do not fall back to a secondary source.
+    to: |-
+      The **query-string forms** (`/legal-content/EN/TXT/?uri=CELEX:...`) answer some
+      clients with an empty page. That reads as a dead document and is not one. Send
+      the lawyer to the ELI path form above; a browser handles either. If a download
+      comes back empty, this is usually why. Do not conclude the text is unavailable,
+      and do not fall back to a secondary source.
+    files: ["references/jurisdictions/eu.md"]
+    expect: 1
+  - from: |-
+      SSO refuses a bare product-token User-Agent with **HTTP 403**. The
+      `Mozilla/5.0 (compatible; ...)` form `fetch_source.py` now sends is accepted.
+      If you get a 403 anyway, report it — do not fall back to a law firm's copy of
+      the Act, of which there are many and all of which look fine.
+    to: |-
+      SSO refuses some automated clients outright, and serves an ordinary browser
+      without complaint — which is what the lawyer will be using. If the download is
+      refused anyway, report that and ask them to try the PDF the page offers. Do not
+      fall back to a law firm's copy of the Act, of which there are many and all of
+      which look fine.
+    files: ["references/jurisdictions/sg.md"]
+    expect: 1
+  - from: |-
+      2. **`read_version.py` matching nothing is normal here** if you fetched anything
+         other than a code section. The registry expects markers that only exist at the
+         foot of a section.
+    to: |-
+      2. **Finding no version marker is normal here** if the lawyer downloaded
+         anything other than a code section. This entry's markers only exist at the
+         foot of a section.
+    files: ["references/jurisdictions/us-ca.md"]
+    expect: 1
+  - from: |-
+      **`leginfo.legislature.ca.gov` serves a certificate that recent trust stores
+      reject.** The chain runs to an Entrust root; Python's bundled store and `certifi`
+      both refuse it, while browsers and some system stores accept it. Verified
+      2026-08-24: `certifi` fails, `/opt/homebrew/etc/openssl@3/cert.pem` succeeds.
+
+          SSL_CERT_FILE=/path/to/a/bundle/that/trusts/it python3 scripts/fetch_source.py ...
+
+      `urllib` honours `SSL_CERT_FILE`, so this needs no flag and no change to the
+      script — which is deliberate. A tool option for relaxing certificate checking is
+      an option someone will eventually use to get past a warning that mattered.
+
+      If you do this, **say so in the note**. Which trust store you had to use to reach
+      a publisher is part of the provenance of what you fetched.
+    to: |-
+      **`leginfo.legislature.ca.gov` serves a certificate some clients reject.** The
+      chain runs to an Entrust root, which browsers and most system stores accept and
+      stricter automated clients do not (checked 2026-08-24). A lawyer downloading the
+      page in their own browser will usually see nothing of this.
+
+      If their browser does warn them about the site, that is worth saying in the
+      note: which route they had to take to reach a publisher is part of the
+      provenance of what they handed over. If they cannot reach it at all, report that
+      rather than taking the text from anywhere else.
+    files: ["references/jurisdictions/us-ca.md"]
+    expect: 1
+  - from: |-
+      - **The eCFR HTML app refuses a bare product-token User-Agent.** It answers a
+        redirect to `unblock.federalregister.gov`, which `fetch_source.py` catches as a
+        publisher-assertion failure. The `Mozilla/5.0 (compatible; ...)` form the script
+        now sends is accepted. The **API is not gated** either way.
+      - **govinfo answers HTTP 200 with an error page** for a package it does not hold,
+        and the redirect stays on `www.govinfo.gov`, so the publisher assertion passes
+        and 44 KB of Drupal lands on disk looking like a document. `fetch_source.py`
+        reports the path change; read the saved bytes before quoting from them. Use the
+        link service rather than guessing granule ids:
+        `https://www.govinfo.gov/link/cfr/16/312?year=2024` redirects to the right PDF.
+    to: |-
+      - **The eCFR HTML app refuses some automated clients** and sends them to
+        `unblock.federalregister.gov`. An ordinary browser is served normally, which is
+        what the lawyer will be using.
+      - **govinfo serves an error page that looks like a document** for a package it
+        does not hold: the address stays on `www.govinfo.gov` and 44 KB of site
+        furniture comes back wearing the right name. Read the file before quoting from
+        it, and check it actually holds the part and section asked for. Send the lawyer
+        through the link service rather than guessing granule ids:
+        `https://www.govinfo.gov/link/cfr/16/312?year=2024` opens the right PDF.
+    files: ["references/jurisdictions/us-federal.md"]
+    expect: 1
+
+
+  # --- the four findings move out of the body and into version-check.md -----
+  - from: "## The vocabulary trap"
+    to: |-
+      ## Four findings, kept apart
+
+      Before anything is quoted, establish and state each of these separately:
+      **publisher identity** — whose site the document came from; **publication
+      authority** — what this copy *is*, the authentic text or a convenience copy;
+      **language** — authentic, second authentic, or translation; and **version**.
+      They are independent findings, and collapsing any two of them is how an
+      unofficial copy comes to be labelled official.
+
+      The trap is site furniture. A page's language notice — *"the English language
+      version is always the official and authoritative version of this website"* — is
+      a translation-widget disclaimer about the website. It establishes nothing about
+      the legal authority of the statute printed on it, and the same publisher may
+      say in its own user guide that the text is unofficial. Both were true of
+      Illinois at once. So quote the publisher's statement about the **statutory
+      text**, not a notice that happens to contain the word "official"; if the
+      publisher makes no such statement, that absence is the finding, and it gets
+      written down.
+
+      A government-hosted convenience copy that disclaims its own authenticity can
+      still carry a qualified answer — that is the default, and a firm may set a
+      stricter one. What it can never do is carry a silent one. Put the publisher's
+      disclaimer in the note, in its own words, and name the authentic publication
+      that would settle the point.
+
+      ## The vocabulary trap
+    files: ["references/version-check.md"]
+    expect: 1
+  - from: |-
+      named), nothing found after the searches the receipt lists, or not
+        investigated.
+    to: |-
+      named), nothing found after the searches the record lists, or not
+        investigated.
+    files: ["references/run-format.md"]
+    expect: 1
+  - from: |-
+      This runs opposite to `read-redline`'s bias, for the same reason: there, surfacing a
+      borderline change beats hiding it; here, surfacing a borderline question beats
+      hiding it.
+    to: |-
+      This runs opposite to the bias a redline review applies, for the same reason:
+      there, surfacing a borderline change beats hiding it; here, surfacing a
+      borderline question beats hiding it.
+    files: ["references/construction-rubric.md"]
+    expect: 1
+
+notes: |
+  Dropped scripts/ — the eight programs that fetched the publisher's document,
+  refused an off-host redirect, hashed it, matched version markers, split and
+  indexed the provisions, re-located every quotation, diffed two runs and audited
+  a check note's coverage table. The premise changes and nothing else does: the
+  lawyer goes to the publisher, downloads the document and puts it in the Input
+  folder, and step 3 is rewritten around a provenance block — publisher, address,
+  date retrieved, and the lawyer's own statement that they took it from there —
+  which travels with every deliverable beside the source filename. That block is
+  what replaces the retrieval record and the hash, and step 3 says so in terms,
+  including what is given up. Steps 4, 5 and 7 become checks the model performs
+  and records, each producing something the lawyer reads, and each one says once
+  that it is self-performed; the Scripts reference section becomes a table of what
+  each program did and what stands in its place. The delivery gate is rewritten
+  around upstream's own provisional route, which is now the ordinary failure:
+  no provenance block, no definitive report. refresh asks the lawyer to attach the
+  earlier note and its provision list and to download today's text, writes this
+  run beside the earlier one rather than over it, and names what it looked for and
+  did not find before doing anything else; its delivery discipline — the four
+  failing openings, quote-the-amendment, replaced and retitled, the blocked
+  comparison — moves verbatim into the new references/refresh-rules.md, which
+  keeps the body inside the word budget. What this produces moves the run folder
+  to the Output folder and says nothing is deleted afterwards. The one rule, the
+  second rule, the construction rubric, the routing table, steps 1 and 6, research
+  and compare are untouched: the central rule that nothing is quoted that did not
+  come from the publisher's own document is the whole skill and survives intact.
+  Companions: the seven jurisdiction registries each gain a dated "as at" line
+  saying they are a pointer and never evidence, and forbidding the words current,
+  the latest and still good; their script-shaped retrieval traps are rewritten for
+  a lawyer downloading in a browser; discovery.md's "coverage receipt" becomes a
+  "coverage record" throughout and its audit step becomes a re-read; run-format.md
+  keeps every quoting rule and loses the run folder, the manifest and the hash
+  machinery; version-check.md's provenance line names the file in the Input folder
+  instead of a hash. New companion: references/refresh-rules.md (12 companions in
+  total, inside the cap). LQC-W010 is suppressed over references/jurisdictions/,
+  where the publisher addresses are upstream-authored and are the point of the
+  registry, and LQC-W004 over the same folder, where the `.../enacted` forms in
+  the entries' `preferred_url_form` strings are abbreviated addresses and not
+  paths out of the skill. LQC-W006 is suppressed on the body, and the number
+  is worth stating plainly: upstream is 5,685 words and the built body lands near
+  5,200. The script machinery is gone and the refresh delivery rules moved out,
+  but the sections that replaced them run to the same length, because they are
+  legal method rather than mechanics — the one rule, the four findings kept apart,
+  the version discipline, the construction rubric's entry points and four
+  workflows. If the budget has to be met, the next lever is the check workflow's
+  fact-gathering prose (a sector is not an activity, a role is not an identity,
+  the five facts), which belongs in references/discovery.md beside its own
+  section 1; that is another 400 words and close to the last cut available before
+  method starts going.
+
+suppress:
+  - code: LQC-W010
+    file: "references/jurisdictions/*.md"
+    reason: >-
+      upstream-authored official publisher addresses; the registry exists to send
+      the lawyer to the right publisher page and is useless without them
+  - code: LQC-W004
+    file: "references/jurisdictions/*.md"
+    reason: >-
+      the `.../enacted` and `.../{yyyy-mm-dd}` forms in each entry's
+      preferred_url_form are abbreviated publisher addresses, not paths out of the
+      skill folder
+  - code: LQC-W006
+    file: "SKILL.md"
+    reason: >-
+      the body is legal method rather than mechanics; upstream is 5,685 words and
+      the built body lands near 5,200 because every section that replaced script
+      machinery is method in its own right - the one rule, the four findings kept
+      apart, the version discipline and four workflows
+
+triggers:
+  positive:
+    - "What does the EU AI Act actually require of a deployer? I can get you the text."
+    - "Here is the consolidated regulation from the publisher - what does Article 12 say about notification?"
+    - "Is the copy of the data protection regulations we advised on last year still the current text?"
+    - "We're launching a paid tier in Singapore in March - which regulations catch that?"
+    - "Has section 12 of this Act changed since our advice in January? I have the old note."
+  negative:
+    - "Find me everything written about the AI Act's enforcement timetable. -> Deep Research"
+    - "What did our team advise Acme about consumer credit rules last year? -> Enterprise Search"
+    - "Check the citations and quotations in this brief against the cases in the folder. -> cite-check"
+    - "Turn this regulatory note into a one-page client explainer with a diagram. -> legaldesign"
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original went to the regulator's own website itself, refused anything
+    that redirected away from it, and kept a fingerprint of the document so it
+    could show that the text it quoted at the end was the same text it had read
+    at the start. None of that is available here, so the lawyer does the
+    retrieval: the skill names the instrument and the publisher, the lawyer
+    downloads that document and drops it in the Input folder, and the skill works
+    from it. The quoting rule that makes this skill worth having is untouched -
+    nothing is quoted that did not come from the publisher's own document, not
+    from a search result, a tracker, a law firm note or the model's memory. What
+    changes is who stands behind the provenance. In place of the retrieval record
+    the note carries a short block naming the publisher, the address, the date
+    and the lawyer's own statement that they took it from there, and that block
+    travels with every deliverable beside the source filename. If the lawyer
+    skips the download, or cannot say where a file came from, the note comes back
+    headed "provisional and unverified" with the unsupported points named, which
+    is the skill working correctly rather than failing. The version check, the
+    provision list and the pass that finds every quotation again in the file are
+    now done by the same reader who wrote the note rather than by a program, and
+    the note says so; what makes them worth something is that the source is
+    sitting in the lawyer's own Input folder and any one of them can be repeated
+    in ten seconds.
+  known_issues:
+    - id: KI-regulatory-1
+      title: "Provenance is attested by the lawyer, not established by the skill"
+      detail: >-
+        The skill cannot fetch the document, refuse an address that redirects off
+        the publisher's host, or fingerprint what it read. It relies on the
+        lawyer's statement of where the file came from. A file downloaded from a
+        mirror, a subscription service or an aggregator will read exactly like the
+        publisher's own, and the provenance block will say whatever the lawyer
+        says. Ask for the address, put it in the block, and treat an incomplete
+        block as the trigger for the provisional heading rather than as a
+        formality.
+      failure: loud
+    - id: KI-regulatory-2
+      title: "A scanned or image-only publisher PDF stops the run"
+      detail: >-
+        Some publishers serve older instruments as scans with no text layer.
+        Nothing in Cowork is documented to read one, so the skill says the text
+        could not be read and asks whether the publisher offers an HTML or
+        text-layer version of the same document. It must not describe pages it has
+        not read. If a run ever reports provisions out of a document the lawyer can
+        see is a scan, stop and report it.
+      failure: loud
+      probe: P4
+    - id: KI-regulatory-3
+      title: "The quotation pass is run by the same reader who wrote the note"
+      detail: >-
+        Upstream had a program find every quotation again in the source without a
+        model in the loop. Here the model does it and records the provision label
+        and locator for each quote. A paraphrase reads exactly as well as the
+        provision, so a missed one leaves no mark on the note. The mitigation is
+        that the lawyer can repeat the check: the file is in their own Input
+        folder, every quote carries its provision label, and one takes ten seconds.
+        The note says the pass was self-performed and names the file to open.
+      failure: silent
+    - id: KI-regulatory-4
+      title: "refresh has no baseline unless the lawyer brings one"
+      detail: >-
+        Nothing written in an earlier session comes back on its own. A refresh
+        needs the earlier note and its provision list attached, plus today's
+        document. Without them the skill says so in the first reply, names what it
+        looked for, and offers a fresh read instead - it never reconstructs the
+        baseline, because a reconstructed one compares the model's work against
+        itself and comes back looking complete.
+      failure: loud
+      probe: P2
+    - id: KI-regulatory-5
+      title: "The jurisdiction registries are a dated snapshot"
+      detail: >-
+        The seven publisher entries were written upstream and are carried at 16
+        September 2026. They say where official text lived on that date, not what
+        it says, so a stale entry sends the lawyer to a page that has moved - which
+        they will see. Each entry now carries its own "as at" line and is forbidden
+        to describe anything as current or the latest. If an address does not
+        resolve, the skill says the entry is out of date rather than guessing a
+        publisher.
+      failure: loud
+  workarounds:
+    - instead_of: "a program fetched the document from the publisher and refused any address that redirected off that host"
+      cowork: "the skill names the instrument, the publisher and the version, and the lawyer downloads that document into the Input folder"
+    - instead_of: "the fetched bytes were hashed so two steps could be shown to have read the same text"
+      cowork: "a provenance block - publisher, address, date, and the lawyer's own statement - printed with every deliverable beside the source filename, with the difference stated in the body"
+    - instead_of: "version markers were matched against the fetched bytes by a program"
+      cowork: "the publisher's own version statement is read off the supplied document and quoted verbatim in the note"
+    - instead_of: "a program split, classed and indexed the provisions into a dataset"
+      cowork: "the provision list is written out to the Output folder as the document is read, and everything downstream cites its labels"
+    - instead_of: "a program found every quotation again in the source and refused a note that failed"
+      cowork: "each quotation is located again in the supplied file with its provision label recorded, stated as a self-performed pass, and repeatable by the lawyer from their own Input folder"
+    - instead_of: "an earlier saved run folder was read back from disk for refresh"
+      cowork: "the lawyer attaches the earlier note and its provision list, and today's run is written beside them under today's date"
+    - instead_of: "a program audited the check note's coverage table row by row"
+      cowork: "the table is re-read against the discovery reference before delivery, with every dimension statused, every dynamic source dated and the omission challenge answered"

@@ -46,6 +46,56 @@ notes: |
   stated as such. The playbook is found by file name, not by a registry.
   references/playbook-engine-contract.md is replaced by references/playbook-format.md,
   shared byte for byte with the playbook-builder skill.
+
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original ran the review through seventeen script steps: a program
+    checked every quote against the source by hash, produced a set of
+    machine-checked files, and exported an internal and an external Word
+    version automatically. Here the model reads and quotes the contract
+    itself and states that plainly as how the wording was checked, and it
+    delivers the same clause-by-clause issues list in the reply, as a file,
+    and as a Word document through the built-in Word skill when you want
+    one. What you get is an issues list showing the wording to use instead,
+    not your original document handed back with visible tracked changes on
+    it. And because no script checks the exported table against the issues
+    list, the skill states the number of rows it produced, so a row that
+    went missing on the way to Word would be noticed rather than simply
+    absent.
+  known_issues:
+    - id: KI-playbook-review-1
+      title: "An issues list, not a tracked-changes redline of your document"
+      detail: >-
+        The deliverable is a clause-anchored issues list showing the source
+        wording, the proposed wording and the reasoning behind it, never
+        your own document handed back with the changes marked on it. If you
+        want a marked-up copy, take the proposed wording from the issues
+        list and apply it as tracked changes yourself, or ask for that
+        explicitly. Whether Cowork can produce a Word file with real tracked
+        changes in it is not yet settled.
+      failure: loud
+      probe: P10
+    - id: KI-playbook-review-2
+      title: "The Word matrix is built by the Word skill, not checked by a script"
+      detail: >-
+        The internal and external issue matrices used to be produced and
+        checked by a script that could not drop a row without failing. Here
+        the built-in Word skill builds the table from the same issue data,
+        and nothing checks afterwards that every row survived. The
+        mitigation is that the skill states the row count it produced
+        alongside the matrix, so check that count against the issues list
+        before you rely on it.
+      failure: silent
+  workarounds:
+    - instead_of: "seventeen script steps verify every quote by hash and a validator before the issues list is treated as complete"
+      cowork: "the model reads and quotes the contract itself and states that as how the wording was checked"
+    - instead_of: "a script exports the internal and external Word cuts automatically from the validated issue set"
+      cowork: "the issues matrix is a table in the reply plus a file, and a Word document through the built-in Word skill on request, stating the row count produced"
+    - instead_of: "a registry and discovery picker find the approved playbook automatically"
+      cowork: "the playbook is found by its file name, in the folder you point to"
+
 triggers:
   positive:
   - Review this MSA the supplier sent against our playbook.

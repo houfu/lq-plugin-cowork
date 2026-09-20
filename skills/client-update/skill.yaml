@@ -6,6 +6,25 @@ anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
 description: |
   Prepares evidence-first litigation status reporting: single-matter updates, event-triggered decision addenda, outside-counsel reports, and portfolio views. Keeps verified developments, analysis, recommendations and decisions in separate layers, and makes deadlines, budgets, exposure, risks and owners explicit. It drafts; it never sends. Use when the user asks to "write a status update for the client on this case", "prepare this month's outside-counsel report", "give the board a view of our open litigation", "the court just ruled — draft a note telling the client what it means", or "summarize where each matter stands and what decisions are needed". Do not use for advocacy or a legal-analysis memorandum (use the writing skill), letters to opposing counsel (use the correspondence skill), the internal matter-team evidence record (use the organize-case-docs skill), laying an existing analysis out as a designed page (use the legaldesign skill), or sending an approved report (use the Email skill).
 
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    The original prepares the same evidence-first status update here,
+    keeping verified developments, analysis, recommendations and decisions
+    in separate layers, and it never sends anything itself either way. That
+    method is unchanged. What differs is around the edges: there is no
+    typed command, so the lawyer describes the report they need; a
+    preferences file is read only if the lawyer has attached it or placed
+    it in the session's input folder, and is never written to; and a
+    multi-document run's working notes are kept inside the session, with
+    anything the skill saves left visible in the session's output folder
+    rather than described as deleted.
+  known_issues: []
+  workarounds:
+    - instead_of: "a temporary working dataset for multi-document extraction, deleted on completion"
+      cowork: "a working table kept inside the session; anything the skill saves stays visible in the session's output folder rather than being described as removed"
+
 replace:
   - from: "Read only confirmed `[client-update]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[client-update]` line, but it affects future work only after the user explicitly confirms it."
     to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[client-update]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[client-update]` line the lawyer can add to their own file; it shapes future work only once they have added it."
@@ -13,6 +32,14 @@ replace:
     expect: 1
   - from: "- Use one temporary working dataset for multi-document extraction and delete it on completion. Do not put client facts, names, amounts, paths, or privileged analysis in reusable knowledge stores."
     to: "- Keep one working table for multi-document extraction inside this session. Anything you save stays in the session's Output folder: name it when you deliver, and never describe it as removed. Do not put client facts, names, amounts, paths, or privileged analysis in reusable knowledge stores."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "keep its evidence receipt separate and link its stable IDs."
+    to: "keep its evidence record separate and link its stable IDs."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "Keep technical receipts and lawyer-facing prose separate."
+    to: "Keep technical records and lawyer-facing prose separate."
     files: ["SKILL.md"]
     expect: 1
 

@@ -1,0 +1,174 @@
+name: lq-connect
+upstream: companion/lq-connect
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Finds two or three colleagues inside the lawyer's own organisation who have
+  already done the kind of work they are about to start: it writes the need
+  back as a short sanitised summary for them to approve, searches the
+  organisation through the Enterprise Search skill, and hands over each name
+  with the document that shows the fit and one line on what to say. A
+  directory, membership list or attendee list the lawyer attaches is matched
+  the same way. Use when the user asks "who here has done this before", "who
+  can I talk to about running a data room with AI", "find someone in the firm
+  who has actually shipped this", "is there anyone who knows about AI in
+  regulatory work", or "match this attendee list against what I need". Do not
+  use for finding documents or facts rather than people (use the Enterprise
+  Search skill), for what lawyers elsewhere have published about working this
+  way (use the lq-ask skill), or for contacting, messaging or booking anyone:
+  this hands over names and stops.
+
+exclude:
+  - "scripts/**"
+  - "references/taxonomy.md"
+
+files: files
+
+replace:
+  - from: "# lq-connect — I found my people"
+    to: "# Finding a colleague who has already done this"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      The lawyer has a judgment call they don't want to make alone — build or buy,
+      positioning AI inside their firm, a workflow that went sideways — and the
+      corpus can't look at *their* situation. A person can. This skill finds two
+      or three LegalQuants members whose **public** profiles fit the need, and
+      hands over their profile links. The member's own contact paths live on their
+      profile; what happens next is between the two of them.
+    to: |-
+      The lawyer has a judgment call they don't want to make alone — build or buy,
+      positioning AI inside their firm, a workflow that went sideways — and a
+      document can't look at *their* situation. A person can. This skill finds
+      two or three people the organisation's own material already puts behind
+      that kind of work, says what put each of them on the list, and hands the
+      names over. How they reach out is theirs; this skill contacts nobody.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      If the yes never comes, offer the public directory link
+      (`legalquants.com/community`) for browsing and stop.
+    to: |-
+      If the yes never comes, say so plainly and stop. Nothing is searched
+      without an approved summary.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      - The two or three cards, the links, one line on what to say when they reach
+        out (mention what you're working on; members respond to specifics).
+    to: |-
+      - The two or three names, the source behind each one, and one line on what
+        to say when they reach out (mention what you're working on; people
+        respond to specifics).
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      - Then stop. This skill does not broker, book, message, rate-limit, or
+        follow up. v1 carries no booking mechanics of any kind — that's a later,
+        separate decision.
+    to: |-
+      - Then stop. This skill does not broker, book, message, rate-limit or
+        follow up, and it carries no messaging and no booking of any kind.
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## First run? One marker, once ever"
+    delete: true
+  - match: "## 2. Match against the public directory"
+    file: sections/match.md
+  - match: "## Rules"
+    file: sections/rules.md
+
+notes: |
+  Dropped the cold-open call to a companion skill's onboarding script, and with
+  it the once-ever marker: the introduction and the consent for it are a line in
+  the conversation each session. The load-bearing step changes pool. Upstream
+  read the LegalQuants public directory and per-member profile pages over the
+  network; the rewritten section 2 hands the approved summary to the Enterprise
+  Search skill and looks for the work first and the people second, and adds a
+  second pool for a directory, membership list or attendee list the lawyer
+  attaches or pastes, with each name labelled by which pool it came from. The
+  evidence-deepening calls to the sibling script (GitHub, a personal page) go;
+  in their place every match must carry the document, note or list entry it came
+  from, named and quoted, and anything merely mentioned in what was read is
+  labelled as mentioned rather than described. Both miss-paths ended by handing
+  over the directory link and now end by saying what was searched, what could
+  not be seen, and the search the lawyer could run themselves. references/
+  taxonomy.md is replaced rather than patched: the seven practice areas, the
+  jurisdiction rule and the prefer-visible-work rule are the intellectual
+  content and are kept, but its field vocabulary described a LegalQuants profile
+  schema that does not exist here, so the framing is rewritten for a pool of
+  tenant documents or a brought list. Upstream is the one companion skill with
+  no closing disclaimer line; the rewritten Rules section adds the contract's
+  vendor-neutral line so the companion bundle reads consistently. The
+  sanitisation gate, the two-or-three-never-pad rule, the honest miss, the
+  no-brokering rule and the no-verdicts rule are kept as upstream wrote them.
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original looked outside the firm. It read the LegalQuants public member
+    directory and handed back two or three members' profile links, so the people
+    it found were strangers who had chosen to be findable for exactly this. This
+    version looks inside the lawyer's own organisation instead, because there is
+    no way to reach that directory from here and no shipped skill may carry a
+    link to it. It asks what the need is, writes it back as two sanitised
+    sentences with no client or matter in them, waits for a yes, and then asks
+    the organisation's own search for the work first and the people second. What
+    comes back is two or three colleagues, each with the document, note or
+    matter record that put them on the list, quoted so the lawyer can check it,
+    and one line on what to say. If the lawyer has a directory, a membership
+    export or a conference list of their own, they can attach it and it is
+    matched the same way, alongside the colleagues. Nobody fits is still an
+    answer, and the skill still contacts nobody and books nothing.
+  known_issues:
+    - id: KI-lq-connect-1
+      title: "Three adjacent colleagues, padded to three"
+      detail: >-
+        Nothing published says what an organisation-wide search returns when it
+        is asked who has worked on something, and a thinly indexed organisation
+        can return people who are merely nearby rather than people who have done
+        this. The answer looks the same either way. Two things are meant to make
+        it visible: upstream's own rule is kept word for word — pick two or
+        three, fewer when that is what the evidence supports, never pad, and an
+        honest miss beats a forced match — and every name has to arrive with the
+        document that put it there, named and quoted, so a lawyer can read the
+        evidence rather than the conclusion. Read the quoted source before
+        reaching out; if a name has no source, it should not be on the list.
+      failure: silent
+      probe: P14
+    - id: KI-lq-connect-2
+      title: "A brought list is as old as the day it was exported"
+      detail: >-
+        When the lawyer attaches a directory export, a membership list or an
+        attendee list, the skill matches what is in the file and has no way to
+        tell whether anyone in it has moved, changed practice or left. It says
+        once that a brought list is only as current as its export date and
+        labels which pool each name came from, but it cannot check a stale
+        entry. Treat a match from a brought list as a lead to verify, not as a
+        current fact.
+      failure: silent
+  workarounds:
+    - instead_of: "a bundled script gates the first-run introduction on a once-ever marker"
+      cowork: "the introduction and the consent for it are one line in the conversation, each session"
+    - instead_of: "the LegalQuants public member directory and per-member profile pages are read over the network"
+      cowork: "the Enterprise Search skill surfaces the organisation's own material and who is named in it, and a directory or list the lawyer attaches is matched alongside it"
+    - instead_of: "a bundled script fetches an excerpt of a candidate's repository or personal page to deepen the why"
+      cowork: "each match quotes the document, note or list entry it came from, and anything only mentioned there is labelled as mentioned rather than described"
+    - instead_of: "no yes, or nobody fits, ends by handing over the public directory link"
+      cowork: "both endings say what was searched, what could not be seen, and the search the lawyer could run themselves"
+
+triggers:
+  positive:
+    - "Who in the firm has actually run a data room review with AI? I want to talk to someone before I commit to this."
+    - "Find me someone here who has done a regulatory gap analysis like this before."
+    - "I've got the attendee list from last month's conference — who on it should I be talking to about contract automation?"
+    - "Is there anyone in the practice who knows how we handled the last big disclosure exercise?"
+  negative:
+    - "Find me every document in the firm about our AI usage policy. -> Enterprise Search"
+    - "What have other lawyers published about using AI on redlines? -> lq-ask"
+    - "Email my colleague and ask whether she'll take a call on Thursday. -> Email"
+    - "Where do I stand with AI compared to other lawyers? -> lq-mirror"

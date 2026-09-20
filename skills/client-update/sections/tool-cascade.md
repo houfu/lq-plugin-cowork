@@ -4,7 +4,7 @@ The plain Markdown/table workflow is complete on its own. Reach for anything mor
 
 1. The documents the lawyer supplies or places in the session's Input folder, read directly, plus public official sources where available.
 2. A spreadsheet for reconciled matter tables, arithmetic, trends, and exception sorting, keeping source IDs beside every row and a readable static export alongside it.
-3. A legal-grade licensed authority, docket, insurer, e-billing, or analytics system only when the user or firm selects it, the license permits the use, and the system's source identity, access scope, retention, and currentness are acceptable. Preserve its receipt and do not imply that licensed access alone proves the proposition.
+3. A legal-grade licensed authority, docket, insurer, e-billing, or analytics system only when the user or firm selects it, the license permits the use, and the system's source identity, access scope, retention, and currentness are acceptable. Preserve an access record and do not imply that licensed access alone proves the proposition.
 
 If a route is unavailable, continue with the next safe one or state the limitation. Never upload confidential matter material merely to format or summarize it. External retrieval does not authorize sending the resulting update.
 

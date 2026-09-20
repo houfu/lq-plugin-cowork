@@ -1,0 +1,141 @@
+name: conform
+upstream: transactional/conform
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Adapts a clause taken from a precedent into the vocabulary of the agreement
+  being drafted, or checks a draft for precedent language that was never
+  adapted. Reads both documents' defined terms in the same session — there is
+  no earlier review it relies on — and returns a mapping table saying which
+  source concept each destination term covers, which ones shift the meaning
+  and why, and the rewritten clause as a Word document to accept, edit or
+  reject. Use when the user asks to "make this indemnity from the precedent
+  fit our agreement", "conform this clause to our defined terms", "does our
+  agreement have an equivalent of their Permitted Encumbrances", or "check
+  this draft for language that came straight out of the precedent". Do not use
+  for reviewing a draft against approved positions or a playbook (use the
+  playbook-review skill), for a defined-term review of one document (use the
+  definition-check skill), or for reading a counterparty's markup (use the
+  read-redline skill).
+
+exclude:
+  - "scripts/**"
+  - "references/*.json"
+  - "references/agentic-mapping-protocol.md"
+  - "references/capability-routing.md"
+  - "references/ledger-consumption-contract.md"
+  - "references/prompts/dispatch.md"
+
+files: files
+
+notes: |
+  Full-file overlay, and a narrowed promise. Upstream, conform could not run
+  at all without local command execution: its first act was a preflight that
+  recomputed both documents' content hashes and compared them against the
+  ledgers a previous definition-check run had written, with a hard stop on any
+  mismatch, and its term normalisation ran a program that physically lives in
+  the definition-check skill's own folder, reached by a relative path out of
+  this skill. Neither exists here. Both documents are read in the one session,
+  which removes the thing the hash guarded: there is no earlier run to go
+  stale. The two-run structure, the ledger, the hashes, the five stop reasons
+  and the cross-folder reach are all gone, and the description and the body
+  say the promise changed rather than implying the guarantee survived.
+  Dropped scripts/ (11 files), the 3 JSON schemas, references/capability-
+  routing.md (which carried the literal ../../definition-check path this
+  repository's card rules forbid), references/agentic-mapping-protocol.md and
+  references/ledger-consumption-contract.md, which describes the fields of a
+  ledger that no longer exists, plus references/prompts/dispatch.md, which is
+  packet plumbing. That leaves three companions: the mapping, leakage-scan and
+  escalation prompts, rewritten as decision checklists that keep the whole
+  decision set, the evidence rules and the escalation rule while dropping the
+  response shapes. The escalation rule is stated in the body as a fixed rule
+  rather than as the behaviour of a named program. The redline goes out as a
+  Word document through the built-in Word skill, with tracked changes asked
+  for and the result stated either way. Both of upstream's surviving
+  boundaries are quoted in the new body: "safe to propose" never means silent
+  application, and there is no silent document modification.
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    Upstream this was the second of two runs. A lawyer first ran a defined-term
+    review over each of the two documents, which wrote out a record of that
+    document's vocabulary; this skill then checked that each record still
+    matched its document — by comparing a fingerprint of the file's contents —
+    and refused to do anything at all if either record was missing, out of
+    date, incomplete or taken from a different version of the document. That
+    check cannot be performed here, and rather than pretend to it the skill has
+    been rebuilt so that the thing it guarded no longer exists: both documents
+    are read in front of you, in this session, every time. Nothing is carried
+    over from an earlier run because there is no earlier run. The trade is
+    honest but real. You no longer get an assurance that the definitions in
+    either document were checked in a prior, verified pass — you get a reading
+    of both documents made now — and nothing can tell you whether the file you
+    attached is the current draft, so the skill asks and names the files it
+    read. What survives whole is the part worth having: the mapping between
+    the two vocabularies, and the rubric that decides which substitutions are
+    safe and which change the meaning and have to come back to you. Every
+    mapping is still a proposal, and neither document is ever written to.
+  known_issues:
+    - id: KI-conform-1
+      title: "A defined term the reading missed is a mapping never proposed"
+      detail: >-
+        Both documents' vocabularies are worked out by reading them, so this
+        skill inherits the defined-term review's characteristic weakness: a
+        term nobody noticed cannot be mapped, and its absence from the table
+        looks exactly like a concept that had no equivalent to find. The
+        mitigation is that the mapping table lists every concept it worked from
+        and every concept it found no equivalent for, so you see the universe
+        it was working in rather than only its conclusions. Read the table's
+        left-hand column against the clause you are conforming; a concept in
+        the clause that is not in the column was not considered.
+      failure: silent
+    - id: KI-conform-2
+      title: "Nothing checks that the attached documents are the current versions"
+      detail: >-
+        The original refused to run where a document had changed since it was
+        last reviewed, by comparing a fingerprint of its contents. There is no
+        equivalent here. If you attach last week's draft, you get a careful
+        mapping of last week's draft and nothing will say otherwise. The skill
+        asks which version each document is and names the files it read in the
+        delivery; check those names before you use the clause.
+      failure: silent
+    - id: KI-conform-3
+      title: "The conformed clause may come back without tracked changes"
+      detail: >-
+        The rewritten clause is produced as a Word document and real tracked
+        changes are asked for, but whether they can be produced is not
+        established. If they cannot, the same content comes back as the old
+        wording set beside the new. You will see which you have the moment you
+        open the file, and the skill is required to say which it produced.
+        Either way the clause is a proposal and neither of your documents is
+        written to.
+      failure: loud
+      probe: P10
+  workarounds:
+    - instead_of: "a preflight recomputes each document's content fingerprint and compares it against the record an earlier review wrote, stopping hard on any mismatch"
+      cowork: "both documents are read in the one session, so there is no earlier record to go stale — and the skill says in the delivery which files it read, by name, because it cannot tell which version they are"
+    - instead_of: "a normalisation program in the neighbouring skill's own folder rewrites both documents' defined terms into placeholder variables"
+      cowork: "the defined-term reading method is applied to both documents inside this session, with each document's clause count and term count stated so the ground under the mapping is visible"
+    - instead_of: "mapping work is split into packets and dispatched to several reviewers at once"
+      cowork: "the queue is worked one concept at a time in a single session, and the result is never described as independently reviewed"
+    - instead_of: "a program applies the escalation rule to every mapping decision as the sole authority on what reaches the lawyer"
+      cowork: "the escalation rule is written into the body as a fixed rule, and every escalation is phrased as one concrete sentence naming what the lawyer has to decide"
+    - instead_of: "the redline is generated as an HTML artifact by the packaged engine"
+      cowork: "the conformed clause goes out as a Word document through the built-in Word skill, with tracked changes asked for and what was actually produced stated either way, plus the clean text written out in the reply"
+    - instead_of: "the temporary run workspace is deleted on handoff and only the run record and redline persist"
+      cowork: "the mapping table and the clause stay in the session's Output folder and are named in the delivery, because nothing here can delete a file"
+
+triggers:
+  positive:
+    - "Take the indemnity from this precedent and make it fit our agreement's defined terms."
+    - "Does our SPA have an equivalent of the precedent's Permitted Encumbrances, or is that a different animal?"
+    - "Conform this clause to the vocabulary of the draft I'm working on."
+    - "Check this draft for language that came straight out of the precedent and was never adapted."
+  negative:
+    - "Review this agreement against our playbook and tell me what's off-market. -> playbook-review"
+    - "Which defined terms in this agreement are used but never defined? -> definition-check"
+    - "What changed between their draft and ours? -> read-redline"
+    - "Build me a playbook from these three signed deals. -> playbook-builder"

@@ -2,7 +2,7 @@
 
 The wiki lives in a folder the lawyer owns and names, in their own file store —
 not inside this skill. Nothing here is executed: every note, index, log entry and
-receipt is Markdown you read and write yourself, with no hidden machine state, no
+status line is Markdown you read and write yourself, with no hidden machine state, no
 lock and no automatic history behind them.
 
 Read [the wiki layout contract](references/wiki_schema.md), and

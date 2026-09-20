@@ -11,7 +11,7 @@ different package name:
 - `coherence-report.md` — the cross-issue checks and any unresolved conflict.
 
 `playbook.md` is canonical; the two reports are the working record behind it.
-Do not generate HTML. Do not claim a hash, a receipt or a registry entry: there
+Do not generate HTML. Do not claim a hash or a registry entry: there
 is none, and the playbook is found by its file name in the folder the lawyer
 chose. Tell the lawyer that name and that folder when you finish, and tell them
 it is what to point a review at.

@@ -15,7 +15,7 @@ marked "to be checked" in the map, and late-arriving attacks join
 Transmission 2 rather than delaying Transmission 1. Target: in the
 lawyer's hands inside two minutes on most bundles. The map states what has
 been read so far ("Read so far: D1, D2, C4") — that line is required, and the
-receipt discloses it. In plain English it
+record discloses it. In plain English it
 states: each
 position under test and what it claims, part by part; the strongest route
 through the documents in two or three quoted, anchored lines; and the
@@ -42,7 +42,7 @@ Transmission 2 with a one-sentence map update, record it in the companion
 (`checkpoint.map_changed_after_full_read` true, with `change_note`), and
 in an interactive run let the lawyer object before the first adjudication
 is posted. Record which documents had been read when the map was posted
-in `checkpoint.map_read`; the receipt states it. In an interactive run, an unanswered checkpoint is not consent: finish safe
+in `checkpoint.map_read`; the record states it. In an interactive run, an unanswered checkpoint is not consent: finish safe
 reading, record `checkpoint.status: unanswered`, then return control and wait
 for the lawyer. Do not start adjudication, invent a reply, or switch to batch
 mode because time has passed. Record `confirmed` after an unqualified go or

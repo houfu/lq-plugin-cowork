@@ -2,7 +2,7 @@
 
 One Markdown file is the playbook. Both skills read and write this shape: the
 builder produces it, the review applies it. Nothing else is canonical, and there
-is no database, registry or receipt file behind it.
+is no database, registry or side file behind it.
 
 ## The file
 

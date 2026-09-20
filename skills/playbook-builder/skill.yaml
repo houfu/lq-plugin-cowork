@@ -211,6 +211,14 @@ replace:
       `lqplaybook.md` yourself: offer a preference this run turns up as one exact
       line the lawyer can paste into their own file.
   expect: 1
+- from: |-
+    - The package validates and the build receipt matches the exact source and
+      playbook hashes.
+  to: |-
+    - Every operative position was checked by reading it against the exact quote
+      in its source, and any mismatch was corrected before this was shown to the
+      lawyer.
+  expect: 1
 notes: |
   Dropped the deterministic builder, its runtime module and the JSON schema. The
   engine's artifact contract is replaced by references/playbook-format.md, a
@@ -224,6 +232,43 @@ notes: |
   becomes a read-through check the model performs and reports; the playbook is
   found by file name in the folder the lawyer chose. Curation, lens, coherence
   and gate logic are unchanged.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original built your playbook with a local tool that hashed every
+    source and the finished playbook, sealed the package with a value tying it
+    to those exact bytes, and registered it automatically so a review could
+    find it. None of that runs here. The model reads and writes the playbook
+    itself: there is no hash and no automatic registration, so instead every
+    operative position and every piece of approved wording simply cites the
+    source document and clause it came from, which you can check yourself by
+    reading it. You find the finished playbook again by its file name, in the
+    folder you chose, rather than through a registry. Importing a playbook you
+    already keep as a table works the same way: the model reads the table
+    itself and shows you the column mapping it used before going any further,
+    instead of a script inferring it.
+  known_issues:
+    - id: KI-playbook-builder-1
+      title: "File identity is by name and content, not a hash"
+      detail: >-
+        There is no cryptographic value tying the finished playbook to the
+        exact bytes of its sources, because the hashing and the reading that
+        would have produced one are both done by the model rather than a
+        script. A mismatch between what the playbook cites and what a source
+        actually says would not announce itself. The mitigation is built
+        into the playbook itself: every operative position and every
+        approved wording item cites its source document and clause, so you
+        can check it directly against the source rather than trusting a
+        computed match.
+      failure: silent
+  workarounds:
+    - instead_of: "a script hashes and indexes every source, then seals the package with a value tying it to those exact bytes and registers it automatically for a later review to discover"
+      cowork: "the model reads and writes the sources itself, reports the read-through check it performed, and the finished playbook is found again by its file name in the folder you chose"
+    - instead_of: "a script parses an existing playbook table and maps its column headers by alias"
+      cowork: "the model reads the table itself and shows you the column mapping it used before going any further, stopping to ask if a column has no home"
+
 triggers:
   positive:
   - Build a contract playbook from our standard MSA and these two negotiated agreements.

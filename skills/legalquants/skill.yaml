@@ -1,0 +1,156 @@
+name: legalquants
+upstream: companion/legalquants
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Picks up a lawyer's own progress with AI and offers the single next move
+  that makes sense now, worked out from what they say in this conversation and
+  from a note or preferences file they bring — never a menu, never a test, and
+  never the legal work itself. It keeps nothing between conversations and says
+  so. Use when the user asks "where am I with all this and what should I do
+  next", "what should I try next", "pick up where I left off", "I've done a
+  few of these now, what's next", or "I'm new to this, where would you start
+  me". Do not use for choosing the skill for the work in front of them, or for
+  the map of everything here (use the lq-start skill); do not use for a
+  structured reading of how they work with AI (use the lq-mirror skill); and
+  do not use for turning that record into a CV or a profile draft (use the
+  lq-apply skill).
+
+exclude:
+  - "scripts/**"
+  - "references/endings.md"
+
+replace:
+  - from: "# legalquants — where you are, and the one next step"
+    to: "# Where you are, and the one next step"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      You are the companion's conductor. You do not do the work of any other skill;
+      you know where the lawyer is in their journey and you offer the one or two
+      moves that advance it. Choosing is the whole job. A lawyer who gets a menu
+      gets nothing.
+    to: |-
+      You are the companion's conductor. You do not do the work of any other skill;
+      you work out where the lawyer is from what they tell you and what they bring,
+      and you offer the one or two moves that advance things. Choosing is the whole
+      job. A lawyer who gets a menu gets nothing.
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## 1. Read where they are — quietly, locally"
+    file: sections/read.md
+  - match: "## 2. First run ever — the cold open"
+    file: sections/first-time.md
+  - match: "## 3. Returning — name where they are, offer one move"
+    file: sections/picking-up.md
+  - match: "## 4. Transitions — noticed, celebrated, consented"
+    file: sections/changes.md
+  - match: "## Rules"
+    file: sections/rules.md
+
+notes: |
+  Five of the body's seven blocks are section overlays; a full-file overlay was
+  not needed, because the skeleton survives the re-scope and heading anchors are
+  worth more on a bump than one whole-file diff. The opening and the journey
+  section are kept as upstream wrote them. Section 1 replaced three script calls
+  — a first-run marker, a private profile file and a counter query through a
+  sibling skill's store — with the three things this host has: what the lawyer
+  said, the confirmed legalquants entries of an lqplaybook.md they attached or
+  placed in the Input folder, and a dated note from an earlier session that they
+  bring. Where a lawyer says the note is already in their Cowork folder, the body
+  asks for its name, looks, and reports in one line whether it was found, which
+  neither depends on cross-session read-back nor denies it; and a new rule makes
+  the skill state what it was working from, including what it did not find,
+  before it says where they are. Section 2 loses the marker entirely: the
+  introduction is offered when the lawyer sounds new, once per conversation,
+  never gates the task, and can be repeated on request because there is nothing
+  to unset. The live installed-plugin catalogue is gone and cannot be replaced:
+  the body offers from the map the lq-start skill keeps and says once that a
+  skill answers only if its bundle is available in this tenant and that the
+  administrator decides that, which is both what the host allows and what the
+  contract requires. Section 4's writes-through-the-store become one exact line
+  handed to the lawyer for their own file. The Residency link and its pitch go,
+  replaced by a single declinable line that such programmes exist and that this
+  cannot take them to one. references/endings.md is excluded: it is a table of
+  doors, and every door in it was an external site. Closing sign-off replaced
+  with the vendor-neutral line. The register, the stage model, the one-move rule
+  and the never-state-a-level rule are untouched.
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original read the lawyer quietly off their own machine. Before it said a
+    word it checked a first-run marker, opened a private profile file and asked a
+    companion's store how many reviews they had run and how much they had kept,
+    then listed what was actually installed and offered only from that. None of
+    those four things exists here, so the promise changes: this version works out
+    where they are from what they say in the conversation and from whatever they
+    choose to bring — a dated note from a previous session, a preferences file —
+    and it says which of those it actually had before it says anything about
+    them. If they have brought nothing, it asks one question instead of guessing.
+    It saves nothing at all: where something is worth carrying into next time it
+    hands them one exact line for their own file rather than writing anywhere. It
+    still offers one move and never a menu, but it names skills from a fixed map
+    and says plainly that it cannot see which ones this organisation has
+    installed. The door to a residential programme is gone, along with its
+    address; if asked, it says once that such things exist, that this is not one,
+    and that it cannot take them there. A lawyer who has not seen the original
+    will notice only that it asks them a question the first time.
+  known_issues:
+    - id: KI-legalquants-1
+      title: "Reading on from a record it never found"
+      detail: >-
+        When the lawyer believes their note from last time is already where the
+        skill can see it, and it is not, the skill has nothing to pick up from —
+        and a warm, confident "you're a few weeks in" reads exactly the same
+        whether it rests on a note or on nothing. Nothing published settles
+        whether a file left in the Cowork folder in an earlier session can be
+        read back without being attached, so the skill neither assumes it nor
+        denies it: it asks for the file by name, says in one line whether it
+        found it, and states what it was working from before it says where they
+        are. If that opening clause does not name the note you expected, attach
+        it and ask again.
+      failure: silent
+      probe: P2
+    - id: KI-legalquants-2
+      title: "A next step through a skill this organisation does not have"
+      detail: >-
+        The skill offers from a map that ships inside it, because nothing here
+        lets a skill see which plugins an administrator has actually installed,
+        and a map can drift from a tenant. The consequence is a lawyer being
+        pointed at a skill that will not answer. The body says once, plainly,
+        that a skill responds only if its bundle is available here and that the
+        Microsoft 365 administrator decides that, and it never claims to know
+        what is installed. If a suggested skill does not respond, that is what
+        happened; the conversation's own Sources picker shows what is really
+        available.
+      failure: silent
+  workarounds:
+    - instead_of: "a bundled script decides, once ever, whether the introduction runs"
+      cowork: "the introduction is offered when the lawyer sounds new, once per conversation, never gating the task, and repeatable on request"
+    - instead_of: "a private profile file on the lawyer's machine supplies their practice sentence and how far along they are"
+      cowork: "the confirmed legalquants entries of a preferences file they attach or place in the Input folder, and otherwise one question"
+    - instead_of: "a sibling skill's store reports how many reviews have run, how much has been kept and what is in play"
+      cowork: "a dated note from an earlier session that the lawyer brings, and the skill names it, or names what it looked for and did not find"
+    - instead_of: "a catalogue script enumerates every installed plugin and bounds what may be offered"
+      cowork: "the fixed map the lq-start skill keeps, plus one neutral sentence that availability is the administrator's to decide"
+    - instead_of: "changes to the lawyer's profile are written through the store on an explicit yes"
+      cowork: "nothing is written at all; a preference worth keeping is handed over as one exact line for their own file"
+    - instead_of: "the ending points at a residential programme at its web address"
+      cowork: "one declinable line that programmes of that kind exist, that this is not one, and that it cannot take them there"
+
+triggers:
+  positive:
+    - "Where am I with all this? What should I do next?"
+    - "I've run a few of these sessions now — what's the next thing worth trying?"
+    - "I'm new to all of this. What is it, and where would you start me?"
+    - "Pick up where we left off — here's the note from last time."
+  negative:
+    - "Which of these skills should I use for a contract markup? -> lq-start"
+    - "Assess me — where do I stand with AI compared to other lawyers? -> lq-mirror"
+    - "Draft me a CV for the AI side of my practice. -> lq-apply"
+    - "Has anyone written about doing disclosure review with AI? -> lq-ask"

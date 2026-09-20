@@ -267,6 +267,11 @@ replace:
 - from: 3. Read [references/component-grammar.md](references/component-grammar.md), the sole UI contract. Inspect relevant packaged examples and supported components, then refine the plan without copying example matter.
   to: 3. Read [references/component-grammar.md](references/component-grammar.md), the sole UI contract, and [references/diagram-selection.md](references/diagram-selection.md) before choosing any figure. Inspect relevant packaged examples and the supported components in [references/components.md](references/components.md), then refine the plan without copying example matter.
   expect: 1
+- from: A proven composition is welcome; novelty is not a requirement.
+  to: A familiar, well-established composition is welcome; novelty is not a requirement.
+  files:
+  - references/design.md
+  expect: 1
 notes: |
   Dropped the two builders, the JSON schemas, the blank template assets (which
   duplicate the six packaged examples) and the cite-check handoff adapter, whose
@@ -281,6 +286,66 @@ notes: |
   device checks it cannot run rather than passing over them. The design
   authority, component grammar, method, copy and the six example pages are
   untouched.
+
+cowork:
+  tier: 1
+  status: shipped
+  differs: |
+    The original built your one-pager or slide brief with a set of local build
+    and validation tools, and could reach into a source PDF or webpage to
+    capture and crop an image you could drop straight into the page as an
+    authentic picture of that source. Neither exists here: the model writes
+    the specification and the finished page itself, in the same order those
+    tools used to enforce, and checks its own work against the same design
+    rules by reading them rather than running a validator — and the preview
+    pane you see is the real, finished file, not a rendering of one. There is
+    no capture tool, so a picture of a source passage appears only where you
+    supply one yourself; otherwise the page shows the source's exact words,
+    quoted, with a plain note that no image is available. Several of the
+    quality checks need an actual browser at more than one window size, with a
+    pointer and a keyboard, and the skill has none: it does every check it can
+    from the file and the preview, and names the rest as not done rather than
+    passing over them.
+  known_issues:
+    - id: KI-legaldesign-1
+      title: "An authentic source image exists only where you supply one"
+      detail: >-
+        There is no tool here that can reach into a source PDF or webpage
+        and capture a picture of a passage for you. If you want the finished
+        page to carry a genuine image of a source, supply the clip yourself;
+        otherwise the page falls back to the source's exact wording, quoted,
+        with a plain note that no image is available. A quotation is never
+        typeset to look like a picture of the source.
+      failure: loud
+    - id: KI-legaldesign-2
+      title: "Browser and device checks are named as undone, not passed"
+      detail: >-
+        Several of the quality checks need a real browser at more than one
+        window size, with a pointer and a keyboard, to confirm the page
+        actually works, and the skill has none of those. It performs every
+        check it can by reading the file and looking at the preview pane,
+        and lists the rest as outstanding, by name, in the handoff. Before
+        you send the page anywhere that matters, open it yourself and check
+        the interactions and the layout at the sizes you care about.
+      failure: loud
+    - id: KI-legaldesign-3
+      title: "Whether a packaged template actually shaped the output is unverified"
+      detail: >-
+        Nothing checks that the finished page truly follows the structure of
+        the packaged template or component the skill says it used, so a page
+        that looks plausible but does not really follow that structure would
+        read as correct. If matching a particular template matters to you,
+        compare the delivered page against the named example yourself.
+      failure: silent
+      probe: P7
+  workarounds:
+    - instead_of: "two local build tools scaffold, compose and validate the page's specification against a JSON schema"
+      cowork: "the model writes the specification and the single self-contained HTML file itself, in the same ordered steps, and checks the result against the same field contract and component registry by reading them"
+    - instead_of: "a capture tool crops a rendering of the source PDF or webpage into an image for the page"
+      cowork: "a picture of a source passage appears only where you supply one; otherwise the page shows the source's exact wording, quoted, with an honest note that no image is available"
+    - instead_of: "an adapter maps another skill's verification report into the page's evidence fields"
+      cowork: "where you supply an upstream verification report, its own labels, statuses and coverage limits are carried through unchanged rather than recomputed"
+
 triggers:
   positive:
   - Turn this advice into a one-page explainer I can send the client.

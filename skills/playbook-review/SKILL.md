@@ -294,6 +294,6 @@ keep the old one.
 - Every missing incorporated document, precedence or governing-law clash and
   irregular provision is in the structural warnings, not only in chat.
 - All three coverage counts reconcile, or the limitations are prominent.
-- Nothing was applied to the source document, and no hash, receipt or automatic
+- Nothing was applied to the source document, and no hash or automatic
   validation was claimed. What stands behind this review is the reading, the
   quotations and the counts.

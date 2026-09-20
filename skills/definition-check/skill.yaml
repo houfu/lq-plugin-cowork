@@ -1,0 +1,182 @@
+name: definition-check
+upstream: transactional/definition-check
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Reviews the defined terms in a contract and reports what is wrong with them:
+  terms used but never defined, defined but never used, defined twice with
+  different meanings, used before they are defined, spelled inconsistently, or
+  pointing at a schedule that is not there. Returns a review page for the
+  preview pane and an Excel register listing every clause read and every term
+  found, with its definition, its uses and their locations, so the count can
+  be checked. Use when the user asks to "check the defined terms in this
+  agreement", "is anything used but not defined in here", "find the definition
+  problems before this goes out", "are any of these definitions circular or
+  duplicated", or "give me a list of every defined term and where it is used".
+  Do not use for measuring a draft against approved positions or a playbook
+  (use the playbook-review skill), for adapting a precedent clause into this
+  document's vocabulary (use the conform skill), or for reading a
+  counterparty's markup (use the read-redline skill).
+
+exclude:
+  - "scripts/**"
+  - "references/*.json"
+  - "references/agentic-review-protocol.md"
+  - "references/capability-routing.md"
+  - "references/ledger-contract.md"
+  - "references/openai-codex-runtime.md"
+  - "references/stage-runner.md"
+  - "references/stage-telemetry.md"
+  - "references/prompts/dispatch.md"
+
+files: files
+
+replace:
+  - from: "# Deterministic Rule Catalog"
+    to: "# The findings this review reports"
+    files: ["references/rule-catalog.md"]
+    expect: 1
+  - from: "| Rule ID | Finding | Initial implementation |"
+    to: "| Rule ID | Finding | What it takes to report it |"
+    files: ["references/rule-catalog.md"]
+    expect: 1
+  - from: " `possible_inherited_definition` preserves a source-backed outside-document qualifier without treating the term as defined. |"
+    to: " Where the document says its meaning comes from a named outside agreement, record that outside document and the wording that says so, and keep the term undefined here. |"
+    files: ["references/rule-catalog.md"]
+    expect: 1
+  - from: "| `DEF-006` | Unresolved definition reference | A complete scoped reference review determines that a definition delegates meaning to an intended internal target that cannot be resolved in the supplied scope. |"
+    to: "| `DEF-006` | Unresolved definition reference | Every one of the document's definition pointers has been checked, and one of them sends the reader to a target meant to be inside this document that this document does not contain. |"
+    files: ["references/rule-catalog.md"]
+    expect: 1
+  - from: |
+      - Compute canonical facts once; do not emit duplicate findings for the same fact.
+      - Findings are deterministic observations, not legal conclusions.
+      - Stable IDs include rule ID, source identity, normalized term, and primary evidence location.
+      - Common-term and entity-name suppression must be configurable and visible.
+      - Unsupported structures cause coverage limitations, not passes.
+      - DEF-006 is not emitted by raw deterministic rule execution. It is emitted only for a `broken` reference adjudication after exact queue reconciliation. `resolved` and `out_of_scope` produce no finding; external and omitted companion references must be `out_of_scope`.
+      - An incomplete reference queue fails closed: no DEF-006 conclusion and no lawyer-facing dashboard.
+    to: |
+      - Work each fact out once; do not report the same fact twice under two rules.
+      - Findings are observations, not legal conclusions. Every one of them carries the term as the document spells it, the unit it sits in, and the wording quoted exactly.
+      - A term you deliberately left out — an everyday word, the name of a party — is left out visibly: say which and why, rather than dropping it quietly.
+      - A unit you could not read produces a stated limit, not a pass.
+      - DEF-006 is reported only after every pointer in the document has been checked. A pointer that resolves, and a pointer to a named outside document that was not supplied, produce no DEF-006 finding; the second is DEF-007.
+      - If the pointers could not all be checked, DEF-006 is not reported at all and the review page says which were left unchecked.
+    files: ["references/rule-catalog.md"]
+    expect: 1
+
+notes: |
+  Full-file overlay. Two of the upstream body's three paths go: the
+  deterministic checker that parsed the document's XML and the
+  worker fan-out that dispatched review packets to a vendor runtime, along
+  with the workspace discipline, the matter-snapshot and ledger machinery, the
+  telemetry and the two vendor waivers. Dropped scripts/ (41 files), the 11
+  JSON contracts under references/, and the six references that describe a
+  runtime this environment does not have (capability routing, the agentic
+  review protocol, the vendor runtime profile, the ledger contract, the stage
+  runner and stage telemetry), plus references/prompts/dispatch.md, which is
+  packet plumbing with nothing in it for a lawyer. That leaves five
+  companions: rule-catalog.md, edited in place, and the four remaining prompts
+  rewritten as review checklists that keep the classification boundary, the
+  occurrence rules and the reference rules whole while dropping the response
+  shapes they were written to fill. The body is rebuilt around the skill's own
+  documented instruction-only mode as the only mode, with two additions the
+  design requires: the document's own units are listed and counted before any
+  term work, so the lawyer can hold that list against the contract's table of
+  contents, and the coverage claim the checker's audit used to enforce is
+  replaced by an Excel definitions register through the Excel skill, one row
+  per term with its definition, mentions found and locators, plus a unit sheet.
+  The HTML review page keeps upstream's rule that it is written only when the
+  review is complete, and gains a mandatory first line saying the counts were
+  made by reading. "Never translate a missing parser into no issues found"
+  survives as a standing rule in the house form: a clean result is always "no
+  issues found in the N clauses I read".
+
+cowork:
+  tier: 2
+  status: shipped
+  differs: |
+    The original had three ways of working and this adaptation has one. Its
+    first way was a program that took the Word file apart and enumerated every
+    defined term and every place each one appeared; its second sent batches of
+    the document out to a fleet of reviewers working at the same time; its
+    third, which it described as the mode for a host with none of that, was to
+    read the document and review it in conversation. Only the third exists
+    here, and it is now the whole skill. The practical difference is the
+    difference between a count and a reading. The original could say that it
+    had looked at every occurrence of a term because something had mechanically
+    scanned for them; this version has read the document carefully, clause by
+    clause, and a use it did not notice is not in the report. Two things are
+    built in to keep that honest. Before any term work it lists the document's
+    own clauses, schedules and annexes and tells you how many there are, so you
+    can hold that list against the contract's own table of contents in a few
+    seconds and see whether anything was skipped. And every term it found comes
+    back in an Excel register with its definition, the number of uses it
+    counted and where each one is, so you can sort by "never used" and check
+    any row against Word's own Find. The legal review itself is unchanged: the
+    same tests, the same seven findings, the same rule that an unreviewed
+    candidate is never shown as a defined term.
+  known_issues:
+    - id: KI-definition-check-1
+      title: "A use the review did not notice does not appear"
+      detail: >-
+        The defining characteristic of this adaptation. Where the original had
+        a program rescan the document for every accepted term and refuse to
+        produce the review page if a use was unaccounted for, this version
+        finds the uses by reading. An overlooked use produces a review that
+        looks clean, which is the failure that looks most like success. Three
+        things are there to catch it: the unit list, which you can hold against
+        the contract's table of contents; the register, which you can sort by
+        mentions found and spot-check with Word's Find; and the line on the
+        review page saying the counts were made by reading. A term that matters
+        to the deal is worth confirming in the document yourself.
+      failure: silent
+    - id: KI-definition-check-2
+      title: "The register's arithmetic is written, not computed"
+      detail: >-
+        The counts in the Excel register are counts the skill made and wrote
+        down. Whether a workbook keeps a live count formula when it is handed
+        back and forth is not established, so a count may arrive as a number
+        rather than as a formula that recalculates. Where you bring the
+        register back for a second pass, the skill states how many rows it read
+        and how many it wrote; compare those two numbers, because a row lost in
+        the round trip is otherwise invisible.
+      failure: silent
+      probe: P9
+    - id: KI-definition-check-3
+      title: "No second reader"
+      detail: >-
+        The original could send the same document to several reviewers working
+        independently and reconcile what came back. Here the review happens in
+        one session, one pass after another, so there is no independent second
+        opinion and the skill is forbidden to describe the result as
+        independently reviewed. Where a definition is load-bearing for the
+        deal, a human second read is the substitute.
+      failure: loud
+  workarounds:
+    - instead_of: "a bundled program parses the Word file and enumerates every defined term and every occurrence"
+      cowork: "the document is read clause by clause, and the classification rules the program's reviewers worked to are shipped as checklists the reading follows"
+    - instead_of: "an internal coverage audit rescans every accepted term and blocks the review page when a use is unaccounted for"
+      cowork: "an Excel definitions register lists every term with its definition, the uses found and their locations, so the count is visible and any row can be checked in the document in seconds"
+    - instead_of: "a machine-readable index states the document's structure"
+      cowork: "the document's own clauses, schedules and annexes are listed and counted first, and the lawyer holds that list against the contract's table of contents"
+    - instead_of: "review packets are dispatched to several workers running at once"
+      cowork: "the units are worked through one at a time in a single session, and the result is never described as independently reviewed"
+    - instead_of: "a normalisation program rewrites both documents into placeholder variables for the conform skill"
+      cowork: "the register's term rows and their quoted definitions are handed over as they stand, and same-name terms across two documents are flagged for the lawyer rather than merged"
+    - instead_of: "the temporary workspace is deleted once the review has been handed off"
+      cowork: "the register and the review page stay in the session's Output folder and are named in the delivery, because nothing here can delete a file"
+
+triggers:
+  positive:
+    - "Check the defined terms in this share purchase agreement before it goes out tonight."
+    - "Is anything in this contract used as a defined term but never actually defined?"
+    - "Give me every defined term in this agreement with where it's defined and where it's used."
+    - "Something's off with the definitions in this draft — are any of them defined twice?"
+  negative:
+    - "Review this agreement against our playbook and tell me what's off-market. -> playbook-review"
+    - "Make this indemnity from the precedent fit this agreement's defined terms. -> conform"
+    - "What changed between their version and ours? -> read-redline"
+    - "Build a spreadsheet of the closing deliverables from this checklist. -> closing-checklist"

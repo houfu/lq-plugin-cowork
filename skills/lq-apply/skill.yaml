@@ -1,0 +1,191 @@
+name: lq-apply
+upstream: companion/lq-apply
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Writes up what a lawyer has actually done with AI, as a one-page legal-AI CV
+  or a professional profile draft, from a record they bring or from the
+  conversation itself. It shows an inventory of what it read before it drafts
+  anything, keeps what they said apart from what the evidence shows, and lists
+  the gaps in plain words instead of filling them. It is not connected to any
+  application, assessment, profile or directory, and it sends nothing anywhere.
+  Use when the user asks to "help me write up what I've done with AI", "build
+  my AI CV", "draft my professional profile", "what can I actually show for
+  this", or "update my CV with the AI work". Do not use for drafting legal
+  documents, letters, pleadings or advice of any kind: this only writes up the
+  lawyer's own record of working with AI. Do not use for a reading of how they
+  work with AI (use the lq-mirror skill), or for choosing a skill for a piece
+  of work (use the lq-start skill).
+
+exclude:
+  - "scripts/**"
+  - "references/formats.md"
+
+files: files
+
+replace:
+  - from: "# lq-apply — I can show the world"
+    to: "# Writing up what you have actually done with AI"
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      The deploy stage. Evidence the lawyer has been quietly accumulating — kept
+      moments, graduated lessons, a practice described, and now also the projects
+      they point you at — becomes something sendable: the real LQ application, a CV,
+      or a public-profile draft, with an honest account of where the evidence runs
+      out.
+    to: |-
+      Evidence the lawyer has been quietly accumulating — moments they kept, the
+      frictions they worked their way out of, a practice described, and the
+      projects they bring you — becomes a one-page legal-AI CV or a professional
+      profile draft, with an honest account of where the evidence runs out. It
+      goes nowhere: it is a draft they own.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      3. **Where it goes.** Local file, saved where they say. Keep private evidence
+         notes in a separate evidence-notes file, never inside copy meant to be
+         pasted publicly. This skill never publishes, never submits, never
+         transmits. The application goes through https://assess.legalquants.com
+         when *they* are ready — one line, no pressure.
+    to: |-
+      3. **Where it goes.** A named file in the Output folder — say the name — or
+         a Word document through the Word skill when they ask for one. Keep the
+         private evidence notes in a second, separately named file, never inside
+         copy meant to be pasted publicly. Both stay in the Output folder;
+         nothing here removes a file. This skill never publishes, never submits
+         and never sends, and there is no destination it could send to.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: |-
+      - Reads only the sources they chose; no writes to `~/.lq` except the store
+        contract's `save` door when they ask to be remembered — verbatim show,
+        explicit yes.
+    to: |-
+      - Reads only the sources they chose, and writes nothing but the draft and
+        its evidence notes. A preference worth keeping is offered as one exact
+        line for their own file, never written on their behalf.
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- Local output only. Nothing leaves the machine."
+    to: "- The output is a draft in their own Output folder. Nothing is sent anywhere."
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## First run? One marker, once ever"
+    delete: true
+  - match: "## 1. Sources — lightest first, always their choice"
+    file: sections/sources.md
+  - match: "## 5. Choose the format"
+    file: sections/format.md
+  - match: "## The ending — the website door"
+    file: sections/ending.md
+
+notes: |
+  Dropped the cold-open call to a companion skill's onboarding script and the
+  once-ever marker; the introduction and the consent for it are a line in the
+  conversation each session. Section 1 is rewritten: upstream read a private
+  store through a sibling skill's script, and the replacement reads what the
+  lawyer attaches — a dated note, a project write-up, an existing CV — plus the
+  confirmed lq-apply entries of an lqplaybook.md they supply, and asks for files
+  rather than a folder, because pointing a task at a folder as a unit is not a
+  documented move. The skill writes nothing but the draft. Where a lawyer says
+  their record is already in the Cowork folder, the body asks for its name,
+  looks, and reports in one line whether it was found, which neither depends on
+  cross-session read-back nor denies it. Upstream's empty-store branch is
+  promoted to a normal mode. The public handle stays reported and unverified and
+  is never opened, described or fetched. The application format goes with its
+  destination: both site URLs are removed, and so is the fetch of the live form
+  wording; what remains is the CV and the profile, said in the description and
+  in the body's first line so the changed promise is visible before the draft
+  rather than after. references/formats.md is replaced rather than patched, for
+  the same reason and because dropping one of three formats renumbers the rest;
+  it keeps upstream's CV and profile shapes and re-roots their vocabulary in the
+  evidence the lawyer brings instead of a journey store. Output goes to a named
+  file in the Output folder, or to a Word document through the Word skill, with
+  the evidence notes in a second file, and nothing is described as cleaned up.
+  The inventory step, the honest-attribution step, the declared-against-inferred
+  step, the gap-marker rule, the "gaps are asked, never filled" rule and the
+  no-verdict-language rule are kept word for word: they are the reason to ship
+  this at all. Closing sign-off replaced with the vendor-neutral line.
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original existed to produce something the lawyer would send. It read a
+    private record kept on their own machine, drafted the answers to a named
+    application form whose current wording it fetched from a website, and ended
+    by pointing at that application and at a public profile page. None of that
+    is reachable from here, and a shipped skill may not carry a link to a
+    sign-up or an assessment, so the destination is gone. What is left is the CV
+    and the professional profile draft, and the skill says in its first line
+    that it connects to no application, assessment or profile anywhere. The
+    evidence now comes from what the lawyer attaches — a dated note, a project
+    write-up, an existing CV, a preferences file — or, when they have kept
+    nothing, from the conversation itself, which upstream already treated as a
+    normal way to work rather than a fallback. The discipline is untouched, and
+    it is the point: an inventory of what was actually read before anything is
+    drafted, what they claimed kept separate from what the evidence shows,
+    attribution split between built, co-built, forked, tested and deployed, and
+    gaps listed rather than filled, however they ask. The draft lands as a named
+    file in the Output folder with the private evidence notes in a second file,
+    and nothing is submitted, published or sent.
+  known_issues:
+    - id: KI-lq-apply-1
+      title: "A thin draft that reads like a complete one"
+      detail: >-
+        The draft is only as good as what the lawyer put in front of it, and a
+        record they meant to supply but did not looks, in the finished CV, like
+        a record that had nothing in it. Nothing published settles whether a
+        file placed in the Cowork folder in an earlier session can be read back
+        without being attached, so the skill does not assume either way: it asks
+        for the file by name, says in one line whether it found it, names every
+        file it actually read, and shows the inventory of what it read and what
+        remains uncovered before it writes a word. Read that inventory before
+        the draft. If a file you expected is not in it, attach it and run again.
+      failure: silent
+      probe: P2
+    - id: KI-lq-apply-2
+      title: "A public handle described but never opened"
+      detail: >-
+        When the lawyer names a code host, a portfolio or a newsletter, the
+        skill has no way to open it and confirm what is there. The rule is that
+        a handle is reported, never verified, labelled as reported wherever it
+        appears, and never described — but a model asked about a well-known
+        profile can produce a fluent account of one it has not read. Nothing in
+        the draft should describe the contents of a page: if a line does, treat
+        it as unverified and cut it or confirm it yourself.
+      failure: silent
+      probe: P12
+  workarounds:
+    - instead_of: "a bundled script gates the first-run introduction on a once-ever marker"
+      cowork: "the introduction and the consent for it are one line in the conversation, each session"
+    - instead_of: "a sibling skill's script reads a saved profile and journey file off the lawyer's own machine"
+      cowork: "the lawyer attaches the record they keep, and the confirmed entries of a preferences file they supply are read but never written"
+    - instead_of: "the skill is pointed at a project or CV folder and reads it as a unit"
+      cowork: "the lawyer attaches the files one at a time and the skill names every file it actually read"
+    - instead_of: "an empty or missing store is repaired by creating one and saving to it"
+      cowork: "compiling from the conversation alone is promoted to a normal mode, and the skill saves nothing on the lawyer's behalf"
+    - instead_of: "the live application form's current field wording is fetched before drafting"
+      cowork: "there is no application format; questions the lawyer pastes or attaches are drafted against in their own words and the draft is called provisional"
+    - instead_of: "a confirmed public handle is used to fill out the picture"
+      cowork: "a handle is taken as reported, labelled as reported, and nothing on it is described"
+    - instead_of: "the draft is saved to a local file wherever the lawyer says"
+      cowork: "a named file in the Output folder, or a Word document through the Word skill, with the private evidence notes in a second named file"
+    - instead_of: "the ending points at the application and at the public profile page"
+      cowork: "the ending says what was written, where it is, that nothing was sent, and that there is nowhere for it to be sent"
+
+triggers:
+  positive:
+    - "Help me write up what I've actually done with AI this year — I've got notes from a few reviews."
+    - "Draft me a one-page CV for the AI side of my practice."
+    - "I need a profile blurb about how I work with AI. Here's the list of things I've built."
+    - "What can I actually show for the AI work I've been doing? Be honest about the gaps."
+  negative:
+    - "Draft our response to their summary judgment motion. -> writing"
+    - "Where do I stand with AI compared to other lawyers? -> lq-mirror"
+    - "Which of these skills should I use for a contract markup? -> lq-start"
+    - "Write up my time entries for the work I did on this matter. -> timenarratives"

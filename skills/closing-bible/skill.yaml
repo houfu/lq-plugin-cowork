@@ -1,0 +1,232 @@
+name: closing-bible
+upstream: transactional/closing-bible
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Reads a signed closing folder and hands back three things: an index the lawyer
+  confirms, an exceptions list, and an Excel status register with one row per
+  expected item, its status, the version selected as final, the qualification on
+  anything not ready, and a count row they can re-add themselves. It is a
+  reading of the documents supplied, not a balanced audit, and it never says a
+  closing set is whole. Use when the user asks to "index this closing folder",
+  "what is missing from the completion bible", "which version of each document
+  is final", "reconcile the closing set against our checklist", or "list the
+  exceptions before we bind the bible". Do not use for preparing or chasing
+  signature pages (use the sigpack skill), for what still has to happen before
+  completion (use the closing-checklist skill), or for a data room that has not
+  closed (use the diligence skill). It does not assemble a combined bible PDF,
+  does not fingerprint documents, and never decides that completion has
+  occurred.
+
+frontmatter:
+  compatibility: null
+  metadata: null
+
+exclude:
+  - "scripts/**"
+  - "schemas/**"
+  - "references/*.schema.json"
+  - "references/assembly-rules.md"
+  - "references/sigpack-ledger-consumption.md"
+
+files: files
+
+sections:
+  - match: "## Speak to the lawyer, not the process"
+    file: sections/speak-to-the-lawyer.md
+  - match: "## When to use"
+    file: sections/when-to-use.md
+  - match: "## Modes"
+    file: sections/one-workflow.md
+  - match: "## Routing"
+    file: sections/routing.md
+  - match: "## Before you start"
+    file: sections/before-you-start.md
+  - match: "## Workflow — audit"
+    file: sections/workflow.md
+  - match: "## Gate 1 — closing-set approval"
+    file: sections/gate.md
+  - match: "## Workflow — build"
+    delete: true
+  - match: "## Gate 2 — build-plan approval"
+    delete: true
+  - match: "## Workflow — update"
+    file: sections/later-document.md
+  - match: "## Execution spotlight"
+    file: sections/execution-spotlight.md
+  - match: "## Outputs"
+    file: sections/outputs.md
+  - match: "## Capability fallback"
+    file: sections/what-this-is-not.md
+  - match: "## Final checks"
+    file: sections/final-checks.md
+  - match: "## Scripts"
+    file: sections/reference-files.md
+
+replace:
+  - from: |-
+      Account for a closing set without touching it. `closing-bible` inventories every file in the closing folder, groups the versions and duplicates of each document into families, looks at what is actually there, reconciles it against the expected set, and hands the lawyer an index, an execution overview, an exceptions list and a receipt whose numbers add up. It begins where `sigpack` ends: `sigpack` owns signature pages; this skill owns the whole set.
+    to: |-
+      Account for a closing set without touching it. This skill reads every document the lawyer attaches, groups the versions and duplicates of each one into families, looks at what is actually there, reconciles it against the expected set, and hands back an index, an exceptions list and a status register whose counting is on the face of it. It begins where the sigpack skill ends: sigpack owns signature pages; this skill reads the set that came out of them.
+
+      It is a reading, not a balanced audit. There is no fingerprint of any document, no combined bible PDF, and no sentence saying the set is whole — that one is the lawyer's to write, and on a closing it always was. Say so in the first reply rather than at the end.
+    expect: 1
+
+
+notes: |
+  The heaviest re-scope of the three, and the only one where the upstream skill
+  forbids its own fallback: "The script is the only thing that validates
+  inspection records and balances the receipt. If it cannot run, stop: tell the
+  lawyer the audit cannot be completed here and why, and produce no index,
+  receipt or exceptions list by hand." That sentence rules out adapting the skill
+  as written, so the promise changes rather than degrades. Dropped scripts/ (the
+  runtime gate, the driver and the six modules that took the census, grouped the
+  families, reconciled, planned, built and updated), the eight references/
+  *.schema.json contracts only those programs read, references/assembly-rules.md
+  (the combined PDF, its bookmarks and volumes, which are not attempted) and
+  references/sigpack-ledger-consumption.md (a block-level mapping from a ledger
+  that, in this adaptation, records what was drafted and sent rather than an
+  inspected placement, so it is no longer execution evidence; the body says that
+  in the execution spotlight and rule 4 of the taxonomy says it again).
+  What ships is the index, the exceptions list and an Excel status register with
+  a visible count row — and a body that says in its first reply what it is not:
+  not a balance, no fingerprints, no folder read as a unit, no combined PDF, no
+  finding that completion has occurred. The word the original used for its
+  balance is gone from every file, and the outcome words become accounted-for,
+  qualified and open, with accounted-for defined in terms as "the reading found
+  nothing outstanding among the documents supplied" and never as a claim about
+  the closing. Both approval gates collapse to one, because the second guarded an
+  assembly that does not happen; Workflow — build and Gate 2 are deleted outright
+  and Workflow — update becomes a late-or-replaced document worked against the
+  register the lawyer attaches. The census becomes a stock-take of what was
+  attached, with the document count stated before anything else, which is the
+  whole protection against a folder handed over half; the 200 MB limit and the
+  fact that encrypted and sensitivity-labelled documents cannot be read at all
+  are named where they bite. Speak to the lawyer survives almost intact — one
+  bullet loses its list of runtime nouns. Companions: 2. status-taxonomy.md is
+  replaced wholesale through files/ — its nine statuses and derivation table
+  survive, its rules lose the two that only described what a program enforced and
+  gain the ledger rule and the wording rule, and its outcome table is rewritten;
+  references/status-register.md is new and carries the workbook's columns, its
+  count row and the rows-read/rows-written discipline.
+
+triggers:
+  positive:
+    - "Index this closing folder against our completion checklist and tell me what is missing."
+    - "Which version of each document here is the final executed one?"
+    - "Build me the exceptions list before we bind the completion bible."
+    - "Here are the 43 documents from the closing - group them and tell me what is in conflict."
+    - "Two documents claim to be the final SPA. Which is which, and what is the evidence?"
+  negative:
+    - "Draft the signature pages for the remaining parties. -> sigpack"
+    - "What conditions precedent are still outstanding before completion? -> closing-checklist"
+    - "Review this data room before we sign. -> diligence"
+    - "Merge these into one PDF with bookmarks per document. -> none"
+
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original skill's whole point was a balance: it fingerprinted every file
+    in the closing folder, counted the expected items against what it found, and
+    refused to write its closing statement unless the numbers reconciled. It also
+    said, in terms, that one written by hand instead was not the same thing and
+    should not be attempted. That is right, and it is why this is a different
+    skill rather than a degraded version of the old one. What you get here is a
+    reading: the documents you attach, grouped into families, each family looked
+    at to decide which version is final and what state it is in, reconciled
+    against your checklist, and handed back as an index you confirm, an
+    exceptions list, and an Excel register with one row per expected item and a
+    count row you can re-add yourself. The counting is visible rather than
+    computed behind the scenes, and that is the substitution: a sentence saying
+    everything is accounted for cannot be checked, while forty-three rows with a
+    status column can be checked in ten seconds. Three things it will not do.
+    It cannot fingerprint a document, so it can never tell you a source has not
+    changed since it looked. It reads the documents you attach rather than
+    reaching into a folder, so every delivery opens with the number it actually
+    received - which is how you find out you handed over forty of two hundred.
+    And it does not build the combined bible PDF. It also never writes the
+    sentence saying the set is whole; that one stays yours, which on a closing it
+    always was.
+  known_issues:
+    - id: KI-closing-bible-1
+      title: "The count is a reading, and the register is what makes it checkable"
+      detail: >-
+        Every number in the index and the register comes from the model's own
+        reading of the documents supplied. Nothing recomputes it and nothing
+        balances it against an independent source. A miscount looks exactly like
+        a correct one in a sentence. The mitigation is the workbook: one row per
+        expected item, a status column, a count row written as a formula over
+        those rows, and the outcome line naming the method and the scope. Sort
+        it, filter it and add it up - that is what it is for, and it is the only
+        honest substitute for the balance the original computed.
+      failure: silent
+      probe: P9
+    - id: KI-closing-bible-2
+      title: "It reads what you attach, not the folder"
+      detail: >-
+        There is no documented way to hand this skill a closing folder as a unit;
+        documents are selected one by one. So the census is a census of what
+        arrived. Every delivery states the number of documents received before
+        anything else, so a folder handed over half is visible in the first line
+        rather than at the end. Check that number against what you meant to send.
+      failure: loud
+    - id: KI-closing-bible-3
+      title: "Scanned execution pages cannot be inspected"
+      detail: >-
+        Where a family's execution pages are a scan or an image, the skill
+        records not-inspected with the reason and the reconciliation carries the
+        item as not ready. It must never describe a page it could not read. If a
+        run ever reports a signature block on a document you can see is a scan,
+        stop and report it - that is the failure this rule exists to prevent, and
+        it is the one that would look most like a result.
+      failure: loud
+      probe: P4
+    - id: KI-closing-bible-4
+      title: "No fingerprints, so no statement that a source is unchanged"
+      detail: >-
+        The original hashed the closing folder before and after and stopped if
+        anything moved. Nothing here can do that. The skill cannot tell you that
+        the document it read an hour ago is the document you are looking at now,
+        and it says so rather than implying otherwise. Where that matters -
+        someone else working in the same folder during a long run - take your own
+        copy of the set before starting.
+      failure: loud
+    - id: KI-closing-bible-5
+      title: "No combined bible PDF"
+      detail: >-
+        Merging chosen documents into one bookmarked PDF, and splitting it into
+        volumes, is nowhere documented in Cowork and is not attempted. The index
+        is a page and a workbook, not a bound document. The indexed set of
+        renamed copies goes with it: the register names the source file selected
+        as final for each item, and the copying and binding stay manual.
+      failure: loud
+      probe: P8
+    - id: KI-closing-bible-6
+      title: "A register round trip can lose a row or a formula"
+      detail: >-
+        The register is handed to Excel and handed back on the next run. Whether
+        the structure and the live count survive that trip is not documented, and
+        a workbook that quietly lost a row looks exactly like a workbook. Every
+        reply states the rows read and the rows written; compare them, and if
+        they differ for any reason other than rows you asked for, open the file.
+      failure: silent
+      probe: P9
+  workarounds:
+    - instead_of: "a program walked the closing folder and recorded every file with its size, format, page count and fingerprint"
+      cowork: "a stock-take of the documents the lawyer attaches, with the count stated before anything else and every unreadable one named with its reason"
+    - instead_of: "a program balanced the expected items against the sources and refused to write its statement unless the counts reconciled"
+      cowork: "an Excel status register, one row per expected item with a status column and a count row written as a formula, which the lawyer sorts and re-adds themselves"
+    - instead_of: "grouping and reconciliation were deterministic and re-checked by the program on every run"
+      cowork: "the family table is shown and confirmed by the lawyer before any family is looked at, and every decision is recorded where it lives"
+    - instead_of: "execution pages were rendered by a bundled page renderer before being judged"
+      cowork: "the execution pages are read where they carry text, and a scan is recorded as not inspected and carried as not ready rather than described"
+    - instead_of: "a signature-page ledger was consumed block by block as authoritative execution evidence"
+      cowork: "the ledger stands as the expected set only, cited for what it is, because the adapted sigpack records what was drafted and sent rather than an inspected placement"
+    - instead_of: "a build step assembled a combined bookmarked PDF and a versioned package beside the closing folder"
+      cowork: "not attempted; the index goes to the preview pane as a page and to Word on request, and the register is the workbook"
+    - instead_of: "two approval gates guarded the index and then the build plan"
+      cowork: "one gate: the index, what arrived, missing and unexpected, and version conflicts, confirmed before anything rests on it"
+    - instead_of: "outputs went to a new folder beside the closing folder and intermediates were deleted when done"
+      cowork: "everything goes to the Output folder under today's date, every file is named in the reply, and nothing is described as cleaned up because nothing here can delete a file"

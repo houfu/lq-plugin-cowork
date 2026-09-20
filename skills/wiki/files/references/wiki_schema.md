@@ -1,10 +1,10 @@
-# The wiki — layout, history, receipts
+# The wiki — layout, history, status lines
 
 The wiki is an OKF v0.2 bundle of plain Markdown notes with YAML frontmatter,
 readable in any editor, diffable, openable in Obsidian. `note_types.md` says
 what a note *means*; this file is the mechanical contract — what exists in the
 folder, what each file may contain, what every change records, and what the
-receipt says.
+status line says.
 
 Everything here is a visible Markdown file the lawyer can read and edit. There
 is no database and no hidden machine state: nothing is executed, so nothing
@@ -85,9 +85,9 @@ plainly that the file and any copies their file store has kept must be deleted
 by them. Do not describe the leak as remediated; it is not, until they have done
 it.
 
-## Receipts
+## Status lines
 
-Every change ends with one short receipt in the reply. A status view prints the
+Every change ends with one short status line in the reply. A status view prints the
 full one:
 
 > notes 47 · sources 31 · review 3 open · disputed 1 · stale 1 · unreviewed changes 2
@@ -99,7 +99,7 @@ a count is worse than no count.
 
 Three places, three different rules, and they do not overlap. The **matter
 folder** may hold client facts; that is what it is for. The **wiki** holds
-gate-certified method and legal knowledge only. The **playbook** holds neither —
+only method the confidentiality gate has cleared, and legal knowledge. The **playbook** holds neither —
 it holds preferences.
 
 The wiki therefore lives **outside any matter folder**. It is cross-matter by

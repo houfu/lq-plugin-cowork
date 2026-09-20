@@ -6,6 +6,24 @@ anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
 description: |
   Triages inbound litigation correspondence and drafts source-grounded outbound letters and emails for U.S. litigation: meet-and-confer letters, settlement demands and counteroffers, scheduling and conduct letters to opposing counsel, and substantive pre-suit or case communications. Returns a routing decision, a reviewer note, a source ledger, the draft, and an explicit no-send gate. Use when the user asks to "draft a meet-and-confer letter about their deficient responses", "reply to opposing counsel's letter", "write to opposing counsel proposing new deposition dates", "draft a settlement demand for this claim", "counter their offer", or "triage this email from the other side and tell me what it asks for". Do not use for court or regulator filings and legal memoranda (use the writing skill), client status reporting (use the client-update skill), the underlying discovery request, objection or subpoena analysis (use the document-discovery skill), or transmitting an approved draft (use the Email skill).
 
+cowork:
+  tier: 0
+  status: shipped
+  differs: |
+    The original triages inbound correspondence and drafts outbound letters
+    and emails exactly the same way here, building the same fact-and-source
+    ledger and always finishing with the same no-send gate. That method is
+    unchanged. What differs is around the edges: a lawyer's saved
+    preferences are read only if they have attached that file or placed it
+    in the session's input folder, and the skill never writes to it; a
+    multi-document run keeps its working notes inside the session rather
+    than in a temporary file deleted afterwards; and the closing no-send
+    line now spells out, in terms a lawyer can act on, that sending the
+    letter is a separate step taken afterwards with the Email skill or the
+    lawyer's own mail client, once they approve the draft.
+  known_issues: []
+  workarounds: []
+
 replace:
   - from: "Read only confirmed `[correspondence]` entries in `lqplaybook.md` if present. Never read `lqprofile.md` for work product and never write either file; the scribe owns journey updates. A preference revealed during the run may be proposed as an exact `[correspondence]` line, but it affects future work only after the user explicitly confirms it."
     to: "If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[correspondence]` entries. Do not read any profile file, and never write to the playbook. A preference that emerges during the run is offered as one exact `[correspondence]` line the lawyer can add to their own file; it shapes future work only once they have added it."
@@ -29,6 +47,23 @@ sections:
     file: sections/guardrails.md
 
 files: files
+
+suppress:
+  - code: LQC-W011
+    file: "SKILL.md"
+    reason: >-
+      Both hits use 'receipt' in the ordinary sense of when a letter was
+      received (a triage field, and inferring receipt, service, waiver or
+      acceptance from a forwarded excerpt) -- standard litigation-
+      correspondence vocabulary, not a claim about anything this skill
+      computed or verified.
+  - code: LQC-W011
+    file: "references/synthetic-patterns.md"
+    reason: >-
+      "We acknowledge receipt of your [date] proposal" is the standard
+      opening line of the settlement-correspondence drafting pattern --
+      ordinary professional vocabulary for the lawyer's own letter, not a
+      claim this skill makes about its own output.
 
 triggers:
   positive:

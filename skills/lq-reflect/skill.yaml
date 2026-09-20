@@ -1,0 +1,166 @@
+name: lq-reflect
+upstream: companion/lq-reflect
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+description: |
+  Goes through one piece of work the lawyer has just done with AI — this
+  conversation and the files they attach — and gives back what helped, what
+  got in the way, one change to keep with a countable signature, and a short
+  dated note they carry to the next review. Use when the user asks to "review
+  this piece of work I did with you", "that was harder than it should have
+  been, what would you do differently", "this went sideways, what actually
+  failed", "I'm stuck, what's the next move", or "here's my note from last
+  time, did the change hold". It reviews only the work in front of it and says
+  so plainly when asked for a week it cannot see. Do not use for a reading of
+  the lawyer themselves — "assess me", "what's my archetype", "where am I with
+  AI" (use the lq-mirror skill) — or for deciding whether a session earned an
+  LQ Moment and writing it up (use the my-lq-moment skill). This reviews how
+  the work went; it does not draft billing narratives or a file note of what
+  was done.
+exclude:
+- scripts/**
+- references/mining.md
+- references/reading.md
+- references/store-contract.md
+replace:
+- from: |-
+    The move: run the catalog script and name
+    the skill that does it — but only when the session actually earned the
+    recommendation.
+  to: |-
+    The move: name the skill
+    that does it, chosen from the LegalQuants skills actually offered in this
+    session — and only when the work actually earned the recommendation.
+  files: ["references/bottlenecks.md"]
+  expect: 1
+- from: |-
+    - **Loop and graph engineering** — multi-step, multi-agent workflows with
+      receipts; parallel review lanes; evals that prove the loop.
+  to: |-
+    - **Loop and graph engineering** — multi-step, multi-agent workflows that
+      show their working; parallel review lanes; evaluations that show the
+      loop holds.
+  files: ["references/technique-ladder.md"]
+  expect: 1
+- from: |-
+    Debrief lessons and office-hours focus areas draw from the user's current tier;
+    a technique observed from a higher tier is evidence for the inferred level.
+  to: |-
+    A review's lessons draw from the lawyer's current tier; a technique observed
+    from a higher tier is evidence for the inferred level.
+  files: ["references/technique-ladder.md"]
+  expect: 1
+notes: |
+  Full-file overlay: the re-scope rewrites most of the body, so nothing below
+  layer 7 would have expressed it honestly. Upstream's promise is a weekly
+  retrospective read out of the lawyer's own session transcripts on disk,
+  selected by a metadata scan, bound to content hashes and retrieved by three
+  bundled scripts; none of that exists here, and the skill is not allowed to
+  improvise a read path in its place. The overlay changes the unit of review
+  from the window to one piece of work: this conversation plus what the lawyer
+  attaches or puts in the Input folder. Dropped the cold-open onboarding call
+  to a companion skill's script, the window and its invocation grammar, the
+  candidate scan, the hash-bound manifest, the preview-to-complete-message
+  retrieval rule, the whole store section and every store verb, the catalogue
+  script, the second-reader subagent pass, the closing counters read from the
+  store, the LegalQuants mention and its site, and the parent-relative endings
+  reference. Kept verbatim in substance: what the review is, the coverage
+  statement, the client-material warning, the six questions, the five parts of
+  a moment, the no-quote-no-moment rule, one change with a countable signature,
+  the never-public wall and the nomination handoff. Added: the evidence is
+  named before any finding; a reconstruction from memory is written without
+  quotation marks; the dated note in the Output folder is the only continuity
+  and the lawyer is told to bring it back; the absence of that note is said out
+  loud and the review continues. Excluded scripts/ and the three references
+  that document the scan frontier, the reading contract and the store; kept
+  bottlenecks.md and technique-ladder.md, the intellectual core, with three
+  literal edits that remove the catalogue script, a claim word and an
+  office-hours programme that does not ship. Closing sign-off replaced with the
+  vendor-neutral line.
+cowork:
+  tier: 3
+  status: shipped
+  differs: |
+    The original went through your own past AI sessions. It read the session
+    files on your computer over a window you chose — the last seven days, the
+    last month, one named session — picked out the moments that mattered and
+    checked, next time, whether the change you kept had held. Nothing in this
+    host lets a skill do that: there are no session files to read and no way to
+    look at last Tuesday. So the promise has changed, and the name of the thing
+    it reviews has changed with it. This version reviews one piece of work: the
+    conversation you are in and whatever you attach or drop in the Input
+    folder. It tells you what it is about to read, by name, before it says
+    anything about it; it quotes only what it can actually see, and where it is
+    working from memory of the conversation it says "as I understand it, you
+    asked" and uses no quotation marks. Ask it for your week and it will tell
+    you in one line that it cannot, and what to attach instead. The one change
+    you keep goes into a short dated note it writes to your Output folder and
+    names; bring that note back next time and it will check whether the change
+    held. That note is the whole memory — the skill stores nothing itself, and
+    without it each review starts fresh.
+  known_issues:
+  - id: KI-lq-reflect-1
+    title: "A fluent account of a session it never read"
+    detail: >-
+      Asked how something went, a model will produce a convincing account with
+      sentences that read like quotes whether or not it can actually see what
+      you typed. This is the failure this skill is built around. The mitigation
+      is in the body and you should hold it to it: it lists the evidence by
+      name before any finding, it drops any moment it cannot anchor in a quote
+      it can read, and where it is reconstructing rather than reading it says
+      so and uses no quotation marks. If you see quotation marks around words
+      you do not recognise, or a finding about work you never put in front of
+      it, stop and ask which file it came from.
+    failure: silent
+    probe: P11
+  - id: KI-lq-reflect-2
+    title: "The kept change is not checked when the note is missing"
+    detail: >-
+      The check on last time's change works only through the dated note the
+      skill wrote and you kept. The skill does not go looking for that file:
+      it reads the note when you attach it or put it in the Input folder, and
+      not otherwise. If you do not attach it, the skill is required to say out
+      loud
+      that it has no note and to carry on without one — but a review that
+      quietly skips the check looks exactly like a review that made it. If you
+      expected a count on the change you kept and did not get one, the note did
+      not reach the session.
+    failure: silent
+    probe: P2
+  - id: KI-lq-reflect-3
+    title: "A window cannot be reviewed, and asking for one is refused"
+    detail: >-
+      "Go through my last seven days" is answered with one line saying the
+      skill reviews the work in front of it and what to attach if you want
+      more. That is the designed answer, not a fault, and it is visible
+      immediately. The workaround is to attach the drafts, notes or exported
+      conversations from the sessions you mean.
+    failure: loud
+  workarounds:
+  - instead_of: "a window — 24h, 3d, 7d, 30d, or one named session file"
+    cowork: "no window: the scope is this conversation plus the files the lawyer attaches or puts in the Input folder, and the scope is stated in one line before any work"
+  - instead_of: "a metadata-only scan of the session store proposes candidate sessions"
+    cowork: "the lawyer's attaching is the selection; there is nothing to discover"
+  - instead_of: "consent bound to exact files by content hash, confirmed before any read"
+    cowork: "the evidence is listed by name with its dates before any finding, and the lawyer is asked what to leave out"
+  - instead_of: "a bundled script writes the kept change and the counters to a private store"
+    cowork: "a short dated note is written to the Output folder and named, and the lawyer brings it back to the next review; the file stays there until they move it"
+  - instead_of: "a catalogue script lists the installed skills before one is recommended"
+    cowork: "skills are named only from those actually offered in the session, with the sentence that availability is managed by the Microsoft 365 administrator"
+  - instead_of: "a second, fresh reviewer checks the draft moments where the host has them"
+    cowork: "one pass, and the skill says in a line that there is no second reviewer here"
+  - instead_of: "the closing counters come from the store"
+    cowork: "the close states what this review covered and what was written"
+suppress: []
+triggers:
+  positive:
+  - That was harder than it should have been. What would you do differently?
+  - Review how I handled this draft with you and tell me what to change next time.
+  - This went sideways. What actually failed here?
+  - I'm going round in circles on this one. What's the next move?
+  - Here's my note from our last review. Did the change I kept hold?
+  negative:
+  - Where do I stand with AI compared to other lawyers? Assess me. -> lq-mirror
+  - Was that an LQ Moment? Write me the post and the cover. -> my-lq-moment
+  - Write up my time entries for the work I did in this chat. -> timenarratives
+  - Which skill should I use to check this contract against our positions? -> lq-start

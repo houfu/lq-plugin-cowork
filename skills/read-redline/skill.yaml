@@ -1,0 +1,181 @@
+name: read-redline
+upstream: transactional/read-redline
+bucket: red
+anchored_to: fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0
+
+description: |
+  Reads a redline, blackline or compare document — a compare PDF, or a Word
+  file with tracked changes — and says what actually moved: every change
+  extracted and rated High, Medium or Low for materiality, grouped into a
+  handful of themes that say what the other side is driving at, with a
+  side-by-side marked-passage page for the preview pane and, on request, an
+  issues list as a Word document. Use when the user asks to "tell me what
+  changed in the new version", "go through the tracked changes in this draft
+  and flag what matters", "mark up this compare and tell me which edits bite",
+  "what is the other side doing in this redline", or "summarise their markup
+  for the client". Do not use for measuring a draft against approved
+  negotiating positions or a contract playbook (use the playbook-review
+  skill), or for fitting a precedent clause into another document's defined
+  terms (use the conform skill). This skill reads a document that already
+  carries change marks; it does not compare two clean documents.
+
+exclude:
+  - "scripts/**"
+
+replace:
+  - from: "- Hand back the same PDF, annotated, so the reader triages the document itself. For a Word file the issues list is the deliverable; an annotated copy is written only when asked. Comparing two clean documents is out of scope."
+    to: "- Hand back a marked-passage page the reader can triage from, and an issues list as a Word document when they want a take-away. The lawyer's own file comes back untouched. Comparing two clean documents is out of scope."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- Read your `[redline]` lines in `lqplaybook.md` if the file exists (comment voice, tier overrides) and apply them over the rubric. Read nothing else from the playbook and nothing from `lqprofile.md`; neither shapes the work product beyond those lines. Write to neither; the scribe owns both. One exception: when the user overrides a tier or rejects a comment voice in-session, propose the exact `[redline]` line and write it only on an explicit yes."
+    to: "- If the lawyer has attached an `lqplaybook.md`, or placed one in the session's Input folder, read only its confirmed `[redline]` entries — comment voice, tier overrides — and apply them over the rubric. Read nothing else from that file, do not read any profile file, and never write to either. When the lawyer overrides a tier or rejects a comment voice during the run, offer the exact `[redline]` line they could add to their own file; it shapes future work only once they have added it."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- Client-identifying facts belong only in the work product: the annotated copy, the issues list, and the three JSON files that build them. Never put them in a proposed `[redline]` line or anywhere else."
+    to: "- Client-identifying facts belong only in the work product: the issues list, the marked-passage page, and the working files that build them. Never put them in a proposed `[redline]` line or anywhere else."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- `extract.json`, `calibration.confirmed.json`, `rows.json` and `themes.json` are the intermediates. Keep them under `tmp/redline/` and delete them after step 9 has written the deliverables."
+    to: "- `extract.json`, `redline-calibration.md`, `rows.json` and `themes.json` are the working files. They go in the session's Output folder beside the deliverables, they are named in the delivery, and they stay there. Nothing here can remove a file, so never describe them as cleaned up."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "- The annotated copy and the issues list go beside the input as `<name> - Annotated.pdf` (or `.docx`) / `<name> - Issues List.docx`."
+    to: "- The marked-passage page and the issues list go in the Output folder as `<name> - Marked Passages.html` and `<name> - Issues List.docx`."
+    files: ["SKILL.md"]
+    expect: 1
+
+sections:
+  - match: "## Workflow"
+    file: sections/workflow.md
+  - match: "## The Word path (tracked changes)"
+    file: sections/word-path.md
+  - match: "## Validating across many PDFs"
+    delete: true
+  - match: "## Capability fallback"
+    file: sections/capability-fallback.md
+  - match: "## Final checks"
+    file: sections/final-checks.md
+  - match: "## Scripts"
+    delete: true
+
+notes: |
+  Dropped scripts/ (seven programs: the two parsers, the calibration-gate
+  recorder, the two annotators, the issues-list builder and the folder batch
+  runner), which leaves references/significance_rubric.md as the single
+  companion, shipped unchanged. The Workflow section is rewritten so the model
+  reads the document itself: the colour calibration is shown and confirmed in
+  the conversation and recorded in redline-calibration.md rather than in a
+  gate file that later steps refused to run without; extraction, quarantine
+  and the page-by-page look are described as reading; the theme-coverage
+  arithmetic is stated as four printed numbers instead of a hard receipt. Step
+  8 no longer annotates the lawyer's PDF — it builds a self-contained HTML
+  marked-passage page for the preview pane — and step 9 routes the issues list
+  through the built-in Word skill, as playbook-review routes its issues
+  matrix. The Word path gains the mitigation this adaptation turns on: a nil
+  return may not be reported as "no tracked changes found" unless one inserted
+  and one deleted string can be quoted with its author, and otherwise must say
+  which of "the file is clean" and "I could not tell" is being reported, with
+  the lawyer asked to check All Markup in Word. "Capability fallback" becomes
+  "What this skill can and cannot do", naming the three weakened guarantees.
+  "Final checks" becomes a self-applied list. "Validating across many PDFs"
+  and "Scripts" are deleted as pure invocation. Output conventions keep the
+  same working-file set but place it in the Output folder, with the deletion
+  instruction removed because Cowork cannot delete.
+
+cowork:
+  tier: 2
+  status: probe-gated
+  differs: |
+    The original drove this work with bundled programs: one took the compare
+    PDF apart and worked out from the colours and underlining which text had
+    been deleted and which inserted, one recorded your confirmation of that
+    reading as a file the later steps refused to run without, one turned every
+    changed page into a picture so the reading could be checked against what
+    is actually printed on the page, and one wrote the marks back onto a copy
+    of your own PDF. None of them runs here. The document is read the way you
+    would read it, the confirmation of what the marks mean is a step the skill
+    is instructed to take rather than a lock it cannot get past, and the
+    counts that used to have to balance before anything could be written are
+    now arithmetic the skill does and shows you. The legal work is the same:
+    the same significance rubric, the same High, Medium and Low, the same
+    grouping into themes that say what the other side is driving at, the same
+    issues list. Two things are genuinely different. You do not get your own
+    file back with marks on it — you get a page showing each change old beside
+    new, and a Word issues list — and where the skill could not see properly
+    inside the file it has to tell you that at the top, rather than reporting
+    that nothing had changed.
+  known_issues:
+    - id: KI-read-redline-1
+      title: "Unseen tracked changes read as no changes"
+      detail: >-
+        Whether a Word document's tracked changes are visible to the skill at
+        all is not established. If they are not, the file reads as though every
+        change had already been accepted, and "there is nothing to review" is
+        exactly what a genuinely clean draft produces — the same sentence for
+        two opposite situations. The skill is therefore forbidden to report a
+        nil result unless it can quote one inserted and one deleted passage
+        with its author; otherwise it must say it could not tell, and ask you
+        to open the file in Word, switch the Review tab to All Markup and say
+        what you see. Treat any nil result on a file you believe carries a
+        markup as the second case until you have looked.
+      failure: silent
+      probe: P3
+    - id: KI-read-redline-2
+      title: "A page the skill cannot read is a page it must name"
+      detail: >-
+        On the PDF path the check that nothing was missed is a page-by-page
+        reading. Whether a scanned page, a photographed signature block or an
+        unusual layout can be read at all is not established, so the skill is
+        required to name any page it could not read and to say that the
+        reconciliation did not run for it. If your compare PDF contains scanned
+        inserts, expect those pages to be named rather than reviewed, and read
+        them yourself.
+      failure: loud
+      probe: P4
+    - id: KI-read-redline-3
+      title: "The calibration confirmation is a rule, not a lock"
+      detail: >-
+        Upstream, a deliverable could not be produced until your confirmation
+        of what the marks mean had been recorded. Here nothing enforces that: a
+        run where you never confirmed produces a report that looks exactly like
+        one where you did. The mitigation is that the reading of the marks, and
+        your words confirming it or the fact that you did not, are printed at
+        the head of every deliverable. Check that head-of-document block before
+        you rely on the tiers; if it does not say you confirmed, you did not.
+      failure: silent
+    - id: KI-read-redline-4
+      title: "A marked-up Word copy may come back as plain text"
+      detail: >-
+        When you ask for the review inside a document, the skill produces a new
+        Word document and asks for the changes to be recorded as real tracked
+        changes. Whether that is possible is not established. If it is not, the
+        same content comes back as old text beside new text. You will see which
+        you got the moment you open the file, and the skill is required to tell
+        you first. Your own file is never written to either way.
+      failure: loud
+      probe: P10
+  workarounds:
+    - instead_of: "a bundled parser reads the compare PDF's colours and decorations and extracts the changed pairs"
+      cowork: "the document is read directly and each change recorded as old text beside new text, with anything that could not be reconstructed put on a quarantine list the lawyer is shown"
+    - instead_of: "a confirmation file is written beside the extract, and the annotators and the issues list refuse to build without it"
+      cowork: "the reading of the marks and the lawyer's confirmation of it are printed at the head of every deliverable, so a run nobody confirmed is visible on the artifact itself"
+    - instead_of: "every changed page is rendered as an image and compared against the extracted changes"
+      cowork: "each page is read and compared against that page's changes, and any page whose content could not be read is named in the delivery"
+    - instead_of: "the lawyer's own PDF is annotated in tier colours and handed back as the complete record"
+      cowork: "a self-contained marked-passage page for the preview pane shows every change old beside new with its theme and tier, and the issues list goes out as a Word document through the built-in Word skill"
+    - instead_of: "a program checks that the rows balance across themes, housekeeping and unclustered before anything is written"
+      cowork: "the four counts are worked out and printed in the delivery so the lawyer can add them up, and they are described as a count that was made rather than a guarantee"
+    - instead_of: "the working files are kept in a temporary folder and deleted once the deliverables exist"
+      cowork: "the working files stay in the session's Output folder and are named in the delivery, because nothing in this environment can delete a file"
+
+triggers:
+  positive:
+    - "They've sent the markup back on the SPA — tell me what moved and what actually matters."
+    - "Go through the tracked changes in this draft and flag anything I need to push back on."
+    - "What is the other side doing in this compare PDF? Give me the themes, not a list of edits."
+    - "Mark up this blackline and give me an issues list I can send to the client."
+  negative:
+    - "Review this MSA against our playbook and tell me what's off-market. -> playbook-review"
+    - "Take this indemnity from the precedent and make it fit our defined terms. -> conform"
+    - "Which defined terms in this agreement are used but never defined? -> definition-check"
+    - "Apply my three edits to this Word file as tracked changes. -> Word"
