@@ -276,6 +276,48 @@ def surviving_tokens(text: str, names: Sequence[str]) -> list[str]:
 
 
 # --------------------------------------------------------------------------
+# claim words
+# --------------------------------------------------------------------------
+
+# LQC-W011. A claim the model cannot back with something the lawyer can
+# inspect must not be worded as one: a "receipt" nothing issued, a count
+# "certified" by no arithmetic anyone can see, a fact "proven" by a reading.
+# Overridable through `transforms.claim_words` in cowork.yaml.
+DEFAULT_CLAIM_WORDS: tuple[str, ...] = (
+    "receipt",
+    "receipts",
+    "certified",
+    "coverage-certified",
+    "proved",
+    "proven",
+    "guaranteed complete",
+)
+
+_CLAIM_CACHE: dict[str, re.Pattern[str]] = {}
+
+
+def _claim_pattern(phrase: str) -> re.Pattern[str]:
+    """Whole-phrase, case-insensitive, with alphanumeric edges refused.
+
+    The edges matter: ``proved`` must not fire on ``approved``, and
+    ``receipt`` must not fire on ``receipts``, which is its own entry.
+    """
+    cached = _CLAIM_CACHE.get(phrase)
+    if cached is None:
+        cached = re.compile(
+            rf"(?<![A-Za-z0-9]){re.escape(phrase)}(?![A-Za-z0-9])",
+            re.IGNORECASE,
+        )
+        _CLAIM_CACHE[phrase] = cached
+    return cached
+
+
+def claim_words(text: str, phrases: Iterable[str]) -> list[str]:
+    """Which of ``phrases`` ``text`` uses, in the order they were given."""
+    return [phrase for phrase in phrases if _claim_pattern(phrase).search(text)]
+
+
+# --------------------------------------------------------------------------
 # literal replacement
 # --------------------------------------------------------------------------
 

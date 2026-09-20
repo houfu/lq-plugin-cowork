@@ -183,6 +183,46 @@ def _suppressed_table(suppressed: list[Suppression]) -> list[str]:
     return lines
 
 
+def _mirror_lines(bundle: Bundle) -> list[str]:
+    """How a mirrored bundle got its membership, and what upstream calls it."""
+    if bundle.mirror is None:
+        return ["- membership: an explicit `skills` list in cowork.yaml"]
+    mirror = bundle.mirror
+    lines = [f"- {mirror.line()}"]
+    lines.append(f"- upstream name: {mirror.display_name}")
+    if mirror.short_description:
+        lines.append(f"- upstream description: {mirror.short_description}")
+    for entry in mirror.excludes:
+        lines.append(f"  - excluded `{entry.name}`: {entry.reason}")
+    return lines
+
+
+def _known_issue_lines(built: BundleBuild) -> list[str]:
+    """Every known issue the bundle's cards declare, in bundle order."""
+    rows = [
+        (skill.name, known)
+        for skill in built.skills
+        for known in (skill.card.cowork.known_issues if skill.card.cowork else ())
+    ]
+    if not rows:
+        return []
+    lines = [
+        "### Known issues",
+        "",
+        "Declared on the cards; the site and the UAT programme read the same list.",
+        "",
+        "| Id | Skill | Title | Failure | Probe |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for name, known in rows:
+        lines.append(
+            f"| `{known.id}` | {name} | {_escape(known.title)} | "
+            f"{known.failure} | {known.probe or ''} |"
+        )
+    lines.append("")
+    return lines
+
+
 def write_build_report(
     config: Config,
     result: BuildResult,
@@ -212,9 +252,13 @@ def write_build_report(
             f"- manifestVersion: {manifest['manifestVersion']}, "
             f"version: {manifest['version']}",
             f"- skills: {len(built.skills)}",
+        ]
+        lines += _mirror_lines(built.bundle)
+        lines += [
             "",
-            "| Skill | Bucket | Files | Bytes | Warnings |",
-            "| --- | --- | ---: | ---: | ---: |",
+            "| Skill | Bucket | Tier | Status | Known issues | Files | Bytes "
+            "| Warnings |",
+            "| --- | --- | ---: | --- | ---: | ---: | ---: | ---: |",
         ]
         for skill in built.skills:
             count = sum(
@@ -222,11 +266,16 @@ def write_build_report(
                 for w in warnings
                 if w.skill == skill.name and w.bundle == built.bundle.id
             )
+            block = skill.card.cowork
+            tier = str(block.tier) if block else "—"
+            status = block.status if block else "—"
+            known = len(block.known_issues) if block else 0
             lines.append(
-                f"| {skill.name} | {skill.card.bucket} | {len(skill.files)} | "
-                f"{skill.total_bytes} | {count} |"
+                f"| {skill.name} | {skill.card.bucket} | {tier} | {status} | "
+                f"{known} | {len(skill.files)} | {skill.total_bytes} | {count} |"
             )
         lines.append("")
+        lines += _known_issue_lines(built)
         unnoticed = [s for s in built.skills if s.unnoticed]
         if unnoticed:
             lines += [

@@ -1,0 +1,326 @@
+# Capability probes.
+#
+# Fourteen questions about Microsoft 365 Copilot Cowork that nobody has
+# answered in a live tenant. Each one is a thing a card would like to rely on
+# and cannot, stated so a tester can settle it in one fresh conversation with
+# synthetic files.
+#
+# Transcribed from docs/research/cowork-alternatives-and-risk.md section 3.
+# Read by validation (LQC-K003, a card's `cowork.known_issues[].probe` must
+# name a probe defined here), by the build report, by the site, and by
+# `tools/scripts/uat_issues.py --probes`. See docs/CONTRACT.md section 4.
+#
+# Fields per probe:
+#   id           P1 to P14
+#   title        the question, as the research document asks it
+#   settles      what a result decides, and why it is not already documented
+#   setup        what the tester prepares first (omitted where there is none)
+#   prompt       the exact text a tester types
+#   pass         what a pass looks like
+#   fail         what a fail looks like
+#   bad_outcome  refusal | fluent-fake | silent | loud — the shape of the
+#                worst result, which is what the tester must be ready to spot
+#   unlocks      the skills whose tier or shipping decision this probe settles
+
+probes:
+  - id: P1
+    title: Does a bundled script actually run, and in what?
+    settles: >-
+      Whether a script packaged inside a skill is executed at all, and what
+      interpreter and libraries it would run under. Nothing ships with a
+      script under the no-scripts policy, so a result changes no tier; it is
+      the input to the maintainer's decision about that policy and to the
+      original, not re-scoped, paths of closing-bible, definition-check and
+      read-redline.
+    setup: >-
+      Cannot be run from the released bundles, because no shipped skill
+      contains a script. Needs a throwaway single-skill probe package
+      containing scripts/probe.py, which prints one line naming sys.version,
+      platform.platform(), whether pypdf, pdfplumber, docx, openpyxl and PIL
+      import, and whether soffice, pdftoppm and tesseract are on the path.
+      The SKILL.md says to run it and report its output verbatim.
+    prompt: Run the environment probe and show me its output exactly as printed.
+    pass: The reply contains the fingerprint line with a real Python version string.
+    fail: >-
+      A reply that paraphrases the script, describes what it would print, or
+      reports the script's contents as instructions.
+    bad_outcome: fluent-fake
+    unlocks: []
+
+  - id: P2
+    title: Does a file written in one session come back in the next?
+    settles: >-
+      Whether state written to the Cowork folder is reachable from a later
+      session without the lawyer attaching it. No tier turns on it, by
+      design: every cross-session design brings its own state instead. It is
+      an ergonomics upgrade for sigpack's ledger, regulatory's refresh
+      baseline, legalquants step 3b, lq-reflect step 8b and lq-apply step 2b.
+    setup: None beyond two sessions on different days.
+    prompt: |-
+      Session 1: Create a file called probe-ledger.json in my Cowork Output folder containing exactly {"probe":"lqc","n":1} and tell me where you put it.
+      A new session on a later day, with nothing attached: Open probe-ledger.json from my Cowork folder, tell me what n is, then save it back with n increased by one.
+    pass: >-
+      It finds the file without the tester attaching it, reports n as 1,
+      writes 2 — and a third session reads 2.
+    fail: It cannot find the file, or asks the tester to attach it.
+    bad_outcome: refusal
+    unlocks: []
+
+  - id: P3
+    title: Does Cowork report tracked changes in a Word document?
+    settles: >-
+      Whether Cowork can see tracked insertions, deletions and comments in a
+      Word document at all, and whether it returns an honest nil on a clean
+      copy. Word tracked changes are nowhere mentioned in Microsoft's pages.
+    setup: >-
+      A two-page synthetic DOCX with tracked insertions and deletions by two
+      named authors and one comment; plus a clean copy of the same file with
+      the changes accepted.
+    prompt: >-
+      List every tracked change in this agreement: the exact inserted and
+      deleted text, who made it, and where it sits. Tell me if there are none.
+    pass: >-
+      Insertions and deletions listed separately with authors, and the comment
+      noted; and, on the clean copy, it says there are none rather than
+      inventing some.
+    fail: >-
+      It reads the document as though the changes had been accepted and
+      reports no changes.
+    bad_outcome: silent
+    unlocks: [read-redline, playbook-review]
+
+  - id: P4
+    title: Can Cowork tell what is on a page?
+    settles: >-
+      Whether Cowork can say, page by page, what a PDF carries — strikethrough
+      and underline, handwriting and signatures, and whether a page is scanned
+      rather than typed. OCR, scanned PDFs and handwriting are nowhere
+      mentioned.
+    setup: >-
+      A four-page synthetic PDF: page 2 carries redline markup (strikethrough
+      and underline), page 3 is a scanned image of a signature block signed
+      over a printed name, page 4 is clean.
+    prompt: >-
+      Go through this PDF page by page. For each page tell me whether anything
+      is struck through or underlined, whether there is handwriting or a
+      signature, and whether the page is scanned rather than typed.
+    pass: >-
+      Correct per-page answers, including that page 3 is an image and is
+      signed, without being told.
+    fail: >-
+      It describes pages it cannot see, or reports the scanned page as blank
+      or as text.
+    bad_outcome: fluent-fake
+    unlocks: [read-redline, diligence, docreview, closing-bible, regulatory, sigpack]
+
+  - id: P5
+    title: What does a resumed task remember?
+    settles: >-
+      What re-enters the model's context when a task is resumed, and whether a
+      brand-new task can see the previous one. The mechanism of continuation
+      is documented; what it carries is not. No tier turns on it: it bounds
+      lq-reflect's week-wide alternative.
+    setup: Two sessions plus one resumption, over two days.
+    prompt: |-
+      Session 1: Remember this reference for later: ALDERNEY-7. Draft me two lines about anything.
+      Resuming that task from the task list the next day: What was the reference I gave you?
+      Then, in a brand-new task: What did I ask you in my previous Cowork task?
+    pass: The resumed task returns ALDERNEY-7 unprompted; the new task does not know.
+    fail: >-
+      The resumed task does not have it, or — the bigger finding — the new
+      task does.
+    bad_outcome: fluent-fake
+    unlocks: []
+
+  - id: P6
+    title: Is web search on in this tenant, and what comes back?
+    settles: >-
+      Whether web search is enabled here, and whether what comes back is a
+      page address the lawyer can check or a rendering they cannot. It
+      confirms a limit rather than lifting one, and informs lq-ask's optional
+      step and regulatory's locator-only use of search.
+    prompt: >-
+      Search the web and quote me, word for word, the opening sentence of the
+      official text you find at legislation.gov.uk for the Bribery Act 2010
+      section 1, and give me the address of the page you read.
+    pass: A URL and a quotation, plus whatever the client says about web search.
+    fail: >-
+      A refusal naming a disabled web-search setting — which is an equally
+      useful result and should be reported with the tenant's admin posture if
+      known.
+    bad_outcome: fluent-fake
+    unlocks: []
+
+  - id: P7
+    title: Can a skill's output carry a file that shipped with the skill?
+    settles: >-
+      Whether a companion file packaged inside a skill reaches something the
+      lawyer receives. Carrying the asset is documented; reaching an output is
+      not. Two arms, one probe: P7a a text or HTML template, P7b a bundled
+      binary image. P7a is free today and should be the first probe the
+      programme runs.
+    setup: >-
+      P7a: none; run it against the shipped legaldesign skill, which carries
+      HTML templates as companions. P7b: package a probe skill carrying a
+      small PNG and an HTML template that references it.
+    prompt: |-
+      P7a: Turn the attached advice note into a one-pager using your supplied template, and tell me which of your template files you used.
+      P7b: Build the card from your supplied template and tell me which of your packaged files it used.
+    pass: >-
+      P7a: the produced HTML visibly uses the packaged template's structure
+      and the reply names the companion file. P7b: the rendered page shows the
+      image and the reply names the file.
+    fail: >-
+      P7a: generic HTML, or a named file that was not used. P7b, recorded
+      separately: the page renders without the image, or the reply claims an
+      image that is not there.
+    bad_outcome: fluent-fake
+    unlocks: [my-lq-moment, read-redline, docreview, definition-check]
+
+  - id: P8
+    title: Can Cowork build a PDF out of chosen pages of supplied PDFs?
+    settles: >-
+      Whether Cowork can assemble a new PDF from chosen pages of supplied
+      ones. Merging or splitting PDFs is nowhere mentioned, and the PDF
+      built-in's entire description is the single line "Work with PDF
+      documents".
+    setup: Two synthetic four-page PDFs with distinguishable page content.
+    prompt: >-
+      Make me one new PDF containing page 3 of the first document and pages 1
+      and 2 of the second, in that order, and tell me how many pages it has.
+    pass: >-
+      A downloadable PDF in the Output folder with exactly those three pages
+      in that order and their content intact.
+    fail: >-
+      A reply that describes the pages instead of producing the file, or a PDF
+      with the wrong pages or order.
+    bad_outcome: fluent-fake
+    unlocks: [sigpack, closing-bible]
+
+  - id: P9
+    title: Does an Excel workbook survive a round trip with its arithmetic intact?
+    settles: >-
+      Whether a workbook's structure and formulas survive being handed back
+      and forth. The round trip itself is documented; whether the arithmetic
+      survives is not. After P3, the probe with the widest reach in the
+      document-pipeline half.
+    setup: None; two sessions.
+    prompt: |-
+      Session 1: Build me a tracker workbook with columns Document, Issue, Status, Quote, Locator and these six rows, and add a row at the bottom that counts how many rows are filled.
+      A fresh session with the returned workbook attached: Add these four documents as new rows, fill the Status column for them, and give the workbook back to me unchanged apart from the new rows.
+    pass: >-
+      The returned file keeps the original six rows, the column order, the
+      count formula as a formula, and its recalculated value.
+    fail: >-
+      Rows dropped or reordered, columns renamed, or the count arriving as a
+      hard-coded number rather than a live formula.
+    bad_outcome: silent
+    unlocks: [diligence, docreview, closing-bible, definition-check, sigpack]
+
+  - id: P10
+    title: Can Cowork produce a Word document carrying real tracked changes?
+    settles: >-
+      Whether Cowork can write a Word file whose edits are recorded as tracked
+      changes rather than applied as plain text. Producing a Word document
+      with tracked changes or comments is nowhere stated. Neither dependent
+      step is load-bearing; both improve.
+    setup: A short supplied agreement clause.
+    prompt: >-
+      Give me back this clause as a Word document with my three edits recorded
+      as tracked changes attributed to "Review", not as plain edited text.
+    pass: Opening the file in Word shows insertions and deletions in the review pane.
+    fail: >-
+      A document with the edits applied as plain text, or coloured text that
+      is not a tracked change.
+    bad_outcome: loud
+    unlocks: [read-redline, conform]
+
+  - id: P11
+    title: What can a skill see and quote of its own session?
+    settles: >-
+      Whether a skill can quote the lawyer's own words back verbatim, list the
+      files created and list the skills and tools used, and whether it says
+      honestly which of those it is reading and which it is reconstructing. A
+      refusal blocks nothing: it forces every quote to come from an attached
+      file.
+    setup: >-
+      In one conversation, do some work first: type a distinctive sentence,
+      have a file created, invoke a second skill.
+    prompt: >-
+      Quote back, word for word, the sentence I typed at the start of this
+      session; list the files created in this session; and list the skills and
+      tools used. Say for each whether you are reading it or reconstructing it.
+    pass: >-
+      A verbatim quote, the correct file list, the correct skill and tool
+      list, each with honest attribution.
+    fail: >-
+      Two distinguishable ways: a refusal (usable — the cards adapt around it)
+      or a fluent paraphrase presented as a quote.
+    bad_outcome: fluent-fake
+    unlocks: [lq-reflect, my-lq-moment]
+
+  - id: P12
+    title: "Browser use: does what it reads reach the skill?"
+    settles: >-
+      Two things. (a) Availability: is browser use enabled in this tenant, and
+      what did it take to enable it — it needs Edge, runs only in Cowork on
+      the web, and is disabled by default until an admin turns it on. (b)
+      Quotability: does page content or a downloaded file become something the
+      session, and therefore a skill, can quote. No design depends on it.
+    setup: >-
+      Cowork on the web in Microsoft Edge, on a device where Edge is
+      installed, in a tenant where an admin has performed the enable steps.
+      Record what the posture was before the tester asked, who had to act, and
+      the tenant's DLP and site-blocking posture. A tenant where the admin
+      declines is a reportable result, not a failed run.
+    prompt: >-
+      Open the page at <public URL> and quote its first heading and the first
+      sentence under it. Tell me how you retrieved it, and tell me whether
+      that page is now one of my session files.
+    pass: >-
+      The quote comes back, Cowork names the route, and it states plainly
+      whether the content is now a session file.
+    fail: >-
+      The content comes back as a summary rather than quotable text; or a
+      refusal citing a blocked site (still a useful result — record it with
+      the posture).
+    bad_outcome: fluent-fake
+    unlocks: [lq-connect, lq-apply, lq-ask]
+
+  - id: P13
+    title: Can a scheduled run work over files placed earlier?
+    settles: >-
+      Whether an automated run can read files the lawyer placed earlier, write
+      outputs, and load a custom skill. The scheduling machinery is
+      documented; what a run can reach is not. No card is built on it; any of
+      them may offer a cadence as a closing line, and must name the
+      twenty-five scheduled-prompt cap when they do.
+    setup: A file already sitting in the Cowork folder, and a custom skill installed.
+    prompt: >-
+      Every Monday at 9am, use the <name> skill on closing-register.xlsx in my
+      Cowork folder and save the updated register back.
+    pass: >-
+      The Runs tab shows it ran; an output file appears; the output reflects
+      the placed file; and the run history shows the custom skill was loaded.
+    fail: >-
+      The schedule exists but the skill is not invoked, or nothing is written,
+      or the run reports success with no output.
+    bad_outcome: silent
+    unlocks: []
+
+  - id: P14
+    title: Enterprise Search as a people finder
+    settles: >-
+      Whether Enterprise Search can answer who in the organisation has worked
+      on a topic, with a quotable document behind each name. Microsoft's whole
+      statement about it is the line "Enterprise Search Search across your
+      organization".
+    setup: A tenant with real internal material behind the chosen topic.
+    prompt: >-
+      Who in my organisation has worked on <a topic with real internal
+      material behind it>? Name up to three people and, for each, quote the
+      document that shows it.
+    pass: Named people, each with a quotable document.
+    fail: Documents with no people attached, or names with nothing behind them.
+    bad_outcome: fluent-fake
+    unlocks: [lq-connect]

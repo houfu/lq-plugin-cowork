@@ -388,3 +388,157 @@ class TestGlobalReplace:
         )
         with pytest.raises(BuildError, match="LQC-A001"):
             Builder(load_config(fixture_repo)).build()
+
+
+def codes(issues) -> list[str]:
+    return [i.code for i in issues]
+
+
+class TestMissingCards:
+    def test_b001_names_the_skill_and_the_bundle(self, mirror_repo):
+        (mirror_repo / "skills/gamma/skill.yaml").unlink()
+        result = Builder(load_config(mirror_repo)).build()
+        assert codes(result.errors) == ["LQC-B001"]
+        message = result.errors[0].message
+        assert result.errors[0].skill == "gamma"
+        assert "skills/gamma/" in message
+        assert "exclude it from test-bundle with a reason" in message
+        assert result.bundles == []
+
+    def test_one_error_per_missing_card_not_per_bundle(self, mirror_repo):
+        (mirror_repo / "skills/alpha/skill.yaml").unlink()
+        (mirror_repo / "skills/beta/skill.yaml").unlink()
+        result = Builder(load_config(mirror_repo)).build()
+        assert sorted(i.skill for i in result.errors) == ["alpha", "beta"]
+
+    def test_an_excluded_skill_needs_no_card(self, mirror_repo):
+        (mirror_repo / "skills/gamma/skill.yaml").unlink()
+        card = mirror_repo / "skills/alpha/skill.yaml"
+        card.write_text(
+            card.read_text().replace('    - "Do the gamma thing. -> gamma"\n', ""),
+            encoding="utf-8",
+        )
+        path = mirror_repo / "cowork.yaml"
+        path.write_text(
+            path.read_text().replace(
+                "    exclude_skills: []",
+                "    exclude_skills:\n      - name: gamma\n"
+                '        reason: "no card, and none wanted"',
+            ),
+            encoding="utf-8",
+        )
+        result = Builder(load_config(mirror_repo)).build()
+        assert result.errors == []
+        assert [s.name for s in result.bundles[0].skills] == ["alpha", "beta"]
+
+
+class TestCardChecks:
+    def _build(self, repo: Path):
+        return Builder(load_config(repo)).build()
+
+    def test_k001_missing_block(self, fixture_repo):
+        path = fixture_repo / "skills/beta/skill.yaml"
+        path.write_text(
+            path.read_text().replace("cowork:", "unused:"), encoding="utf-8"
+        )
+        result = self._build(fixture_repo)
+        assert codes(result.errors) == ["LQC-K001"]
+        assert "`cowork` block is missing" in result.errors[0].message
+
+    def test_k001_duplicate_known_issue_id(self, fixture_repo):
+        path = fixture_repo / "skills/beta/skill.yaml"
+        path.write_text(
+            path.read_text().replace(
+                "  status: shipped\n",
+                "  status: shipped\n"
+                "  known_issues:\n"
+                "    - id: KI-alpha-1\n"
+                '      title: "Borrowed id"\n'
+                '      detail: "Also declared by alpha."\n'
+                "      failure: loud\n",
+            ),
+            encoding="utf-8",
+        )
+        result = self._build(fixture_repo)
+        assert codes(result.errors) == ["LQC-K001", "LQC-K001"]
+        assert all("KI-alpha-1" in i.message for i in result.errors)
+
+    def test_k002_tier_four_cannot_ship(self, fixture_repo):
+        path = fixture_repo / "skills/gamma/skill.yaml"
+        path.write_text(path.read_text().replace("tier: 1", "tier: 4"), "utf-8")
+        result = Builder(load_config(fixture_repo)).build_skill_only(["gamma"])
+        assert "LQC-K002" in codes(result.errors)
+
+    def test_k002_tier_two_needs_a_known_issue(self, fixture_repo):
+        path = fixture_repo / "skills/gamma/skill.yaml"
+        path.write_text(path.read_text().replace("tier: 1", "tier: 2"), "utf-8")
+        result = Builder(load_config(fixture_repo)).build_skill_only(["gamma"])
+        assert "LQC-K002" in codes(result.errors)
+        assert "no known issue" in result.errors[0].message
+
+    def test_k002_probe_gated_needs_a_probe(self, fixture_repo):
+        path = fixture_repo / "skills/alpha/skill.yaml"
+        path.write_text(path.read_text().replace("      probe: P3\n", ""), "utf-8")
+        result = self._build(fixture_repo)
+        assert "LQC-K002" in codes(result.errors)
+        assert "probe-gated" in result.errors[0].message
+
+    def test_k003_warns_on_an_undefined_probe(self, fixture_repo):
+        path = fixture_repo / "skills/alpha/skill.yaml"
+        path.write_text(path.read_text().replace("probe: P3", "probe: P99"), "utf-8")
+        result = self._build(fixture_repo)
+        assert result.errors == []
+        assert codes(result.warnings) == ["LQC-K003"]
+        assert "P99" in result.warnings[0].message
+
+    def test_a_clean_tree_has_no_card_issues(self, fixture_repo):
+        result = self._build(fixture_repo)
+        assert result.errors == []
+        assert result.warnings == []
+
+
+class TestSkillOnlyBuild:
+    def test_writes_skills_only_and_skips_the_manifest(self, fixture_repo):
+        config = load_config(fixture_repo)
+        result = Builder(config).build_skill_only(["alpha"])
+        root = fixture_repo / "dist" / "skills-only"
+        assert (root / "alpha" / "SKILL.md").is_file()
+        assert not (fixture_repo / "dist" / "test-bundle").exists()
+        assert not (root / "manifest.json").exists()
+        assert [s.name for s in result.bundles[0].skills] == ["alpha"]
+
+    def test_every_card_transform_still_runs(self, fixture_repo):
+        Builder(load_config(fixture_repo)).build_skill_only(["alpha"])
+        text = (fixture_repo / "dist/skills-only/alpha/SKILL.md").read_text(
+            encoding="utf-8"
+        )
+        assert "Open the alpha folder" in text  # the card's replace rule
+        assert "## Automation is not available here" in text  # the section overlay
+        assert "## Finish well" not in text  # the section deletion
+        assert "Modified from LegalQuants/lq-plugin-oss@" in text
+
+    def test_repeatable(self, fixture_repo):
+        result = Builder(load_config(fixture_repo)).build_skill_only(["alpha", "beta"])
+        assert [s.name for s in result.bundles[0].skills] == ["alpha", "beta"]
+        assert (fixture_repo / "dist/skills-only/beta/SKILL.md").is_file()
+
+    def test_a_skill_without_a_card_is_a_usage_error(self, fixture_repo):
+        from lqcowork.config import ConfigError
+
+        with pytest.raises(ConfigError, match="no adaptation card for: nope"):
+            Builder(load_config(fixture_repo)).build_skill_only(["nope"])
+
+    def test_cli_runs_the_per_skill_checks(self, fixture_repo, monkeypatch, capsys):
+        from lqcowork.cli import main
+
+        monkeypatch.chdir(fixture_repo)
+        assert main(["build", "--skill", "alpha"]) == 0
+        out = capsys.readouterr().out
+        assert "alpha: 4 files" in out
+        assert "dist/skills-only/alpha" in out
+
+    def test_cli_refuses_skill_with_bundle(self, fixture_repo, monkeypatch):
+        from lqcowork.cli import main
+
+        monkeypatch.chdir(fixture_repo)
+        assert main(["build", "--skill", "alpha", "--bundle", "test-bundle"]) == 1

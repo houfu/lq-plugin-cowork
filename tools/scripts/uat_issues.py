@@ -10,6 +10,11 @@ that skill's own routing checklist built from its card's ``triggers``.
     uv run --project tools python tools/scripts/uat_issues.py --out /tmp/uat
     uv run --project tools python tools/scripts/uat_issues.py --create
     uv run --project tools python tools/scripts/uat_issues.py --tracking
+    uv run --project tools python tools/scripts/uat_issues.py --probes
+
+``--probes`` renders the other programme instead: one issue per capability
+probe in ``probes.yaml``, the fourteen questions about Cowork that no card
+can answer for itself.
 
 Without flags it only writes Markdown to ``dist/uat-issues/``. ``--create``
 and ``--tracking`` talk to GitHub through the ``gh`` CLI and are safe to
@@ -32,6 +37,7 @@ from lqcowork.config import (
     Card,
     Config,
     ConfigError,
+    Probe,
     find_repo_root,
     load_cards,
     load_config,
@@ -57,6 +63,11 @@ BUCKET_NOTE = {
         "**green** — little had to change from upstream, so this one should "
         "behave much as its description says. Worth confirming exactly that."
     ),
+    "red": (
+        "**red** — the original depended on something Cowork does not have, so "
+        "this is a re-designed skill rather than a port. Read how it differs "
+        "before you start; the question is whether the new promise holds."
+    ),
 }
 
 
@@ -67,22 +78,47 @@ class Label:
     description: str
 
 
-BASE_LABELS = (
-    Label(
-        "help wanted",
-        "008672",
-        "Anyone with a Microsoft 365 Copilot tenant can pick this up",
-    ),
-    Label(
-        "uat",
-        "0e8a16",
-        "Acceptance testing of a shipped skill in a live Cowork tenant",
-    ),
+HELP_WANTED_LABEL = Label(
+    "help wanted",
+    "008672",
+    "Anyone with a Microsoft 365 Copilot tenant can pick this up",
 )
+UAT_LABEL = Label(
+    "uat",
+    "0e8a16",
+    "Acceptance testing of a shipped skill in a live Cowork tenant",
+)
+BASE_LABELS = (HELP_WANTED_LABEL, UAT_LABEL)
+
+PROBE_LABEL = Label(
+    "probe",
+    "fbca04",
+    "A capability probe: one question about Cowork, settled by observation",
+)
+
+BAD_OUTCOME_NOTE = {
+    "fluent-fake": (
+        "**fluent fake** — a wrong answer that reads like a right one. Do not "
+        "accept a confident reply as a pass; check the thing it claims."
+    ),
+    "silent": (
+        "**silent** — a wrong result looks exactly like a correct one. The "
+        "check has to be against the source, not against the reply."
+    ),
+    "refusal": (
+        "**refusal** — the likely bad outcome is a plain refusal, which is a "
+        "safe shape and a useful result. Record the exact wording."
+    ),
+    "loud": (
+        "**loud** — a failure is visible the moment you open the file. This is "
+        "the comfortable kind of probe."
+    ),
+}
 
 BUNDLE_LABEL_COLORS = {
     "litigation": "5319e7",
     "transactional": "1d76db",
+    "companion": "d93f0b",
 }
 FALLBACK_LABEL_COLOR = "ededed"
 
@@ -108,6 +144,122 @@ class SkillIssue:
     def labels(self) -> tuple[str, ...]:
         bundle_labels = tuple(bundle_label(b) for b in self.bundles)
         return ("help wanted", "uat", *bundle_labels)
+
+
+@dataclass(frozen=True)
+class ProbeIssue:
+    """One capability probe's issue: the same shape as a skill's."""
+
+    name: str
+    title: str
+    body: str
+
+    @property
+    def filename(self) -> str:
+        return f"probe-{self.name}.md"
+
+    @property
+    def labels(self) -> tuple[str, ...]:
+        return ("uat", PROBE_LABEL.name)
+
+
+def probe_title(probe: Probe) -> str:
+    return f"Probe {probe.id}: {probe.title}"
+
+
+def _quoted(text: str) -> list[str]:
+    """A block quote, so a multi-line prompt survives as typed."""
+    return [f"> {line}" if line.strip() else ">" for line in text.split("\n")]
+
+
+def render_probe_body(config: Config, probe: Probe) -> str:
+    unlocks = ", ".join(f"`{name}`" for name in probe.unlocks)
+    lines = [
+        f"**What this settles.** {probe.settles}",
+        "",
+        "Nothing in this repository has been exercised in a live Microsoft "
+        "365 Copilot Cowork tenant, and this is one of the fourteen questions "
+        "the cards had to write around. One fresh conversation, synthetic "
+        "files only, and a result either way is worth having.",
+        "",
+        f"- **Probe:** `{probe.id}`",
+        f"- **Package version:** {config.version} — "
+        f"[download the packages]({LATEST_RELEASE})",
+        f"- **Unlocks:** {unlocks or 'no tier turns on it; it bounds a design'}",
+        f"- **Watch for:** {BAD_OUTCOME_NOTE.get(probe.bad_outcome, probe.bad_outcome)}",
+        "",
+        "## Setup",
+        "",
+        probe.setup or "Nothing to prepare.",
+        "",
+        "## Prompt",
+        "",
+        "Type this exactly as written.",
+        "",
+        *_quoted(probe.prompt),
+        "",
+        "## What a pass looks like",
+        "",
+        probe.passes,
+        "",
+        "## What a fail looks like",
+        "",
+        probe.fails,
+        "",
+        "- [ ] Prepared the setup above",
+        "- [ ] Ran the prompt in a fresh conversation",
+        "- [ ] Recorded the result — pass or fail — with a trimmed excerpt",
+        "- [ ] Said which Cowork client this was, and the tenant's posture for "
+        "web search and browser use",
+        "",
+        "## How to report",
+        "",
+        f"File one [UAT report]({ISSUE_FORM}), or answer in a comment here. "
+        "A fail is as useful as a pass: it is what the cards are written "
+        f"against. The whole programme is [docs/TESTING.md]({TESTING_DOC}).",
+        "",
+        "**Sanitise everything.** No client material, no matter or party "
+        "names, nothing from a live system, in text or in screenshots. Every "
+        "document these probes use is invented on purpose.",
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def build_probe_issues(config: Config) -> list[ProbeIssue]:
+    return [
+        ProbeIssue(
+            name=probe.id,
+            title=probe_title(probe),
+            body=render_probe_body(config, probe),
+        )
+        for probe in config.probes
+    ]
+
+
+def render_probe_index(config: Config, issues: list[ProbeIssue]) -> str:
+    lines = [
+        "# Capability probe issues",
+        "",
+        f"One issue per probe in `probes.yaml`, package version "
+        f"{config.version}, upstream `{config.sha7}`. Rendered by "
+        "`tools/scripts/uat_issues.py --probes`; do not edit these files by "
+        "hand.",
+        "",
+        "`--create` files them on GitHub with the labels `uat` and `probe`, "
+        "skipping any whose exact title is already open.",
+        "",
+        "| Probe | Question | Unlocks | Watch for | File |",
+        "| --- | --- | --- | --- | --- |",
+    ]
+    for probe in config.probes:
+        unlocks = ", ".join(f"`{n}`" for n in probe.unlocks) or "—"
+        lines.append(
+            f"| `{probe.id}` | {probe.title} | {unlocks} | "
+            f"{probe.bad_outcome} | [probe-{probe.id}.md](probe-{probe.id}.md) |"
+        )
+    lines += ["", f"{len(issues)} probe(s).", ""]
+    return "\n".join(lines)
 
 
 def bundle_key(bundle: Bundle) -> str:
@@ -378,7 +530,7 @@ def render_tracking(
     return "\n".join(lines)
 
 
-def write_files(out_dir: Path, config: Config, issues: list[SkillIssue]) -> list[Path]:
+def write_files(out_dir: Path, issues: list, index_text: str) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     written: list[Path] = []
     for issue in issues:
@@ -386,7 +538,7 @@ def write_files(out_dir: Path, config: Config, issues: list[SkillIssue]) -> list
         target.write_text(issue.body, encoding="utf-8")
         written.append(target)
     index = out_dir / "index.md"
-    index.write_text(render_index(config, issues), encoding="utf-8")
+    index.write_text(index_text, encoding="utf-8")
     written.append(index)
     return written
 
@@ -427,8 +579,8 @@ def list_issues(state: str) -> list[dict[str, object]]:
     return json.loads(raw or "[]")
 
 
-def ensure_labels(config: Config) -> None:
-    for label in labels_for(config):
+def ensure_labels(labels: list[Label]) -> None:
+    for label in labels:
         gh(
             [
                 "label",
@@ -443,8 +595,8 @@ def ensure_labels(config: Config) -> None:
         )
 
 
-def create_issues(config: Config, issues: list[SkillIssue], out_dir: Path) -> int:
-    ensure_labels(config)
+def create_issues(labels: list[Label], issues: list, out_dir: Path) -> int:
+    ensure_labels(labels)
     open_titles = {str(row["title"]) for row in list_issues("open")}
     created = 0
     for issue in issues:
@@ -510,10 +662,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="file the issues on GitHub with `gh`, skipping titles already open",
     )
-    parser.add_argument(
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument(
         "--tracking",
         action="store_true",
         help=f'create or update the single "{TRACKING_TITLE}" issue',
+    )
+    mode.add_argument(
+        "--probes",
+        action="store_true",
+        help=(
+            "render one issue per capability probe in probes.yaml instead of "
+            "one per shipped skill, labelled `uat` and `probe`"
+        ),
     )
     return parser.parse_args(argv)
 
@@ -523,7 +684,14 @@ def main(argv: list[str] | None = None) -> int:
     try:
         root = find_repo_root()
         config = load_config(root)
-        issues = build_issues(config)
+        if args.probes:
+            issues: list = build_probe_issues(config)
+            index_text = render_probe_index(config, issues)
+            labels = [UAT_LABEL, PROBE_LABEL]
+        else:
+            issues = build_issues(config)
+            index_text = render_index(config, issues)
+            labels = labels_for(config)
     except ConfigError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -531,7 +699,7 @@ def main(argv: list[str] | None = None) -> int:
     out_dir = Path(args.out)
     if not out_dir.is_absolute():
         out_dir = root / out_dir
-    written = write_files(out_dir, config, issues)
+    written = write_files(out_dir, issues, index_text)
     print(f"wrote {len(written)} file(s) to {out_dir}")
 
     if not (args.create or args.tracking):
@@ -539,7 +707,7 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         if args.create:
-            create_issues(config, issues, out_dir)
+            create_issues(labels, issues, out_dir)
         if args.tracking:
             sync_tracking(config, issues, out_dir)
     except GhError as exc:

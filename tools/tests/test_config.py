@@ -113,3 +113,182 @@ class TestCards:
         )
         with pytest.raises(ConfigError, match="missing required key 'to'"):
             load_card(load_config(fixture_repo), "alpha")
+
+
+class TestMirroredBundles:
+    def test_derives_groups_then_includes(self, mirror_repo):
+        config = load_config(mirror_repo)
+        bundle = config.bundles[0]
+        # core alphabetically, then the include_skills entry
+        assert bundle.skills == ("alpha", "beta", "gamma")
+        assert bundle.mirror is not None
+        assert bundle.mirror.plugin_id == "test-plugin"
+        assert bundle.mirror.groups == ("core",)
+        assert bundle.mirror.includes == ("extra/gamma",)
+        assert bundle.mirror.display_name == "The Upstream Test Plugin"
+        assert (
+            bundle.mirror.short_description == "An upstream plugin a bundle can mirror"
+        )
+
+    def test_report_line_names_the_derivation(self, mirror_repo):
+        line = load_config(mirror_repo).bundles[0].mirror.line()
+        assert line == (
+            "Mirrors upstream plugin test-plugin: groups core; "
+            "includes extra/gamma; excludes none"
+        )
+
+    def test_exclude_removes_the_skill_and_keeps_the_reason(self, mirror_repo):
+        edit(
+            mirror_repo / "cowork.yaml",
+            "    exclude_skills: []",
+            "    exclude_skills:\n"
+            "      - name: gamma\n"
+            '        reason: "needs a connector we do not ship"',
+        )
+        bundle = load_config(mirror_repo).bundles[0]
+        assert bundle.skills == ("alpha", "beta")
+        assert [e.name for e in bundle.mirror.excludes] == ["gamma"]
+        assert bundle.mirror.excludes[0].reason == "needs a connector we do not ship"
+
+    def test_exclude_without_a_reason_is_refused(self, mirror_repo):
+        edit(
+            mirror_repo / "cowork.yaml",
+            "    exclude_skills: []",
+            "    exclude_skills:\n      - name: gamma",
+        )
+        with pytest.raises(ConfigError, match="reason"):
+            load_config(mirror_repo)
+
+    def test_mirror_and_skills_together_is_refused(self, mirror_repo):
+        edit(
+            mirror_repo / "cowork.yaml",
+            "    exclude_skills: []",
+            "    skills:\n      - alpha",
+        )
+        with pytest.raises(ConfigError, match="'mirror' and 'skills'"):
+            load_config(mirror_repo)
+
+    def test_unknown_plugin_id_is_refused(self, mirror_repo):
+        edit(mirror_repo / "cowork.yaml", "mirror: test-plugin", "mirror: nope")
+        with pytest.raises(ConfigError, match="not a plugin in plugin.release.yaml"):
+            load_config(mirror_repo)
+
+    def test_exclude_on_an_explicit_list_is_refused(self, fixture_repo):
+        edit(
+            fixture_repo / "cowork.yaml",
+            "    skills:\n      - alpha",
+            "    exclude_skills:\n      - name: gamma\n"
+            '        reason: "x"\n    skills:\n      - alpha',
+        )
+        with pytest.raises(ConfigError, match="only a mirrored bundle excludes"):
+            load_config(fixture_repo)
+
+    def test_an_explicit_list_still_works(self, fixture_repo):
+        bundle = load_config(fixture_repo).bundles[0]
+        assert bundle.mirror is None
+        assert bundle.skills == ("alpha", "beta")
+
+
+class TestCoworkBlock:
+    def test_parsed_onto_the_card(self, fixture_repo):
+        card = load_card(load_config(fixture_repo), "alpha")
+        assert card.cowork is not None
+        assert card.cowork_problems == ()
+        assert card.tier == 2
+        assert card.status == "probe-gated"
+        assert card.cowork.differs.startswith("The original ran a bundled program")
+        assert [k.id for k in card.known_issues] == ["KI-alpha-1"]
+        assert card.known_issues[0].failure == "silent"
+        assert card.known_issues[0].probe == "P3"
+        assert card.cowork.probes == ("P3",)
+        assert card.cowork.workarounds[0].instead_of.startswith("a bundled script")
+
+    def test_missing_block_is_collected_not_raised(self, fixture_repo):
+        path = fixture_repo / "skills/beta/skill.yaml"
+        path.write_text(
+            path.read_text().replace("cowork:", "unused:"), encoding="utf-8"
+        )
+        card = load_card(load_config(fixture_repo), "beta")
+        assert card.cowork is None
+        assert any("`cowork` block is missing" in p for p in card.cowork_problems)
+
+    def test_bad_tier_and_status_are_collected(self, fixture_repo):
+        path = fixture_repo / "skills/gamma/skill.yaml"
+        path.write_text(
+            path.read_text()
+            .replace("tier: 1", "tier: 9")
+            .replace("status: shipped", "status: maybe"),
+            encoding="utf-8",
+        )
+        card = load_card(load_config(fixture_repo), "gamma")
+        assert card.cowork is None
+        assert any("tier" in p for p in card.cowork_problems)
+        assert any("status" in p for p in card.cowork_problems)
+
+    def test_known_issue_needs_every_key(self, fixture_repo):
+        path = fixture_repo / "skills/alpha/skill.yaml"
+        path.write_text(
+            path.read_text().replace("      failure: silent\n", ""), encoding="utf-8"
+        )
+        card = load_card(load_config(fixture_repo), "alpha")
+        assert any("missing failure" in p for p in card.cowork_problems)
+
+    def test_workaround_needs_both_keys(self, fixture_repo):
+        path = fixture_repo / "skills/alpha/skill.yaml"
+        path.write_text(
+            path.read_text().replace(
+                '      cowork: "the skill lists every document it read, so the '
+                'count is visible"\n',
+                "",
+            ),
+            encoding="utf-8",
+        )
+        card = load_card(load_config(fixture_repo), "alpha")
+        assert any("missing cowork" in p for p in card.cowork_problems)
+
+    def test_red_is_a_bucket(self, fixture_repo):
+        edit(fixture_repo / "skills/alpha/skill.yaml", "bucket: amber", "bucket: red")
+        assert load_card(load_config(fixture_repo), "alpha").bucket == "red"
+
+    def test_an_unknown_bucket_is_refused(self, fixture_repo):
+        edit(fixture_repo / "skills/alpha/skill.yaml", "bucket: amber", "bucket: puce")
+        with pytest.raises(ConfigError, match="bucket"):
+            load_card(load_config(fixture_repo), "alpha")
+
+
+class TestProbes:
+    def test_loaded_onto_the_config(self, fixture_repo):
+        config = load_config(fixture_repo)
+        assert [p.id for p in config.probes] == ["P3"]
+        probe = config.probe("P3")
+        assert probe.title.startswith("Does Cowork report tracked changes")
+        assert probe.bad_outcome == "silent"
+        assert probe.unlocks == ("alpha",)
+        assert probe.setup.startswith("A synthetic DOCX")
+        assert probe.passes.startswith("Insertions and deletions")
+        assert probe.fails == "It reports no changes."
+
+    def test_absent_file_means_no_probes(self, fixture_repo):
+        (fixture_repo / "probes.yaml").unlink()
+        assert load_config(fixture_repo).probes == ()
+
+    def test_duplicate_ids_refused(self, fixture_repo):
+        path = fixture_repo / "probes.yaml"
+        body = path.read_text()
+        path.write_text(body + body.split("probes:\n", 1)[1], encoding="utf-8")
+        with pytest.raises(ConfigError, match="duplicate probe id"):
+            load_config(fixture_repo)
+
+    def test_unknown_bad_outcome_refused(self, fixture_repo):
+        edit(fixture_repo / "probes.yaml", "bad_outcome: silent", "bad_outcome: odd")
+        with pytest.raises(ConfigError, match="bad_outcome"):
+            load_config(fixture_repo)
+
+    def test_the_real_repository_defines_p1_to_p14(self, real_root):
+        from lqcowork.config import load_probes
+
+        probes = load_probes(real_root)
+        assert [p.id for p in probes] == [f"P{n}" for n in range(1, 15)]
+        for probe in probes:
+            assert probe.title and probe.settles and probe.prompt
+            assert probe.passes and probe.fails

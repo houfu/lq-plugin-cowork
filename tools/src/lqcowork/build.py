@@ -15,8 +15,11 @@ from .config import (
     Bundle,
     Card,
     Config,
+    ConfigError,
     ReplaceRule,
-    load_cards,
+    known_card_names,
+    load_available_cards,
+    load_card,
     upstream_skill_names,
 )
 
@@ -66,6 +69,9 @@ MANIFEST_SCHEMA = (
     "MicrosoftTeams.schema.json"
 )
 MANIFEST_VERSION = "1.28"
+
+# Where `build --skill NAME` puts its trees: one folder per skill, no bundle.
+SKILLS_ONLY_DIR = "skills-only"
 
 
 class BuildError(Exception):
@@ -142,6 +148,135 @@ class BuildResult:
         return not self.anchors
 
 
+def missing_card_errors(missing: list[str], bundles: list[Bundle]) -> list[Issue]:
+    """LQC-B001: one per skill a bundle derives but no card covers.
+
+    A mirrored bundle takes its membership from upstream, so a skill arriving
+    upstream — or one re-admitted here — shows up as a named, reviewable error
+    with exactly two ways out.
+    """
+    issues: list[Issue] = []
+    for name in missing:
+        wanted = [b.id for b in bundles if name in b.skills]
+        where = ", ".join(wanted) or "a bundle"
+        issues.append(
+            Issue(
+                "LQC-B001",
+                f"no adaptation card under skills/{name}/; write a card for "
+                f"'{name}', or exclude it from {where} with a reason",
+                skill=name,
+            )
+        )
+    return issues
+
+
+def _known_issue_owners(config: Config, cards: dict[str, Card]) -> dict[str, list[str]]:
+    """Known-issue id -> the skills that declare it, across the whole repo.
+
+    Every card on disk counts, not only the cards in this build, because
+    LQC-K001 makes the ids unique across the repository. A card that cannot
+    be parsed at all is skipped here; its own load reports that separately.
+    """
+    owners: dict[str, list[str]] = {}
+    for name in sorted(known_card_names(config)):
+        card = cards.get(name)
+        if card is None:
+            try:
+                card = load_card(config, name)
+            except ConfigError:
+                continue
+        for known in card.known_issues:
+            owners.setdefault(known.id, []).append(name)
+    return owners
+
+
+def check_cards(
+    config: Config, cards: dict[str, Card]
+) -> tuple[list[Issue], list[Issue]]:
+    """LQC-K001, LQC-K002 (errors) and LQC-K003 (warnings) over ``cards``."""
+    errors: list[Issue] = []
+    warnings: list[Issue] = []
+    owners = _known_issue_owners(config, cards)
+    probe_ids = config.probe_ids
+
+    for name in sorted(cards):
+        card = cards[name]
+        for problem in card.cowork_problems:
+            errors.append(Issue("LQC-K001", problem, skill=name))
+        for known in card.known_issues:
+            others = [o for o in owners.get(known.id, []) if o != name]
+            if others:
+                errors.append(
+                    Issue(
+                        "LQC-K001",
+                        f"known-issue id '{known.id}' is also used by "
+                        f"{', '.join(sorted(set(others)))}; ids are unique "
+                        "across the repository",
+                        skill=name,
+                    )
+                )
+            if known.probe and known.probe not in probe_ids:
+                warnings.append(
+                    Issue(
+                        "LQC-K003",
+                        f"known issue {known.id} names probe '{known.probe}', "
+                        "which probes.yaml does not define",
+                        skill=name,
+                    )
+                )
+
+        block = card.cowork
+        if block is None:
+            continue
+        if block.tier == 4:
+            errors.append(
+                Issue(
+                    "LQC-K002",
+                    "tier 4 needs a connector, so this card cannot ship; "
+                    "re-scope it to tier 3 or lower, or leave it out",
+                    skill=name,
+                )
+            )
+        if block.tier in (2, 3) and not block.known_issues:
+            errors.append(
+                Issue(
+                    "LQC-K002",
+                    f"tier {block.tier} with no known issue; a re-scoped or "
+                    "probe-bound skill has something to declare",
+                    skill=name,
+                )
+            )
+        if block.status == "probe-gated" and not block.probes:
+            errors.append(
+                Issue(
+                    "LQC-K002",
+                    "status probe-gated but no known issue carries a probe; "
+                    "name the probe that would settle the degrade",
+                    skill=name,
+                )
+            )
+    return errors, warnings
+
+
+def skills_only_bundle(config: Config) -> Bundle:
+    """The stand-in bundle ``build --skill`` validates against.
+
+    There is no bundle in a single-skill build, so LQC-W003 — "hands off to a
+    skill that is not in this bundle" — has nothing to measure. Treating every
+    card in the repository as present makes the rule say the useful half of
+    what it means: a hand-off must name a skill that exists somewhere.
+    """
+    return Bundle(
+        id=SKILLS_ONLY_DIR,
+        guid="00000000-0000-5000-8000-000000000000",
+        name_short="skills only",
+        name_full="single-skill build",
+        description_short="single-skill build, not a package",
+        description_full="single-skill build, not a package",
+        skills=tuple(sorted(known_card_names(config))),
+    )
+
+
 class Builder:
     """Builds ``dist/<bundle>/`` trees from the vendored upstream skills."""
 
@@ -172,9 +307,56 @@ class Builder:
     def build(self, bundle_id: str | None = None) -> BuildResult:
         bundles = self.config.select(bundle_id)
         names = sorted({name for b in bundles for name in b.skills})
-        cards = load_cards(self.config, names)
+        cards, missing = load_available_cards(self.config, names)
+
+        card_errors = missing_card_errors(missing, bundles)
+        errors, warnings = check_cards(self.config, cards)
+        self.result.errors.extend(card_errors + errors)
+        self.result.warnings.extend(warnings)
+        if self.result.errors:
+            # Nothing is built on a broken card set: half a bundle would bury
+            # these under a manifest's worth of consequential errors.
+            return self.result
+
         for bundle in bundles:
             self._build_bundle(bundle, cards)
+        self._check_global_replace_counts()
+        return self.result
+
+    def build_skill_only(self, names: list[str]) -> BuildResult:
+        """Build just these skills into ``<out>/skills-only/<name>/``.
+
+        Every card transform runs; bundle assembly and the manifest checks do
+        not. This is what a card author runs before the skill is in any
+        buildable bundle.
+        """
+        requested = list(dict.fromkeys(names))
+        cards, missing = load_available_cards(self.config, requested)
+        if missing:
+            raise ConfigError(
+                "no adaptation card for: "
+                + ", ".join(missing)
+                + " (expected skills/<name>/skill.yaml)"
+            )
+        errors, warnings = check_cards(self.config, cards)
+        self.result.errors.extend(errors)
+        self.result.warnings.extend(warnings)
+
+        bundle = skills_only_bundle(self.config)
+        root = self.dist / SKILLS_ONLY_DIR
+        record = BundleBuild(bundle=bundle, path=root)
+        for name in requested:
+            card = cards[name]
+            if not (self.skills_root / card.upstream).is_dir():
+                raise BuildError(
+                    f"skills/{name}: upstream folder "
+                    f"{self.config.skills_root}/{card.upstream} does not exist"
+                )
+            dest = root / name
+            if dest.exists():
+                shutil.rmtree(dest)
+            record.skills.append(self._build_skill(card, dest, bundle))
+        self.result.bundles.append(record)
         self._check_global_replace_counts()
         return self.result
 

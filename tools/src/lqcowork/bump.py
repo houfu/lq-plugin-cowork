@@ -11,7 +11,7 @@ from pathlib import Path
 
 from . import transforms
 from .build import Builder, BuildError, Issue
-from .config import Card, Config, ConfigError, load_cards
+from .config import Card, Config, ConfigError, load_available_cards, load_cards
 from .validate import validate_bundle
 
 SHA_LINE_RE = re.compile(r"^(\s*sha:\s*)[0-9a-f]{40}", re.M)
@@ -266,7 +266,10 @@ def bump_upstream(
     to_sha = resolve_ref(upstream, to)
 
     names = sorted({name for bundle in config.bundles for name in bundle.skills})
-    cards = load_cards(config, names)
+    # A mirrored bundle can derive a skill nobody has written a card for; that
+    # is LQC-B001, which the build inside collect_drift reports by name rather
+    # than an exception that hides every other row of the report.
+    cards, _missing = load_available_cards(config, names)
 
     tmp = Path(tempfile.mkdtemp(prefix="lqcowork-upstream-"))
     worktree = tmp / "upstream"
@@ -312,7 +315,13 @@ def anchor(config: Config, skill: str | None = None) -> list[str]:
         if skill
         else sorted({name for bundle in config.bundles for name in bundle.skills})
     )
-    cards = load_cards(config, names)
+    if skill:
+        cards = load_cards(config, names)
+    else:
+        # A skill a mirrored bundle derives may not have a card yet; there is
+        # nothing to anchor there, and LQC-B001 already says so at build time.
+        cards, _missing = load_available_cards(config, names)
+        names = [name for name in names if name in cards]
     updated: list[str] = []
     for name in names:
         card = cards[name]
