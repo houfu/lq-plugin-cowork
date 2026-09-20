@@ -1,12 +1,15 @@
 # Installing a bundle in Microsoft 365 Copilot Cowork
 
-How to get `legalquants-litigation-cowork.zip` or
-`legalquants-transactional-cowork.zip` from a
-[release](https://github.com/houfu/lq-plugin-cowork/releases/latest) into
+How to get `legalquants-litigation-cowork.zip`,
+`legalquants-transactional-cowork.zip` or `legalquants-companion-cowork.zip`
+from a [release](https://github.com/houfu/lq-plugin-cowork/releases/latest) into
 Copilot Cowork. Every Microsoft page this is built on is listed, with the date
 it was checked, in [Sources](#sources) at the end. Anything that could not be
 confirmed from Microsoft's documentation is marked **unverified** rather than
 guessed at.
+
+This page is also on the site, beside what each bundle contains and what
+changed in each skill: <https://houfu.github.io/lq-plugin-cowork/>.
 
 Nothing in this file has been walked through in a live tenant. If a step is
 wrong, or a button is not called what this says it is called, please
@@ -147,7 +150,8 @@ be re-shared or removed from there rather than with `atk uninstall`.
    **Discover** section.
 2. **Check the skills came with it.** When a plugin is enabled, its skills appear
    alongside Cowork's built-in skills as chips in the side panel. The litigation
-   bundle should contribute 15; the transactional bundle 8.
+   bundle should contribute 15; the transactional bundle 14; the companion
+   bundle 8.
 3. **Make one activate.** Start a fresh conversation and type a prompt from the
    bundle's `*-trigger-tests.md` in the release, for example:
 
@@ -252,6 +256,7 @@ a correction here is welcome.
 4. Whether the upload control is labelled **Upload plugin** or **Add plugin** —
    Microsoft's own pages differ.
 5. What Cowork does when two installed plugins contribute skills with the same
-   name — relevant only if you install both bundles, which share six skill
-   names. Microsoft documents only that plugin skills cannot override built-in
+   name — relevant if you install more than one bundle. The litigation and
+   transactional bundles share five skill names, and `lq-start` is in all
+   three. Microsoft documents only that plugin skills cannot override built-in
    skills of the same name.

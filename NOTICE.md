@@ -7,11 +7,14 @@ This package contains skills adapted from the LegalQuants open skills project:
   this file)
 
 The skills in this package are **modified** versions of the upstream files.
-They have been adapted to run inside Microsoft 365 Copilot Cowork, which has
-no local filesystem, no shell and no plugin invocation grammar. The usual
-changes are: removing bundled scripts, schemas and other files that cannot
-execute in Cowork; replacing local-execution instructions with host-native
-steps; rewriting each skill's `description` into Cowork trigger phrasing; and
+They have been adapted to run inside Microsoft 365 Copilot Cowork, which works
+from OneDrive and SharePoint rather than a local disk, documents a skill's
+`scripts/` folder as executed without specifying what runs it, and does not
+yet support a `commands/` invocation grammar (as of Microsoft's plugin
+development page of 17 September 2026). The usual changes are: removing
+bundled scripts, schemas and other files whose runtime Cowork does not
+specify; replacing local-execution instructions with host-native steps;
+rewriting each skill's `description` into Cowork trigger phrasing; and
 removing references to particular AI hosts and to other LegalQuants plugins.
 
 In accordance with section 4(b) of the Apache License 2.0, every modified

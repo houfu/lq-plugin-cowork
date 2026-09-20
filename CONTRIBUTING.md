@@ -1,9 +1,11 @@
 # Contributing
 
 This repository adapts the open [LegalQuants
-skills](https://github.com/LegalQuants/lq-plugin-oss) into two Microsoft 365
-Copilot Cowork plugin packages. It is a small, opinionated build, and the most
-valuable contribution right now has nothing to do with Python.
+skills](https://github.com/LegalQuants/lq-plugin-oss) into three Microsoft 365
+Copilot Cowork plugin packages — litigation, transactional and companion —
+mirroring the three plugins upstream publishes, so all thirty-one skills ship.
+It is a small, opinionated build, and the most valuable contribution right now
+has nothing to do with Python.
 
 ## Ways to help
 
@@ -18,6 +20,12 @@ There is one open
 [help wanted issue](https://github.com/houfu/lq-plugin-cowork/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)
 per skill, each carrying that skill's routing checklist; claim one in a comment
 so two people do not test the same thing.
+
+Worth more than a skill test: run one of the **fourteen capability probes** in
+Part E of [docs/TESTING.md](docs/TESTING.md). Each is one prompt in one fresh
+conversation, and each settles a question about Cowork that nobody has
+answered — several skills move a tier the day a probe comes back. They have
+their own issues, labelled `probe`.
 
 A negative result is a result. "Typed the prompt, a different skill answered" is
 the single most useful sentence you can send. Sanitise everything and never
@@ -38,25 +46,101 @@ to earn its place.
 
 ### 3. Review or improve a section overlay
 
-Every amber card carries `notes` recording what the adaptation changed from
-upstream and why. Those notes are where the judgement calls live, and a second
-reader is welcome: does the rewritten section still carry the legal method
-upstream intended, or did something load-bearing go out with the scripts?
-Compare `upstream/skills/<group>/<name>/SKILL.md` with
+Every amber and red card carries two records. `notes` is the technical one —
+what the adaptation changed from upstream, in build terms. `cowork.differs` is
+the lawyer-facing one: one paragraph, plain words, no file names, saying how
+this skill differs from the original. Those two are where the judgement calls
+live, and a second reader is welcome: does the rewritten section still carry the
+legal method upstream intended, or did something load-bearing go out with the
+scripts? Does `differs` say the thing a lawyer would want to have been told
+before they relied on it? Compare `upstream/skills/<group>/<name>/SKILL.md` with
 `dist/<bundle>/skills/<name>/SKILL.md` and say what you find. If you change an
-overlay, update the card's `notes` in the same commit — that is the record.
+overlay, update both records in the same commit.
 
-### 4. Porting a left-out skill: out of scope
+### 4. Adapting a red skill
 
-Fourteen upstream skills are deliberately not shipped (see the README). Each is
-a thin instruction layer over a local Python pipeline, a worker runtime, a
-network fetch, a `~/.lq/` store or host session transcripts — none of which
-Cowork has. Shipping one as prose would ship the instructions without the
-machinery, and a skill that promises receipts it cannot produce is worse than no
-skill. A pull request that ports one will be declined on that ground alone. The
-honest route for that group is a remote MCP connector declared under
-`agentConnectors`, which keeps the pipeline server-side; that is a different
-project from this one.
+A **red** card is one of the fourteen skills whose upstream version leans on
+machinery a Cowork package cannot carry: a local Python pipeline, a worker
+runtime, a network fetch it can hash, a `~/.lq/` store, or the agent's own past
+session logs. All fourteen now ship, adapted rather than ported. If you want to
+improve one, or re-adapt one after an upstream release moves it, this is the
+shape of the work.
+
+**Never ship the instructions without the machinery.** A skill that promises
+receipts it cannot produce is worse than no skill. Every step needs a path the
+host can actually take, and where no path exists the skill says so in the reply
+rather than proceeding as though it had one.
+
+**Set the tier by the three tests, in order.** The tier is mechanical, not a
+mood:
+
+1. Did the promise change? If the skill now hands back a different deliverable,
+   or its own text says a version without the missing thing is unacceptable, it
+   is **tier 3** — re-scoped, and the description has to say so in its first
+   clause. Nothing below this test rescues it.
+2. Otherwise, is a load-bearing step undocumented or contested? Then it is
+   **tier 2**, and the tier is discharged when the named probe passes.
+3. Otherwise, are all its failures loud — does the lawyer see it fail? Then
+   **tier 1**. If a characteristic failure is silent, so that a wrong result
+   looks exactly like a right one, it is **tier 2** with a degrade the skill
+   announces, however clean the capability picture.
+
+**Tier 4** means a load-bearing step needs a remote MCP connector under
+`agentConnectors` — a server somebody operates. That is the honest route for
+anything needing a fetch it can hash, and a tier 4 card may not ship in a
+bundle (`LQC-K002`).
+
+**Reach for a substitution pattern before inventing one.** The fourteen were
+designed against a catalogue, and re-using it keeps them consistent:
+
+- state the lawyer carries — an attached register or dated note — in place of a
+  private store, and the skill names the file it looked for when it is missing;
+- an Excel register through the built-in Excel skill as the visible record, in
+  place of a count a script used to compute;
+- an HTML page for the preview pane in place of a rendered image or an
+  annotated PDF;
+- sequential passes in one session in place of parallel workers, with the
+  execution shape recorded and the word "independent" declined;
+- tranches the lawyer sizes, in place of a run over a whole folder;
+- the publisher's own document, downloaded and attested by the lawyer, in place
+  of a fetch;
+- a hand-off to a named built-in — Word, Excel, PowerPoint, PDF, Enterprise
+  Search — in place of a bundled program;
+- the skill's own documented degraded mode promoted to being the only mode,
+  which is usually closer to what Cowork can do than anything an adapter would
+  invent;
+- and, where none of those works, say the gap out loud: unavailable is said,
+  not implied.
+
+**Fill in the `cowork:` block.** It is required on every card and the build
+refuses without it (`LQC-K001`): `tier`, `status` (`shipped`, or `probe-gated`
+when the skill ships now with a degrade it announces until a probe passes),
+`differs` — one paragraph for a lawyer — and, for tier 2 and 3, at least one
+known issue (`LQC-K002`). A known issue carries an id unique across the
+repository, a title, a detail saying what the lawyer would see and what to do
+about it, and `failure: silent | loud`. Where a probe would settle it, name the
+probe; `LQC-K003` warns if `probes.yaml` does not define it. `workarounds`
+records what the adaptation does instead of upstream's machinery, one line for
+each side.
+
+**Name the probe rather than guessing.** `probes.yaml` at the repository root
+holds the fourteen capability probes, each with the exact prompt a tester types
+and what its result unlocks. If your adaptation rests on something nobody has
+tested, it belongs behind a probe — and if `probes.yaml` has no probe for it,
+propose one in the pull request rather than writing the card as though the
+question were settled.
+
+**Watch the claim words.** `LQC-W011` warns when a built skill says *receipt*,
+*certified*, *proved* or *guaranteed complete*. The rule behind it has two
+limbs. Where a count or a completeness claim comes from the skill's own reading
+rather than from something the lawyer can check independently, those words may
+not be used: the permitted form names the method and the scope — "no issues
+found in the 62 clauses I read", never "no issues found". And where an answer
+rests on a dated snapshot rather than a live source, *currently*, *now*, *the
+latest* and *up to date* may not be used, and the snapshot's date appears in the
+description, in the first line of the answer and in the closing scope statement.
+Like every warning it can be suppressed with a reason; unlike most, it usually
+should not be.
 
 ## Setup
 
@@ -87,10 +171,22 @@ skills/<name>/
 
 To add a skill, create `skills/<name>/skill.yaml` with `name`, `upstream`
 (`<group>/<name>` under `upstream/skills/`), `anchored_to` (the SHA in
-`cowork.yaml`), a Cowork-shaped `description`, and `triggers` (3-5 positive
-prompts, 3-5 negative ones each tagged `-> other-skill`). Add `notes` when the
-card's `bucket` is `amber`. Then list the skill in the right bundle in
-`cowork.yaml` and run `make package`.
+`cowork.yaml`), a Cowork-shaped `description`, `triggers` (3-5 positive
+prompts, 3-5 negative ones each tagged `-> other-skill`), and the `cowork:`
+block — tier, status, `differs`, and the known issues and workarounds that
+follow from them (section 4 above). Add `notes` when the card's `bucket` is
+`amber` or `red`.
+
+You do not have to wait for the skill to be in a buildable bundle:
+
+```sh
+uv run --project tools lqcowork build --skill <name>
+```
+
+builds that one skill into `dist/skills-only/<name>/` through every transform
+and runs its per-skill checks. When it is clean, the skill joins a bundle —
+which, for a bundle that mirrors an upstream plugin, means writing the card and
+letting the mirror pick it up — and `make package` builds the lot.
 
 To adjust one, reach for the **highest layer that does the job** — the higher
 the layer, the less an upstream release can silently break it:
@@ -134,9 +230,20 @@ of them run over every `*.md` in the built skill unless the rule names SKILL.md.
 | `LQC-W005` | `scripts/` or `schemas/` is mentioned but not packaged |
 | `LQC-W006` | the SKILL.md body runs past 3,000 words |
 | `LQC-W007` | `hooks`, `~/.lq/`, `CLAUDE_PLUGIN_ROOT`, `argument-hint` or `disable-model-invocation` is mentioned |
-| `LQC-W008` | an amber card has no `notes` |
+| `LQC-W008` | an amber or red card has no `notes` |
 | `LQC-W009` | a phrase from `transforms.host_words` survives — host machinery Cowork does not have (`the scribe`, `exit code`, `subprocess`, …) |
 | `LQC-W010` | an external `http(s)://` URL the adaptation introduced; a URL that appears anywhere in the upstream skill folder is upstream's and stays exempt wherever it was moved to |
+| `LQC-W011` | a claim word survives (`receipt`, `certified`, `proved`, `guaranteed complete`, …) — a claim the model cannot back with something the lawyer can inspect must not be worded as one |
+| `LQC-K003` | a known issue names a `probe` that `probes.yaml` does not define |
+| `LQC-B002` | a mirrored bundle excludes a skill, with the reason, so the build and drift reports both show it |
+
+Three errors come with the `cowork:` block and the mirrored bundles, and none
+of them can be suppressed: `LQC-K001`, a missing or malformed block — no
+`tier`, `status` or `differs`, a known issue without an id, title, detail or
+failure mode, or a duplicate id anywhere in the repository; `LQC-K002`, a tier 4
+card in a bundle, a tier 2 or 3 card with no known issue, or a `probe-gated`
+card whose known issues name no probe; and `LQC-B001`, a mirrored bundle
+deriving a skill that has no card — write one, or exclude it with a reason.
 
 Section 6 of [docs/CONTRACT.md](docs/CONTRACT.md) is the authoritative list,
 including every error code.
@@ -181,7 +288,10 @@ The template asks four things, and they are the whole review:
   suppressed with a `reason`. Run `make test` too, and `make fmt` if you touched
   Python (black, line length 88).
 - **Card `notes` updated.** If the built output changed, the card says what
-  changed and why. An amber card without `notes` fails the build (`LQC-W008`).
+  changed and why. An amber or red card without `notes` is warned about
+  (`LQC-W008`). If what the lawyer gets changed, `cowork.differs` and the known
+  issues change with it, and a card with no `cowork:` block at all fails the
+  build (`LQC-K001`).
 - **No edits under `upstream/`.**
 
 Keep pull requests small and single-purpose — one skill, or one tooling change.
