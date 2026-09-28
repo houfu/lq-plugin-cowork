@@ -87,13 +87,17 @@ off, and today's date — and create the profile as `lq-capabilities.md` in the
 Output folder, in the format in [the profile format](references/profile-format.md),
 with every probe marked `unknown`. Say plainly that the file stays in the
 Output folder, that they should keep a copy, and that they attach it to every
-later probe conversation so the results collect in one place.
+later probe conversation so the results collect in one place. Then tell them
+to open a fresh conversation for their first probe: this one has done work
+now, so a probe run here would measure the wrong thing.
 
 ### 2. Run one probe
 
 The tester names a probe, or describes the capability; match it to its id.
 
-1. **Check the conversation is fresh** (rule 6).
+1. **Check the conversation is fresh** (rule 6). P11 is the one exception: its
+   setup is the earlier work in the conversation, and the probe entry says
+   which.
 2. **Give the setup** from [the probes](references/probes.md): what to make, how
    to plant their own check words, and what to write down for themselves. Wait
    until they say it is ready and have attached what the probe needs.
