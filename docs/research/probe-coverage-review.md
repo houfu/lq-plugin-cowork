@@ -2,6 +2,17 @@
 
 1 October 2026
 
+> **Status: implemented.** Steps 1 to 7 below are done: probes carry `tests`,
+> `cost` and `harness` fields; P15 to P27 exist and P1, P6, P12 and P13 are
+> tightened; results are data in `probe-results/` with a Probe report form;
+> levels are data in `capabilities.yaml` under two profiles; the verdict rule
+> is implemented once, in the `harness-probe` skill's engine; the build report
+> and the site's Verdicts page are generated from it; and the first results
+> file is a real run. The review below is kept as written, as the record of
+> why. Two numbers in it have since moved with a second audit (see the chart's
+> *Changes since the first audit*): FS is now required by fifteen upstream
+> skills, not seventeen.
+
 This document reviews `probes.yaml` (P1–P14), docs/TESTING.md Part E and the tooling that reads them. It
 checks them against [harness-capability-chart.md](harness-capability-chart.md) and asks two questions:
 
