@@ -1,3 +1,5 @@
+<!-- Added by the lq-plugin-cowork adaptation of LegalQuants/lq-plugin-oss@fa5a668; not an upstream LegalQuants file. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->
+
 # The probes
 
 Fourteen questions, each settled by one run. For every probe: what it settles,

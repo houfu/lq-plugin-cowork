@@ -15,8 +15,10 @@ description: |
 license: Apache-2.0
 metadata:
   adapted-for: "Microsoft 365 Copilot Cowork"
-  status: "draft; not yet part of the build, see docs/capability-switches.md"
+  version: "0.2.0"
+  status: "draft diagnostic; ships in no bundle"
 ---
+<!-- Added by the lq-plugin-cowork adaptation of LegalQuants/lq-plugin-oss@fa5a668; not an upstream LegalQuants file. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->
 
 # Capability check
 

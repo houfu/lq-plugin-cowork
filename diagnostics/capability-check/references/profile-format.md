@@ -1,3 +1,5 @@
+<!-- Added by the lq-plugin-cowork adaptation of LegalQuants/lq-plugin-oss@fa5a668; not an upstream LegalQuants file. Apache-2.0; see LICENSE and NOTICE.md at the package root. -->
+
 # The capability profile: `lq-capabilities.md`
 
 One file per tenant. The tester keeps it and attaches it to every probe

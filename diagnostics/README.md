@@ -19,9 +19,14 @@ time.
 
 ### Trying it before it is packaged
 
-1. Zip the **contents** of `diagnostics/capability-check/` — `SKILL.md`,
-   `references/` and `assets/` at the root of the archive, with no enclosing
-   folder — and name the file `capability-check.skill`.
+1. Get `capability-check.skill`. Until the build packages it, it is made by
+   hand with the repository's own archive writer, so it has the same shape as
+   every released `.skill`: the contents of `diagnostics/capability-check/`
+   at the archive root plus upstream's `LICENSE` and `NOTICE.md`, sorted
+   entries, fixed 1980 timestamps, byte-reproducible. It goes to
+   `dist/skills/capability-check.skill`, which is not committed. A hand-made
+   zip of the folder's contents also uploads, but leaves out the licence
+   files.
 2. In Cowork, **+**, **Customize**, **Skills**, the arrow next to **Add**,
    **Upload skill**, and pick the file.
 3. In a new conversation: "Check what Cowork can do here." You should get the
