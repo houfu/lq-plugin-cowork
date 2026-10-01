@@ -92,6 +92,7 @@ NAV: tuple[tuple[str, str], ...] = (
     ("differences.html", "What changed"),
     ("known-issues.html", "Known issues"),
     ("probes.html", "Probes"),
+    ("verdicts.html", "Verdicts"),
     ("install.html", "Install"),
     ("downloads.html", "Downloads"),
     ("testing.html", "Testing"),
@@ -560,6 +561,10 @@ class ProbeView:
     bad_outcome: str
     unlocks: tuple[str, ...]
     issues: tuple[IssueRef, ...]
+    tests: tuple[str, ...] = ()
+    cost: str = ""
+    method: str = ""
+    steps: str = ""
 
 
 @dataclass(frozen=True)
@@ -811,9 +816,29 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
             bad_outcome=probe.bad_outcome,
             unlocks=probe.unlocks,
             issues=tuple(issues_by_probe.get(probe.id, ())),
+            tests=probe.tests,
+            cost=probe.cost or "",
+            method=str((probe.harness or {}).get("method") or ""),
+            steps=" ".join(str((probe.harness or {}).get("steps") or "").split()),
         )
         for probe in config.probes
     )
+
+    from ..harness import harness_reports, load_capabilities
+
+    verdict_reports = [
+        {
+            "slug": item.slug,
+            "baseline": item.slug.startswith("baseline-"),
+            "source": (
+                ""
+                if item.slug.startswith("baseline-")
+                else item.source.relative_to(config.root).as_posix()
+            ),
+            **item.report,
+        }
+        for item in harness_reports(config, load_capabilities(config.root))
+    ]
 
     tier_counts: dict[int, int] = {}
     for skill in ordered_skills:
@@ -846,6 +871,13 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
         "probes": probe_views,
         "probe_ids": set(config.probe_ids),
         "probe_span": _probe_span(probe_views),
+        "verdict_reports": verdict_reports,
+        "verdict_titles": {
+            "as-intended": "Runs as intended",
+            "fallback": "Runs on a fallback",
+            "cannot-run": "Cannot run",
+            "untested": "Untested",
+        },
         "tiers": tier_rows,
         "transforms": config.transforms,
         "archives_built": any(skill.archive.built for skill in ordered_skills),
@@ -928,6 +960,7 @@ def build_site(config: Config, out_dir: Path | None = None) -> SiteResult:
     render("differences.html", "differences.html")
     render("known-issues.html", "known-issues.html")
     render("probes.html", "probes.html")
+    render("verdicts.html", "verdicts.html")
     render("downloads.html", "downloads.html")
     for bundle in context["bundles"]:
         render("bundle.html", f"bundles/{bundle.id}.html", bundle=bundle)

@@ -1,0 +1,278 @@
+{
+  "schema": "lq-harness-probe-results/1",
+  "harness": {
+    "name": "Claude Code on the web (cloud container)",
+    "profile": "upstream",
+    "client": "claude.ai/code, Claude Code 2.1.286",
+    "version": "",
+    "model": "claude-opus-5-5",
+    "recorded_by": "harness-probe skill, run by the agent",
+    "posture": {
+      "web_search": "available",
+      "web_fetch": "available-model-processed",
+      "mcp": "connected-remote-servers",
+      "subagents": "available",
+      "permission_mode": "auto",
+      "network": "allow-list-egress-proxy"
+    }
+  },
+  "results": [
+    {
+      "probe": "P1",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:08+00:00",
+      "observer": "script",
+      "codes": {
+        "EXEC": "pass",
+        "BIN": "pass"
+      },
+      "facts": {
+        "python": "3.11.15",
+        "implementation": "CPython",
+        "platform": "Linux-6.18.44-fc-v50-x86_64-with-glibc2.39",
+        "packages": {
+          "pypdf": false,
+          "pdfplumber": false,
+          "docx": false,
+          "openpyxl": false,
+          "PIL": false,
+          "fitz": false,
+          "playwright": false
+        },
+        "binaries": {
+          "pdftoppm": true,
+          "pdfinfo": true,
+          "pdftotext": true,
+          "soffice": true,
+          "libreoffice": true,
+          "tesseract": false,
+          "chromium": false,
+          "chromium-browser": false,
+          "google-chrome": false,
+          "rsvg-convert": false,
+          "magick": false,
+          "convert": true,
+          "inkscape": false,
+          "codex": false
+        },
+        "read_fixture": true,
+        "write_output": true
+      },
+      "evidence": "python 3.11.15 on Linux-6.18.44-fc-v50-x86_64-with-glibc2.39; packages ; binaries pdftoppm,pdfinfo,pdftotext,soffice,libreoffice,convert; read=True write=True"
+    },
+    {
+      "probe": "P21",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:08+00:00",
+      "observer": "script",
+      "facts": {
+        "skill_dir": "harness-probe",
+        "sibling_skills": [
+          "harness-probe-invoke"
+        ]
+      },
+      "evidence": "script at harness-probe/scripts; sibling import ok; marker sha256 566d06993d7b9f7c; sibling skills: harness-probe-invoke"
+    },
+    {
+      "probe": "P25",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:14+00:00",
+      "observer": "script",
+      "evidence": "contents match the generated token"
+    },
+    {
+      "probe": "P27",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:22+00:00",
+      "observer": "script",
+      "evidence": "file written with exactly the token",
+      "notes": "written with the Write tool; this harness hands files to the user through SendUserFile or the session's file panel"
+    },
+    {
+      "probe": "P26",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:31+00:00",
+      "observer": "script",
+      "evidence": "all five codes right: docx, eml, pdf, txt, xlsx",
+      "notes": "pdftotext for the PDF, unzip+grep for docx and xlsx, grep for eml, tail for the 152 KB text file"
+    },
+    {
+      "probe": "P17",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:31+00:00",
+      "observer": "script",
+      "evidence": "digest matches",
+      "notes": "sha256sum"
+    },
+    {
+      "probe": "P16",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:31+00:00",
+      "observer": "script",
+      "evidence": "all 23 relative paths and the count right, in a sibling folder",
+      "notes": "find over the folder"
+    },
+    {
+      "probe": "P3",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:35+00:00",
+      "observer": "script",
+      "evidence": "insertion, deletion, both authors, comment and the clean nil all right",
+      "notes": "unzip of word/document.xml and comments.xml"
+    },
+    {
+      "probe": "P4",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:45+00:00",
+      "observer": "script",
+      "evidence": "code and scribble corner both right",
+      "notes": "looked at the PNG with the Read tool's image view"
+    },
+    {
+      "probe": "P7",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:45+00:00",
+      "observer": "script",
+      "evidence": "packaged badge copied byte for byte and referenced by card.html"
+    },
+    {
+      "probe": "P8",
+      "outcome": "pass",
+      "date": "2026-10-01T06:05:45+00:00",
+      "observer": "script",
+      "evidence": "3 pages in the right order",
+      "notes": "poppler pdfseparate + pdfunite"
+    },
+    {
+      "probe": "P9",
+      "outcome": "pass",
+      "date": "2026-10-01T06:06:01+00:00",
+      "observer": "script",
+      "evidence": "header and six original rows intact, four new rows added, count still a formula (B12=COUNTA(A2:A11))",
+      "notes": "stdlib zipfile edit of the sheet XML"
+    },
+    {
+      "probe": "P10",
+      "outcome": "pass",
+      "date": "2026-10-01T06:06:02+00:00",
+      "observer": "script",
+      "evidence": "all three edits are tracked changes attributed to Review",
+      "notes": "stdlib zipfile edit of word/document.xml"
+    },
+    {
+      "probe": "P23",
+      "outcome": "pass",
+      "date": "2026-10-01T06:06:02+00:00",
+      "observer": "script",
+      "evidence": "packaged template copied, one cell changed, style and rows intact",
+      "notes": "copied the packaged template from the skill folder, one cell edited in the XML"
+    },
+    {
+      "probe": "P22",
+      "outcome": "pass",
+      "date": "2026-10-01T06:06:13+00:00",
+      "observer": "script",
+      "evidence": "a highlight and a comment carrying the token",
+      "notes": "incremental update written with stdlib Python; pdfinfo reads it"
+    },
+    {
+      "probe": "P18",
+      "outcome": "pass",
+      "date": "2026-10-01T06:06:20+00:00",
+      "observer": "script",
+      "facts": {
+        "bytes": 11358,
+        "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+      },
+      "evidence": "11358 bytes, digest matches the published file",
+      "notes": "curl through the environment's HTTPS proxy"
+    },
+    {
+      "probe": "P12",
+      "outcome": "refused",
+      "date": "2026-10-01T06:06:39+00:00",
+      "observer": "agent",
+      "evidence": "WebFetch: EGRESS_BLOCKED for example.com; curl through the proxy: CONNECT 403. The environment's network policy is an allow-list; raw.githubusercontent.com is allowed (see P18)."
+    },
+    {
+      "probe": "P6",
+      "outcome": "pass",
+      "date": "2026-10-01T06:06:39+00:00",
+      "observer": "script",
+      "facts": {
+        "url": "https://www.legislation.gov.uk/ukpga/2010/23/section/1",
+        "bytes_reported": 0
+      },
+      "evidence": "quoted from https://www.legislation.gov.uk/ukpga/2010/23/section/1",
+      "notes": "WebSearch restricted to legislation.gov.uk; the tool returns a rendering, not raw bytes"
+    },
+    {
+      "probe": "P19",
+      "outcome": "pass",
+      "date": "2026-10-01T06:07:00+00:00",
+      "observer": "script",
+      "facts": {
+        "worker_model": "haiku"
+      },
+      "evidence": "the worker followed the packet and did not know the canary; model haiku",
+      "notes": "Agent tool subagent, model chosen per call (haiku); the prompt was the packet alone"
+    },
+    {
+      "probe": "P15",
+      "outcome": "pass",
+      "date": "2026-10-01T06:07:00+00:00",
+      "observer": "agent",
+      "evidence": "Called mcp__claude-code-remote__get_session on the connected claude-code-remote MCP server; it returned this session's details (model claude-opus-5-5). The bundled probe server was not registered: servers load at session start.",
+      "notes": "user confirmation of the call still welcome"
+    },
+    {
+      "probe": "P2",
+      "outcome": "pending",
+      "date": "2026-10-01T06:07:00+00:00",
+      "observer": "script",
+      "evidence": "session one armed; write the token to lq-probe-persist.txt in the workspace root"
+    },
+    {
+      "probe": "P5",
+      "outcome": "pending",
+      "date": "2026-10-01T06:07:00+00:00",
+      "observer": "script",
+      "evidence": "token issued; resume this task later and ask for it, then try a new task"
+    },
+    {
+      "probe": "P11",
+      "outcome": "pending",
+      "date": "2026-10-01T06:07:00+00:00",
+      "observer": "agent",
+      "evidence": "The user's first message is in context and can be quoted; the user has not yet judged the quotation."
+    },
+    {
+      "probe": "P20",
+      "outcome": "not-run",
+      "date": "2026-10-01T06:07:01+00:00",
+      "observer": "agent",
+      "evidence": "Needs the user to open outputs/roundtrip.html; not done in this unattended run."
+    },
+    {
+      "probe": "P24",
+      "outcome": "not-run",
+      "date": "2026-10-01T06:07:01+00:00",
+      "observer": "agent",
+      "evidence": "Needs harness-probe-invoke installed and the user to call it by name."
+    },
+    {
+      "probe": "P13",
+      "outcome": "not-run",
+      "date": "2026-10-01T06:07:01+00:00",
+      "observer": "agent",
+      "evidence": "The harness has send_later and routines, but no scheduled run was armed in this run."
+    },
+    {
+      "probe": "P14",
+      "outcome": "not-run",
+      "date": "2026-10-01T06:07:01+00:00",
+      "observer": "agent",
+      "evidence": "Cowork Enterprise Search; not applicable to this harness."
+    }
+  ]
+}

@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Harness verdicts{% endblock %}
+{% block content %}
+<h1>Harness verdicts</h1>
+
+<p class="lede">
+  Which skills a harness can run as intended, which run on a documented
+  fallback, which cannot run, and which nobody has probed yet. Every verdict is
+  computed from recorded probe results against the capability levels in
+  <code>capabilities.yaml</code>, by the same engine the
+  <code>harness-probe</code> skill runs.
+</p>
+
+<p>
+  <strong>How to add one.</strong> Install <code>harness-probe.skill</code> from
+  the <a href="downloads.html">downloads</a> (or point a harness at the
+  <code>harness-probe/</code> folder), ask it to probe the harness, and attach
+  the <code>results.json</code> it writes to a Probe report issue. The rule is
+  in <code>harness-probe/references/verdict-rule.md</code>: a skill runs as
+  intended only when every required and every degradable capability has a
+  passing probe, cannot run when a required one failed, and is untested while a
+  required one has no result.
+</p>
+
+<div class="tablewrap">
+  <table>
+    <caption>Every harness on record. The two baselines show where things stand before any probe has run.</caption>
+    <thead>
+      <tr>
+        <th scope="col">Harness</th>
+        <th scope="col">Profile</th>
+        <th scope="col">As intended</th>
+        <th scope="col">Fallback</th>
+        <th scope="col">Cannot run</th>
+        <th scope="col">Untested</th>
+      </tr>
+    </thead>
+    <tbody>
+      {%- for r in verdict_reports %}
+      <tr>
+        <th scope="row"><a href="#{{ r.slug }}">{{ r.harness.name }}</a></th>
+        <td>{{ r.profile }}</td>
+        <td>{{ r.summary["as-intended"] }}</td>
+        <td>{{ r.summary["fallback"] }}</td>
+        <td>{{ r.summary["cannot-run"] }}</td>
+        <td>{{ r.summary["untested"] }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% for r in verdict_reports %}
+<h2 id="{{ r.slug }}">{{ r.harness.name }} <span class="subtle">({{ r.profile }} profile)</span></h2>
+
+<dl class="facts">
+  {%- if r.source %}
+  <dt>Results</dt>
+  <dd><code>{{ r.source }}</code>, newest result {{ r.generated }}</dd>
+  {%- else %}
+  <dt>Results</dt>
+  <dd>None: this is the baseline every harness starts from.</dd>
+  {%- endif %}
+  {%- for key in ["client", "version", "model", "recorded_by"] %}
+  {%- if r.harness[key] %}
+  <dt>{{ key | replace("_", " ") | capitalize }}</dt>
+  <dd>{{ r.harness[key] }}</dd>
+  {%- endif %}
+  {%- endfor %}
+  {%- if r.harness.posture %}
+  <dt>Posture</dt>
+  <dd>{% for k, v in r.harness.posture | dictsort %}{{ k }}: {{ v }}{{ "; " if not loop.last }}{% endfor %}</dd>
+  {%- endif %}
+</dl>
+
+{% for verdict in ["as-intended", "fallback", "cannot-run", "untested"] %}
+{% set names = r.groups[verdict] %}
+<h3>{{ verdict_titles[verdict] }} ({{ names | length }})</h3>
+{% if names %}
+<ul>
+  {%- for s in r.skills if s.verdict == verdict %}
+  <li>
+    {%- if s.skill in skill_names %}<a href="skills/{{ s.skill }}.html">{{ s.skill }}</a>{% else %}{{ s.skill }}{% endif %}
+    {%- if s.blocking %} — blocked by
+      {%- for b in s.blocking %} {{ b.code }} ({{ b.probes | join(", ") }}{% if b.reason %}: {{ b.reason }}{% endif %}){{ ";" if not loop.last }}{% endfor %}
+    {%- elif verdict == "untested" and s.unknown %} — waiting on
+      {%- for u in s.unknown %} {{ u.code }} ({{ u.probes | join(", ") }}){{ ";" if not loop.last }}{% endfor %}
+    {%- elif verdict == "fallback" %} — 
+      {%- for f in s.fallbacks %} {{ f.code }} {{ "failed" if f.status == "fail" else "unprobed" }}{% if f.text %}: “{{ f.text }}”{% endif %}{{ ";" if not loop.last }}{% endfor %}
+    {%- endif %}
+  </li>
+  {%- endfor %}
+</ul>
+{% else %}
+<p class="subtle">None.</p>
+{% endif %}
+{% endfor %}
+
+{% if r.next %}
+<div class="tablewrap">
+  <table>
+    <caption>What to probe next on this harness: unrun probes ranked by how many untested skills each would clear.</caption>
+    <thead>
+      <tr><th scope="col">Probe</th><th scope="col">Question</th><th scope="col">Cost</th><th scope="col">Clears</th><th scope="col">Bears on</th></tr>
+    </thead>
+    <tbody>
+      {%- for row in r.next[:8] %}
+      <tr>
+        <th scope="row"><a href="probes.html#{{ row.probe }}">{{ row.probe }}</a></th>
+        <td>{{ row.title }}</td>
+        <td>{{ row.cost }}</td>
+        <td>{{ row.clears | length }}{% if row.clears %} <span class="subtle">({{ row.clears | join(", ") }})</span>{% endif %}</td>
+        <td>{{ row.touches | length }}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+{% if r.disagreements %}
+<div class="tablewrap">
+  <table>
+    <caption>Cards whose hand-set status disagrees with this harness's verdict. Flagged, not changed.</caption>
+    <thead><tr><th scope="col">Skill</th><th scope="col">Card</th><th scope="col">Computed</th><th scope="col">Why</th></tr></thead>
+    <tbody>
+      {%- for flag in r.disagreements %}
+      <tr><th scope="row">{{ flag.skill }}</th><td>{{ flag.card }}</td><td>{{ verdict_titles[flag.computed] }}</td><td>{{ flag.note }}</td></tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endfor %}
+
+{% if verdict_reports %}
+<h2 id="coverage">Probe coverage</h2>
+<div class="tablewrap">
+  <table>
+    <caption>Which probes test each capability code.</caption>
+    <thead><tr><th scope="col">Code</th><th scope="col">Capability</th><th scope="col">Probes</th></tr></thead>
+    <tbody>
+      {%- set caps = verdict_reports[0].capabilities %}
+      {%- for row in verdict_reports[0].coverage.rows %}
+      <tr>
+        <th scope="row"><code>{{ row.code }}</code></th>
+        <td>{% for c in caps if c.code == row.code %}{{ c.name }}{% endfor %}</td>
+        <td>{% for p in row.probes %}<a href="probes.html#{{ p }}">{{ p }}</a>{{ ", " if not loop.last }}{% else %}none{% if row.unprobed_reason %} — {{ row.unprobed_reason }}{% endif %}{% endfor %}</td>
+      </tr>
+      {%- endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+{% endblock %}
