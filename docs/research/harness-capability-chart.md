@@ -16,15 +16,16 @@ The harness already has these, so they are not listed per skill:
 - **Agent Skills support.** The harness discovers skills by description, loads `SKILL.md` and loads the
   skill's own text files (`references/*.md`, schemas, prompts) into context on demand.
 
-Everything else counts as an additional capability. The baseline includes no tool calling. Many of the
-capabilities below can come from MCP servers or other tools instead of the harness itself; see
-[Supplying capabilities through MCP](#supplying-capabilities-through-mcp-or-a-similar-tool-interface).
+Everything else is a capability the harness must add. That includes executing tool calls (TOOLS) and
+connecting to MCP servers (MCP). The baseline returns text only.
 
 ## Capability codes
 
 | Code | Capability the harness must add |
 |---|---|
-| **IN** | Read files the user supplies: pdf, docx, xlsx, eml, txt/md, csv, images. |
+| **TOOLS** | Tool execution. The harness gives the model callable tools, runs each call and returns the result within the turn. Every capability that acts rather than reads goes through a tool call: OUT, FS, PERSIST, EXEC, BIN, NET, SEARCH, VISION, DOCX, SUB, SESSION, SCHED and MCP. A skill's TOOLS level is therefore the strongest of its levels in those columns. |
+| **MCP** | Connecting to an MCP server: local stdio or remote HTTP, with authorisation, tool and resource discovery, and routing of calls. Equivalent connector mechanisms count too: OpenAPI tools, Cowork `agentConnectors` and claude.ai connectors. Presupposes TOOLS. The service a skill connects to is named in [MCP connection](#mcp-connection). |
+| **IN** | Read files the user supplies: pdf, docx, xlsx, eml, txt/md, csv, images. Needs no TOOLS when the harness places attachments in context. |
 | **OUT** | Write and hand back files: html, docx, pdf, json, csv, md, png/svg. |
 | **FS** | A real filesystem. This covers user-named paths, recursive folder walks, a run or work directory, sibling output folders, and the skill directory itself present on disk. |
 | **PERSIST** | Storage that outlives the session. Examples are `~/.lq/`, `~/.wiki/`, a ledger or registry in a matter folder, and earlier run folders. |
@@ -37,7 +38,6 @@ capabilities below can come from MCP servers or other tools instead of the harne
 | **SUB** | Isolated worker contexts: parallel subagents, or a fresh-context reviewer call. |
 | **SESSION** | Read conversation transcripts: the current session's events and tool calls, or past sessions. |
 | **SCHED** | Background, detached or hook-driven runs that outlive the turn. |
-| **CONN** | An external service via MCP or API. The skill row names it. |
 | **HTML** | The user opens a generated offline HTML page in a browser. For docreview and document-discovery, the user's decisions come back as a downloaded JSON file. |
 
 Two capabilities are left out as columns:
@@ -57,47 +57,50 @@ Two capabilities are left out as columns:
 
 ## Matrix
 
-| Skill | IN | OUT | FS | PERSIST | EXEC | BIN | NET | SEARCH | VISION | DOCX | SUB | SESSION | SCHED | CONN | HTML |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **core** | | | | | | | | | | | | | | | |
-| legaldesign | ● | ● | ● | ○ | ◐ | ○ | ○ | | ◐ | | | | | ○ | ● |
-| lq-start | | | ● | | ● | | | | | | | | | | |
-| regulatory | ◐ | ○ | ● | ○ | ◐ | | ● | ◐ | | | ○ | | | ○ | |
-| timenarratives | ○ | ◐ | ○ | ○ | ◐ | | | | | ○ | | ◐ | | ○ | |
-| wiki | ● | ○ | ● | ● | ◐ | | ○ | | | | ◐ | ○ | ○ | | ◐ |
-| **companion** | | | | | | | | | | | | | | | |
-| legalquants | | | ◐ | ◐ | ◐ | | | | | | | | | | |
-| lq-apply | ○ | ● | ○ | ◐ | ◐ | | ◐ | | | | | | | | |
-| lq-ask | ○ | | | | ◐ | | ◐ | | | | | | | ◐ | |
-| lq-connect | | | | | ◐ | | ● | | | | | | | | |
-| lq-mirror | | ○ | | ○ | ○ | | | | | | | | | | |
-| lq-reflect | ● | ○ | ● | ● | ● | | | | | | ◐ | ● | | | |
-| my-lq-moment | ◐ | ● | ◐ | ○ | ● | ◐ | | | | | | ● | | | |
-| **litigation** | | | | | | | | | | | | | | | |
-| cite-check | ● | ● | ● | ○ | ◐ | ○ | ○ | ◐ | | | ◐ | | | ○ | |
-| client-update | ◐ | ○ | | ○ | ○ | | ○ | ○ | | | ◐ | | | ○ | |
-| correspondence | ◐ | ○ | | ○ | | | ○ | ○ | | | | | | ○ | |
-| depositions | ◐ | ○ | | ○ | | | ○ | ○ | | | | | | ○ | |
-| docreview | ● | ● | ● | ○ | ◐ | ○ | | | ◐ | | ◐ | | ○ | | ● |
-| document-discovery | ● | ● | ◐ | ○ | ○ | ○ | ◐ | ◐ | ○ | ○ | | | | ○ | ◐ |
-| new-matter | ○ | ◐ | ◐ | ○ | | | | | | | | | | ○ | |
-| organize-case-docs | ● | ◐ | ● | ● | ◐ | ○ | | | ○ | | | | | ○ | |
-| pressuretest | ● | ◐ | ◐ | | ◐ | | | | | | ○ | | | | |
-| writing | ○ | ○ | | ○ | | | ◐ | ◐ | | | | | | ○ | |
-| **transactional** | | | | | | | | | | | | | | | |
-| closing-bible | ● | ● | ● | ○ | ● | ◐ | | | ◐ | | ○ | | | | |
-| closing-checklist | ● | ● | ● | ○ | ◐ | ○ | ○ | ○ | ◐ | ◐ | ○ | | | ○ | |
-| conform | ● | ● | ● | | ● | | ○ | | | | ◐ | | | ○ | |
-| definition-check | ● | ◐ | ● | ○ | ◐ | ○ | | | | ◐ | ◐ | | | | |
-| diligence | ● | ● | ● | ○ | ◐ | ○ | | | ◐ | | ◐ | | ○ | | ● |
-| playbook-builder | ● | ● | ● | ● | ◐ | | | | ◐ | ◐ | | | | | |
-| playbook-review | ● | ● | ● | ● | ◐ | | | | ◐ | ◐ | ◐ | | | | |
-| read-redline | ● | ● | ● | ○ | ◐ | ◐ | | | ◐ | ● | | | | | |
-| sigpack | ● | ● | ● | ● | ◐ | ◐ | | | ● | ○ | ◐ | | | | |
+| Skill | TOOLS | MCP | IN | OUT | FS | PERSIST | EXEC | BIN | NET | SEARCH | VISION | DOCX | SUB | SESSION | SCHED | HTML |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **core** | | | | | | | | | | | | | | | | |
+| legaldesign | ● | ○ | ● | ● | ● | ○ | ◐ | ○ | ○ |  | ◐ |  |  |  |  | ● |
+| lq-start | ● |  |  |  | ● |  | ● |  |  |  |  |  |  |  |  |  |
+| regulatory | ● | ○ | ◐ | ○ | ● | ○ | ◐ |  | ● | ◐ |  |  | ○ |  |  |  |
+| timenarratives | ◐ | ○ | ○ | ◐ | ○ | ○ | ◐ |  |  |  |  | ○ |  | ◐ |  |  |
+| wiki | ● |  | ● | ○ | ● | ● | ◐ |  | ○ |  |  |  | ◐ | ○ | ○ | ◐ |
+| **companion** | | | | | | | | | | | | | | | | |
+| legalquants | ◐ |  |  |  | ◐ | ◐ | ◐ |  |  |  |  |  |  |  |  |  |
+| lq-apply | ● |  | ○ | ● | ○ | ◐ | ◐ |  | ◐ |  |  |  |  |  |  |  |
+| lq-ask | ◐ | ◐ | ○ |  |  |  | ◐ |  | ◐ |  |  |  |  |  |  |  |
+| lq-connect | ● |  |  |  |  |  | ◐ |  | ● |  |  |  |  |  |  |  |
+| lq-mirror | ○ |  |  | ○ |  | ○ | ○ |  |  |  |  |  |  |  |  |  |
+| lq-reflect | ● |  | ● | ○ | ● | ● | ● |  |  |  |  |  | ◐ | ● |  |  |
+| my-lq-moment | ● |  | ◐ | ● | ◐ | ○ | ● | ◐ |  |  |  |  |  | ● |  |  |
+| **litigation** | | | | | | | | | | | | | | | | |
+| cite-check | ● | ○ | ● | ● | ● | ○ | ◐ | ○ | ○ | ◐ |  |  | ◐ |  |  |  |
+| client-update | ◐ | ○ | ◐ | ○ |  | ○ | ○ |  | ○ | ○ |  |  | ◐ |  |  |  |
+| correspondence | ○ | ○ | ◐ | ○ |  | ○ |  |  | ○ | ○ |  |  |  |  |  |  |
+| depositions | ○ | ○ | ◐ | ○ |  | ○ |  |  | ○ | ○ |  |  |  |  |  |  |
+| docreview | ● |  | ● | ● | ● | ○ | ◐ | ○ |  |  | ◐ |  | ◐ |  | ○ | ● |
+| document-discovery | ● | ○ | ● | ● | ◐ | ○ | ○ | ○ | ◐ | ◐ | ○ | ○ |  |  |  | ◐ |
+| new-matter | ◐ | ○ | ○ | ◐ | ◐ | ○ |  |  |  |  |  |  |  |  |  |  |
+| organize-case-docs | ● | ○ | ● | ◐ | ● | ● | ◐ | ○ |  |  | ○ |  |  |  |  |  |
+| pressuretest | ◐ |  | ● | ◐ | ◐ |  | ◐ |  |  |  |  |  | ○ |  |  |  |
+| writing | ◐ | ○ | ○ | ○ |  | ○ |  |  | ◐ | ◐ |  |  |  |  |  |  |
+| **transactional** | | | | | | | | | | | | | | | | |
+| closing-bible | ● |  | ● | ● | ● | ○ | ● | ◐ |  |  | ◐ |  | ○ |  |  |  |
+| closing-checklist | ● | ○ | ● | ● | ● | ○ | ◐ | ○ | ○ | ○ | ◐ | ◐ | ○ |  |  |  |
+| conform | ● | ○ | ● | ● | ● |  | ● |  | ○ |  |  |  | ◐ |  |  |  |
+| definition-check | ● | ○ | ● | ◐ | ● | ○ | ◐ | ○ |  |  |  | ◐ | ◐ |  |  |  |
+| diligence | ● |  | ● | ● | ● | ○ | ◐ | ○ |  |  | ◐ |  | ◐ |  | ○ | ● |
+| playbook-builder | ● |  | ● | ● | ● | ● | ◐ |  |  |  | ◐ | ◐ |  |  |  |  |
+| playbook-review | ● |  | ● | ● | ● | ● | ◐ |  |  |  | ◐ | ◐ | ◐ |  |  |  |
+| read-redline | ● |  | ● | ● | ● | ○ | ◐ | ◐ |  |  | ◐ | ● |  |  |  |  |
+| sigpack | ● |  | ● | ● | ● | ● | ◐ | ◐ |  |  | ● | ○ | ◐ |  |  |  |
 
 Nine skills have no ● at all: timenarratives, legalquants, lq-ask, lq-mirror, client-update,
 correspondence, depositions, new-matter and writing. They run on the baseline alone, in their documented
 degraded form wherever they have ◐ items.
+
+TOOLS is ● for 21 skills, ◐ for 7 and ○ for 3. MCP is never ●. lq-ask's lq-mcp is the only ◐, and
+fifteen other skills use a connection optionally.
 
 ## Per skill: what is hard, what it runs on, what degrades
 
@@ -195,22 +198,23 @@ These requirements do not show as their own column but a harness builder will hi
 - **Python version.** The floor across the set is **3.12**: definition-check, conform and closing-bible
   gate on it, pressuretest declares it, and most of the rest need 3.11 for `datetime.UTC`.
 
-## Supplying capabilities through MCP or a similar tool interface
+## TOOLS and MCP in more detail
 
-The matrix says what each skill needs. It does not say how the harness supplies it. A harness that adds
-one thing, a **tool-calling loop with an MCP client**, can supply most columns through tool servers
-instead of building them in. Plain chat completion does not include tool calls, so this client is a
-prerequisite for every MCP route below, but on its own it makes no skill runnable.
+### Tool execution
 
-"Similar" means any tool the model calls during a turn: function calling, OpenAPI tools, host
-connectors (Cowork `agentConnectors`, claude.ai connectors) and MCP Apps for UI. Everything in this
-section applies to them in the same way.
+TOOLS is the capability almost everything else depends on. Plain chat completion only returns text. A
+skill that writes a file, walks a folder, runs a script, fetches a page, renders a page, starts a worker
+or reads a past chat does each of these through a tool call that the harness executes. That is why the
+TOOLS column is derived from the other columns, not audited separately:
 
-### The skills already accept host tools
+- **21 skills** need it (●);
+- **7** have a documented fallback (◐): timenarratives, legalquants, lq-ask, client-update, new-matter,
+  pressuretest, writing;
+- **3** use it only optionally (○): lq-mirror, correspondence, depositions.
 
-Most skills describe a **tool cascade**: the bundled scripts first, then host-native tools, then a
-licensed service that the user or firm selects (`upstream/AGENTS.md`, "Tool cascade"). An MCP tool is a
-host tool. Examples:
+The skills do not care whether a tool is built into the harness or attached over MCP. Most of them
+describe a **tool cascade**: the bundled scripts first, then host-native tools, then a licensed service
+that the user or firm selects (`upstream/AGENTS.md`, "Tool cascade"). Examples:
 
 - diligence and docreview, `references/shared/execution-modes.md:75`;
 - read-redline, `SKILL.md:124`;
@@ -218,15 +222,13 @@ host tool. Examples:
 - playbook-builder, `SKILL.md:282-287`;
 - regulatory, `SKILL.md:612-617`.
 
-definition-check and conform name MCP outright as profile `C5_APPROVED_INTEGRATIONS`
-(`references/capability-routing.md`).
-
-### Three rules decide whether a server counts
+What the skills do care about is how a tool behaves. Three conditions apply to every tool, however it is
+connected:
 
 1. **The tool must actually perform the operation.** The rule is "do not claim SHA-256 identity …
    automated count reconciliation unless a host-native tool actually performed it"
    (`execution-modes.md:96-98`).
-   - A server that summarises a page or describes a file does not satisfy NET, hashing or DOCX.
+   - A tool that summarises a page or describes a file does not satisfy NET, hashing or DOCX.
    - regulatory rejects a web-fetch tool's rendering as "a model's summary of the text, not the text"
      (`SKILL.md:46-49`).
 2. **Client material stays inside a boundary that is already authorised.** Remote processing is allowed
@@ -237,56 +239,68 @@ definition-check and conform name MCP outright as profile `C5_APPROVED_INTEGRATI
    - closing-checklist does not upload matter documents to a new service (`SKILL.md:30`);
    - wiki Position notes "never leave the machine".
 
-   In practice, for the matter skills, any server that touches the documents must be local (stdio) or the
+   In practice, for the matter skills, any tool that touches the documents must run locally or inside the
    firm's own approved system.
 3. **The bundled scripts can only see a filesystem.** They take paths, import sibling modules, read
    `../assets`, and call other skills' scripts by relative path.
-   - A code-execution server satisfies EXEC only if the skill folders and the user's workspace are both
+   - A code-execution tool satisfies EXEC only if the skill folders and the user's workspace are both
      inside its filesystem.
    - A remote sandbox that holds neither does nothing for the script path.
-   - Uploading matter files into a remote sandbox falls under rule 2.
+   - Uploading matter files into a remote sandbox falls under condition 2.
 
-### Capability by capability
+### MCP connection
 
-| Code | MCP or tool route | Counts when | Does not count |
-|---|---|---|---|
-| IN | A filesystem server; a DMS connector (SharePoint/OneDrive, iManage, NetDocuments); upload into the chat | The tool returns the whole document. For the script path, the file must also land where the scripts can read it. | A connector that returns snippets or summaries. A remote DMS used for documents outside its authorised boundary. |
-| OUT | A filesystem server with write; a DMS connector with write; a host file-return or artifact tool | The user gets a file they can open. docx and pdf output also need a tool that produces that format (see DOCX and BIN). | — |
-| FS | A local filesystem server with list, recursive walk, read, write and make-directory | Paths stay stable across calls, and EXEC (if used) sees the same tree. | Connectors that address items by ID with no paths. They serve the model-read fallback, not the scripts. |
-| PERSIST | The same filesystem server on durable storage | The files the skills expect survive between sessions: `~/.lq/`, `~/.wiki/wikis.json`, `sigpack.ledger.json`, `playbook-registry.json`, earlier run folders. | A generic memory or key-value server. No skill reads one, and the bundled scripts are the only writers of these stores. |
-| EXEC | A code-execution server, local or sandboxed | It runs Python ≥3.12 and has both the skill folders and the workspace mounted. | A sandbox without the skill folders. A remote sandbox that matter files must be uploaded into. |
-| BIN | The EXEC sandbox with the binaries installed; or dedicated render and convert servers (LibreOffice, PDF rendering) | The agent itself calls the binary, as read-redline and sigpack do with `pdftoppm`. | Binaries that scripts launch via `subprocess` (closing-bible, docreview, diligence, sigpack). These must be inside the EXEC sandbox, not behind a separate server. |
-| NET | A fetch server | For regulatory, it saves the **raw response bytes** to the workspace so they can be hashed. For lq-connect and the live parts of lq-ask, a readable page is enough. | For regulatory, a fetch server that converts HTML to Markdown. |
-| SEARCH | A search server (Brave, Bing, Tavily and similar) | Queries carry citation metadata only, never client text (cite-check). | — |
-| VISION | A render server that returns page images as image content, plus a multimodal model | Every page asked for is rendered and actually looked at. sigpack refuses to compile otherwise. | OCR text standing in for the image: sigpack decides `signed` from the render alone. A server cannot give the model vision it lacks. |
-| DOCX | A Word or OOXML server that exposes tracked changes, comments and table structure, and can write them | It reports `w:ins`/`w:del`/moves with their authors, and comments (read-redline). It can edit a table in place (closing-checklist). | A plain docx-to-text converter. |
-| SUB | Host subagents; MCP sampling, where a server asks the client for a fresh completion; an "ask another model" tool | Each call is a fresh context holding only its packet. docreview and diligence also need the model and effort chosen per call. | A tool that shares the parent's context. |
-| SESSION | Host conversation tools (list and read past chats); the host's own event log | timenarratives reads past chats through "host-native conversation list and read tools" (`conversation-context.md:9-13`). | A generic server, since the transcript lives in the host. timenarratives prefers native readers to a local session scanner, and rules out browser scraping, reverse-engineered private APIs and uploading chat history. lq-reflect's scripts read Codex and Claude Code JSONL files on disk, so a transcript server would need a new reader. |
-| SCHED | A scheduler or trigger server; host routines | It can keep a long-running process with a heartbeat alive for the detached review runners. | wiki's automatic retrieval, which needs host lifecycle hooks. A server cannot add those. |
-| CONN | The named connectors, listed in the next table | — | — |
-| HTML | A host artifact surface or MCP Apps UI to show the page; chat upload for the JSON it returns | The user can open the page and hand back the file it downloads. | Untested. The pages are written for `file://` and rely on Blob downloads and `localStorage`. |
+MCP means the harness can connect to an MCP server: start or reach it (local stdio or remote HTTP), handle
+its authorisation, list its tools and resources, and route the model's calls to it. Other connector
+mechanisms count in the same way: OpenAPI tools, Cowork `agentConnectors` and claude.ai connectors. MCP
+presupposes TOOLS.
 
-### Connectors the skills name
+The MCP column marks the skills that ask for a server by name or by kind:
 
-| Skill | Connector | Level | Rule |
+- **No skill needs MCP (●).**
+- **lq-ask is the only ◐.** It falls back to a static source list when lq-mcp is absent.
+- **The rest are ○.** They use a connection only if one is present and authorised.
+
+| Skill | What the connection is for | Level | Rule |
 |---|---|---|---|
 | lq-ask | **lq-mcp**, guest scope | ◐ | A connector being present "does not prove member access". The member tier (LQ Brain) needs an authorised capability response and is not shipped (`SKILL.md:44-59`). |
 | cite-check | **CourtListener MCP** | ○ | Used only when the host exposes it and the user authorises it. Only citation metadata is sent (`getting-authorities.md:75-77`). |
-| definition-check, conform | "network/connectors/MCP/DMS", as profile C5 | ○ | Only inside an already-authorised boundary, and remote processing is recorded. The example given is retrieving a source ledger from a DMS. |
-| closing-checklist, new-matter, organize-case-docs, depositions, client-update, writing, correspondence, document-discovery, timenarratives, legaldesign | Unnamed, firm-selected systems: DMS, matter management, docket, e-billing, e-discovery or transcript platforms, licensed legal research | ○ | Only when the user or firm selects one, and never assumed. new-matter never reports a system as queried unless it actually returned a result (`SKILL.md:100`). |
-| my-lq-moment, correspondence, sigpack, playbook-review, diligence | Publishing, email, calendar, docketing, e-signature | **Forbidden** | These skills never send, post, file, docket or run an e-signature process, even when the connector exists. A harness should not expose such tools to them. |
+| definition-check, conform | "network/connectors/MCP/DMS", as profile C5 | ○ | Only inside an already-authorised boundary, and remote processing is recorded. The example given is retrieving a source ledger from a DMS (`references/capability-routing.md`). |
+| regulatory, closing-checklist, new-matter, organize-case-docs, depositions, client-update, writing, correspondence, document-discovery, timenarratives, legaldesign | Unnamed, firm-selected systems: DMS, matter management, docket, e-billing, e-discovery or transcript platforms, licensed legal research or retrieval | ○ | Only when the user or firm selects one, and never assumed. new-matter never reports a system as queried unless it actually returned a result (`SKILL.md:100`). |
+| my-lq-moment, correspondence, sigpack, playbook-review, diligence | Publishing, email, calendar, docketing, e-signature | **Forbidden** | These skills never send, post, file, docket or run an e-signature process, even when the connection exists. A harness should not expose such tools to them. |
 
-### Which skills can run on MCP alone
+MCP can also carry the tools behind other capabilities. In that case, the three conditions above apply to
+each server. The table below says what a tool must do to count for each capability, whether it is built
+in or comes from a server.
 
-Here, "MCP alone" means the harness has no local Python runtime of its own, only tool servers. Each skill
-is placed according to its ● cells.
+| Code | Example tools, built in or over MCP | Counts when | Does not count |
+|---|---|---|---|
+| IN | Attachment into context; a filesystem tool; a DMS connector | The whole document arrives. For the script path, the file must also land where the scripts can read it. IN alone needs no TOOLS when the harness places attachments in context. | A connector that returns snippets or summaries. A remote DMS used for documents outside its authorised boundary. |
+| OUT | Filesystem write; DMS write; a file-return or artifact tool | The user gets a file they can open. docx and pdf output also need a tool that produces that format (see DOCX and BIN). | — |
+| FS | Filesystem tools with list, recursive walk, read, write and make-directory | Paths stay stable across calls, and EXEC (if used) sees the same tree. | Tools that address items by ID with no paths. They serve the model-read fallback, not the scripts. |
+| PERSIST | The same filesystem tools on durable storage | The files the skills expect survive between sessions: `~/.lq/`, `~/.wiki/wikis.json`, `sigpack.ledger.json`, `playbook-registry.json`, earlier run folders. | A generic memory or key-value store. No skill reads one, and the bundled scripts are the only writers of these stores. |
+| EXEC | A code-execution tool, local or sandboxed | It runs Python ≥3.12 with both the skill folders and the workspace mounted. | A sandbox without the skill folders. A remote sandbox that matter files must be uploaded into. |
+| BIN | The EXEC sandbox with the binaries installed; render and convert tools (LibreOffice, PDF rendering) | The agent itself calls the binary, as read-redline and sigpack do with `pdftoppm`. | Binaries that scripts launch via `subprocess` (closing-bible, docreview, diligence, sigpack). These must be inside the EXEC sandbox. |
+| NET | A fetch tool | For regulatory, it saves the **raw response bytes** to the workspace so they can be hashed. For lq-connect and the live parts of lq-ask, a readable page is enough. | For regulatory, a fetch tool that converts HTML to Markdown. |
+| SEARCH | A search tool (Brave, Bing, Tavily and similar) | Queries carry citation metadata only, never client text (cite-check). | — |
+| VISION | A render tool that returns page images as image content, plus a multimodal model | Every page asked for is rendered and actually looked at. sigpack refuses to compile otherwise. | OCR text standing in for the image: sigpack decides `signed` from the render alone. No tool can give the model vision it lacks. |
+| DOCX | A Word or OOXML tool that exposes tracked changes, comments and table structure, and can write them | It reports `w:ins`/`w:del`/moves with their authors, and comments (read-redline). It can edit a table in place (closing-checklist). | A plain docx-to-text converter. |
+| SUB | Host subagents; MCP sampling, where a server asks the client for a fresh completion; a tool that calls another model | Each call is a fresh context holding only its packet. docreview and diligence also need the model and effort chosen per call. | A tool that shares the parent's context. |
+| SESSION | Host conversation tools (list and read past chats); the host's own event log | timenarratives reads past chats through "host-native conversation list and read tools" (`conversation-context.md:9-13`). | A third-party server, since the transcript lives in the host. timenarratives prefers native readers to a local session scanner, and rules out browser scraping, reverse-engineered private APIs and uploading chat history. lq-reflect's scripts read Codex and Claude Code JSONL files on disk, so a transcript tool would need a new reader. |
+| SCHED | A scheduler or trigger tool; host routines | It can keep a long-running process with a heartbeat alive for the detached review runners. | wiki's automatic retrieval, which needs host lifecycle hooks. A tool cannot add those. |
+| HTML | A host artifact surface or MCP Apps UI to show the page; chat upload for the JSON it returns | The user can open the page and hand back the file it downloads. | Untested. The pages are written for `file://` and rely on Blob downloads and `localStorage`. |
 
-| Verdict | Skills | Servers that cover the ● cells |
+### If every tool comes over MCP
+
+Suppose a harness has TOOLS and MCP but no built-in tools, so every action goes to a server. Each skill is
+placed according to its ● cells.
+
+| Verdict | Skills | What the servers must provide |
 |---|---|---|
-| Needs nothing | **9**: timenarratives, legalquants, lq-ask, lq-mirror, client-update, correspondence, depositions, new-matter, writing | Optional extras: lq-mcp for lq-ask; search and fetch for writing, correspondence and client-update. |
-| Yes, with any server (only public or personal data is involved) | **3**: lq-connect, lq-apply, regulatory | lq-connect and lq-apply need fetch. regulatory needs a fetch server that saves raw bytes, plus a filesystem server; its script verification stays ◐. |
-| Yes, but the servers must be local or inside an approved boundary, because client material is involved | **14**: cite-check, pressuretest, document-discovery, closing-checklist, definition-check, playbook-builder, playbook-review, legaldesign, wiki, organize-case-docs, read-redline, sigpack, docreview, diligence | All need a filesystem server with write. Some need more, listed below. |
-| Only with a co-located code server | **3**: lq-start, conform, closing-bible | A code-execution server whose filesystem holds both the skill folders and the workspace. lq-start also needs the host's plugin install tree inside it. |
+| Needs no tools | **9**: timenarratives, legalquants, lq-ask, lq-mirror, client-update, correspondence, depositions, new-matter, writing | Nothing. Optional extras: lq-mcp for lq-ask; search and fetch for writing, correspondence and client-update. |
+| Works with any server (only public or personal data is involved) | **3**: lq-connect, lq-apply, regulatory | lq-connect and lq-apply need fetch. regulatory needs a fetch server that saves raw bytes, plus a filesystem server; its script verification stays ◐. |
+| Works only with local or approved servers, because client material is involved | **14**: cite-check, pressuretest, document-discovery, closing-checklist, definition-check, playbook-builder, playbook-review, legaldesign, wiki, organize-case-docs, read-redline, sigpack, docreview, diligence | All need a filesystem server with write. Some need more, listed below. |
+| Works only with a co-located code server | **3**: lq-start, conform, closing-bible | A code-execution server whose filesystem holds both the skill folders and the workspace. lq-start also needs the host's plugin install tree inside it. |
 | Needs the host itself | **2**: lq-reflect, my-lq-moment | Past transcripts (lq-reflect) and the current session's tool and event log (my-lq-moment) belong to the host. lq-reflect also needs co-located exec over those transcripts. |
 
 The counts sum to 31.
@@ -307,27 +321,25 @@ Each rung assumes the ones before it. A skill is placed on the first rung where 
 met, so every skill appears exactly once. It then runs in its degraded form until its ◐ items are also
 present.
 
-Every rung can be built natively or through tool servers. The "Via MCP or tools" column needs the MCP
-client prerequisite and is bound by the three rules above.
+| Rung | Add | Skills whose ● are all met here (new) | Main ◐ upgrades this rung brings |
+|---|---|---|---|
+| 0 | Baseline only | **9**: timenarratives, legalquants, lq-ask, lq-mirror, client-update, correspondence, depositions, new-matter, writing | — |
+| 1 | IN: user attachments placed in context | **1**: pressuretest | correspondence, depositions and client-update read their sources directly. |
+| 2 | TOOLS, with OUT, FS and PERSIST tools: a durable workspace with user-named folders, and the skills materialised on disk | **9**: lq-apply, cite-check, document-discovery, closing-checklist, definition-check, playbook-builder, playbook-review, wiki, organize-case-docs (which still needs some way to SHA-256 files) | new-matter and legalquants save their files. |
+| 3 | EXEC: a Python ≥3.12 stdlib sandbox that can reach both the workspace and the skill folders | **4**: lq-start, conform, closing-bible, read-redline (Word path) | Script-verified receipts and hashes for almost every ◐ EXEC cell. timenarratives, wiki and pressuretest move off their fallback routes. |
+| 4 | Document stack and VISION: **pypdf, pdfplumber, python-docx, Pillow**, **Poppler**, **LibreOffice**, and a model that reads rendered pages | **1**: sigpack | read-redline's PDF path, closing-bible's execution-page inspection, scans in diligence and docreview, closing-checklist's layout QA. |
+| 5 | HTML: the user can open a generated local HTML file and return the JSON file it downloads | **3**: legaldesign, docreview, diligence | document-discovery's review page; wiki's rich browse view. |
+| 6 | SUB: isolated worker contexts, with a model and effort choice for each worker | **0** | Parallel speed and independent review in cite-check, docreview, diligence, definition-check, conform and sigpack. wiki's fresh-context gate reviewer. |
+| 7 | NET (raw bytes) and SEARCH | **2**: regulatory, lq-connect | Live sources for lq-ask and lq-apply. Authority checks for cite-check, writing and document-discovery. |
+| 8 | SESSION: the current session's event log, plus access to past transcripts | **2**: lq-reflect, my-lq-moment | timenarratives can read related chats. |
+| 9 | MCP connection | **0** | lq-mcp for lq-ask; CourtListener for cite-check; C5 integrations for definition-check and conform; firm-selected systems for eleven more. |
+| 10 | SCHED or host hooks | **0** | wiki auto-retrieval; detached review runners. |
 
-| Rung | Add | Via MCP or tools | Skills whose ● are all met here (new) | Main ◐ upgrades this rung brings |
-|---|---|---|---|---|
-| 0 | Baseline only | — | **9**: timenarratives, legalquants, lq-ask, lq-mirror, client-update, correspondence, depositions, new-matter, writing | — |
-| — | Tool calling with an MCP client | The prerequisite for every route in this column | **0** | lq-mcp for lq-ask; CourtListener for cite-check; firm-selected connectors. |
-| 1 | IN, OUT, FS, PERSIST: a durable workspace with user-named folders, and the skills materialised on disk | A local filesystem server on durable storage. A DMS connector only inside its approved boundary. | **10**: lq-apply, pressuretest, cite-check, document-discovery, closing-checklist, definition-check, playbook-builder, playbook-review, wiki, organize-case-docs (which still needs some way to SHA-256 files) | new-matter and legalquants save their files. |
-| 2 | EXEC: a Python ≥3.12 stdlib sandbox that can reach both the workspace and the skill folders | A code-execution server, but only if the skill folders and the workspace are inside it. | **4**: lq-start, conform, closing-bible, read-redline (Word path) | Script-verified receipts and hashes for almost every ◐ EXEC cell. timenarratives and wiki move off their fallback routes. |
-| 3 | Document stack and VISION: **pypdf, pdfplumber, python-docx, Pillow**, **Poppler**, **LibreOffice**, and a model that reads rendered pages | The packages and binaries go inside the EXEC sandbox. The agent can call separate render and convert servers itself. The model's vision cannot come from a server. | **1**: sigpack | read-redline's PDF path, closing-bible's execution-page inspection, scans in diligence and docreview, closing-checklist's layout QA. |
-| 4 | HTML: the user can open a generated local HTML file and return the JSON file it downloads | A host artifact surface or MCP Apps to show the page, and chat upload for the JSON (untested against `file://` pages). | **3**: legaldesign, docreview, diligence | document-discovery's review page; wiki's rich browse view. |
-| 5 | SUB: isolated worker contexts, with a model and effort choice for each worker | Host subagents, or MCP sampling or another tool that calls a model, with fresh context and a choice of model per call. | **0** | Parallel speed and independent review in cite-check, docreview, diligence, definition-check, conform and sigpack. wiki's fresh-context gate reviewer. |
-| 6 | NET (raw bytes) and SEARCH | Fetch and search servers. For regulatory, the fetch server must save the raw bytes. | **2**: regulatory, lq-connect | Live sources for lq-ask and lq-apply. Authority checks for cite-check, writing and document-discovery. |
-| 7 | SESSION: the current session's event log, plus access to past transcripts | Host conversation tools only. No generic server can supply it. | **2**: lq-reflect, my-lq-moment | timenarratives can read related chats. |
-| 8 | SCHED or hooks, and CONN | Trigger servers and named connectors. Hooks must come from the host. | **0** | Optional extras only: wiki auto-retrieval, detached review runners, connector rungs. |
+The counts sum to 31.
 
-The counts sum to 31. Running purely on servers, with no runtime of its own, a harness gets:
-
-- 26 skills as long as the servers respect the boundary rules;
-- 3 more (lq-start, conform, closing-bible) only with a co-located code server;
-- 2 (lq-reflect, my-lq-moment) only from host features.
+MCP sits late on this ladder because no skill requires it. A harness that gets its tools from MCP servers
+instead of building them in needs MCP at rung 2. It is then bound by the conditions in
+[Tool execution](#tool-execution).
 
 ## Method and confidence
 
@@ -344,7 +356,10 @@ The orchestrator then cross-checked the heaviest claims by grep across the tree,
 - The external binaries invoked are exactly Poppler, LibreOffice, tesseract, Chromium, Inkscape,
   `rsvg-convert` and `codex`.
 
-The MCP section adds a further sweep of every skill's Markdown. It searched for MCP, connector, host-native and tool-cascade language and for data-boundary rules, and every rule it quotes is cited to the file it came from.
+The TOOLS column is derived from the other cells, as the code list explains. The MCP column, and the
+rules quoted in the TOOLS and MCP section, come from a further sweep of every skill's Markdown. That sweep
+searched for MCP, connector, host-native and tool-cascade language and for data-boundary rules. Every
+rule quoted is cited to the file it came from.
 
 No script was executed. Levels describe what the skills say about themselves, not observed behaviour on
 any harness.
