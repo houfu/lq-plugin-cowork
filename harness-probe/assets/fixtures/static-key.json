@@ -1,0 +1,174 @@
+{
+  "P15": {
+    "nonce": "MCP-AVFYHEAD"
+  },
+  "P16": {
+    "count": 23,
+    "paths": [
+      "097180ab65c0635091658f249d9e78e1d48e68404c6271fe473fdb74de7507c1",
+      "0b919fabc64125b62a31a7c13337763a3fca2f70b9e5fcd7ea4177fee0463456",
+      "1b71af72a201e534187dc698201ca58d4122768194d8b464d8618c16b3bb66dc",
+      "1fc9f571d8fbae9a2d83cfdfd25417c2aaa4426b822024c4a91394286d6de38e",
+      "250930938e339cfed10afa3735cc5ab98ad6d4e93fa68bd0c38a790a71df6262",
+      "3351b3ea9fb1a32f617a3aa7a2bd73fdadb947d294985b7b88df659e10ab6c6a",
+      "71a8c818710bb49e1e62a2275acf24c9af8b99b76129a9212235608baf27425d",
+      "7d69e41f106065bcc33ecf3d7f81967c20b5973a02cf27ac06eabce0e5f9c111",
+      "8ef9ba4ceb0aeee0446156b0271af8e0a66bc6efc1b42a893c9c627e286b543c",
+      "9fd03da6ebdec4954ffa40d8171dd236fe075ca3734bba4f207a541ed1bf3364",
+      "a0c94f20b9f69b8900b3c819049caec10b6871d859f438205815ac212d92259b",
+      "a6b25cbd8ff4e3b4260894028ce2a4c33ac47e693057bcf9ee3f73beb2cf080a",
+      "a7182e24017f6873738c360b200f09cac954b82126ea673a7eacbd57452225e7",
+      "a8c6ccd4272e80f177126251a6dba3e5c5a53e4c68cadef1f90bea9fe0abfe7e",
+      "b0295cfd17f1e8497f58bbfe052f55f24d440234ab61dc97f264128a14d1e7d1",
+      "c656289f903a1ea8775214863b2cec8c6dcbc9a607b92b0cb6c4bb4ebd41c5ef",
+      "dbaf723286aee2e81aca7c7e4c3395969c9811ea8146ee27c34fa55016041295",
+      "e0f61158d7e01c676a80b53f48e6063cbfb34b5f7cc0afd25be19090ab9e6aa0",
+      "e6a7144be50ea41e09ad274e7858688dd602670196cc2faaab23cfc31e86c783",
+      "f3a700e21a924b1bfd48b219dfc1830abce28916dba8a95925a500d8232a927c",
+      "f5ac602c6f6b1f63b83e3a55e0d24952d1bbc6d487ca39fd181382e895c28569",
+      "f89dad54a22dc7a79d6bf0154f49f9b98398fdb89d83e9d94acd8c978a0693f7",
+      "fec1aa655548e45171ac1ac61ce4f8cb008a23afa1b7716cac77c72b7df9e94b"
+    ]
+  },
+  "P17": "10956f2d39f9f3f58d491b797ed20bebb3a543c31c4cf38e9d90462406003310",
+  "P19": {
+    "canary": "SPRUCE FENNEL",
+    "reversed": "7fcaf011ce73304d500aa4f3923e61213ad1af8d09065bd642607d88e248610a"
+  },
+  "P2": {
+    "token": "PERSIST-FN9YUX"
+  },
+  "P20": {
+    "nonce": "RT-C7PMPJHYAX"
+  },
+  "P22": {
+    "token": "REVIEW-YKY7"
+  },
+  "P23": {
+    "token": "AGREED-VXH3"
+  },
+  "P24": {},
+  "P25": "fa56018165a00f8c6a157dee23c4de1fea44a59f066c65b6fce2cfb04dc2636b",
+  "P26": {
+    "docx": "b4d55a07ca798ad57e5f513e706cea1b69fd17ddadaa9778da9005044cb68456",
+    "eml": "ccfe6f6c41769eaa005e683b34c73fec8aabcf820c6f7d9f65ed282412f376d7",
+    "pdf": "ba54c44e6c8c7f2081a994f74de27138a823343719b01a8b08d6b52e15ef3135",
+    "txt": "0ee959ce366139d75c94808cedea6b3c8508384e9430e370e7a8b13f47068ebd",
+    "xlsx": "91660904531476314d59462ea5f15909668c384d9b8ce83f1fef7074801e6f65"
+  },
+  "P27": {
+    "token": "e4879487398caebe3775f24f2dbf8caedcbf0200f5afa6d373a76972180a3f4e"
+  },
+  "P3": {
+    "clean": "70968cf50e34cc074b64b753f58917bdbe3521bc31cd8f40eaf99b685a8eb0d8",
+    "comment": "f5507b8d3703e360f782b9b5507bb775f34928701a6613bd0c2d46d564c11ef1",
+    "del": "145d776f3ab63e48b775c79ad32a7f22fa4ddd3574200872fb66775272090951",
+    "del_author": "4435d518b659fe6608f3b923a7e161628fcbc4427a74675ecfe11f1d52738b39",
+    "ins": "d1ea8c1f0f313f85435811076c3767f192400da0ba649730ee02dad3d7e2dbbb",
+    "ins_author": "edcaa55d939c5c2b0d8e9cfd6c62649056d727b56c917e6f4d73a8d926c01583"
+  },
+  "P4": {
+    "code": "406a5745ed7b516efbbe8abe6e62f67af63fe2846bd1ed9908bab8d3b555843e",
+    "corner": "4b08def47614ab81077c096f9c6672e973b544dc15d38dac4ff1a336e97f12c2"
+  },
+  "P5": "RESUME-MM7HL",
+  "P8": {
+    "unwanted": [
+      "A1-W9PY9",
+      "A2-R349C",
+      "A4-Y3WMN",
+      "B3-XP4Y9",
+      "B4-M4KRN"
+    ],
+    "want": [
+      "A3-DPM3E",
+      "B1-VF4F9",
+      "B2-J4NDM"
+    ]
+  },
+  "P9": {
+    "header": [
+      "Document",
+      "Issue",
+      "Status",
+      "Quote",
+      "Locator"
+    ],
+    "new": [
+      [
+        "DOC-07 Bramble letter",
+        "Assignment",
+        "Reviewed",
+        "clause 8.3",
+        "p. 38"
+      ],
+      [
+        "DOC-08 Timber letter",
+        "Change of control",
+        "Reviewed",
+        "clause 25.7",
+        "p. 18"
+      ],
+      [
+        "DOC-09 Willow letter",
+        "Change of control",
+        "Reviewed",
+        "clause 15.4",
+        "p. 2"
+      ],
+      [
+        "DOC-10 Anchor letter",
+        "Assignment",
+        "Reviewed",
+        "clause 27.1",
+        "p. 15"
+      ]
+    ],
+    "original": [
+      [
+        "DOC-01 Cinder agreement",
+        "Termination",
+        "Reviewed",
+        "clause 24.6",
+        "p. 30"
+      ],
+      [
+        "DOC-02 Iris agreement",
+        "Assignment",
+        "Flagged",
+        "clause 6.8",
+        "p. 29"
+      ],
+      [
+        "DOC-03 Larch agreement",
+        "Change of control",
+        "Open",
+        "clause 27.1",
+        "p. 20"
+      ],
+      [
+        "DOC-04 Juniper agreement",
+        "Exclusivity",
+        "Reviewed",
+        "clause 28.2",
+        "p. 5"
+      ],
+      [
+        "DOC-05 Cinder agreement",
+        "Assignment",
+        "Reviewed",
+        "clause 28.8",
+        "p. 16"
+      ],
+      [
+        "DOC-06 Timber agreement",
+        "Termination",
+        "Flagged",
+        "clause 28.1",
+        "p. 1"
+      ]
+    ]
+  },
+  "_note": "Answer key for hprobe.py check. An agent running the probes must not read this file: an answer taken from it is a fluent fake.",
+  "salt": "static"
+}
