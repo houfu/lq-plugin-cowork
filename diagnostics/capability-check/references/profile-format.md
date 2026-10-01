@@ -16,6 +16,7 @@ time reads the same lines.
 - Web search: <on | off | not known> (as the tester understands it)
 - Browser use: <enabled | disabled | not known>; <who enabled it, if anyone>
 - Built-in skills seen: <the exact names, verbatim, comma-separated>
+- Other LegalQuants skills installed: <none | which bundles or skills>
 - Profile started: <YYYY-MM-DD>
 - Last updated: <YYYY-MM-DD>
 ```

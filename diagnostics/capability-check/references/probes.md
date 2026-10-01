@@ -4,11 +4,14 @@ Fourteen questions, each settled by one run. For every probe: what it settles,
 the setup the tester prepares, the task you run, and the check the tester makes.
 The source of truth is the project's `probes.yaml`; this file restates it for a
 conversation, with the setups rewritten so the tester plants words only they
-know. Where this file and `probes.yaml` disagree, `probes.yaml` wins.
+know. The prompts are `probes.yaml`'s, word for word, except where an entry
+says it adds a check word. Anywhere else this file and `probes.yaml` disagree,
+`probes.yaml` wins.
 
 **Check words.** A check word is a made-up word the tester invents and types
-into a probe file — a bird and a number, say, like "heron-4417". Ask for a new
-one per probe. The tester writes it on paper, not in the chat. A reply that
+into a probe file — a bird and a number, say, like "heron-4417". Tell the
+tester to invent a new one for every probe; never ask what it is. The tester
+writes it on paper, not in the chat. A reply that
 quotes it back could only have come from reading the file.
 
 **Worst outcome** names the shape of the dangerous result, so the tester knows
@@ -39,14 +42,16 @@ what to watch for:
 - **Settles:** whether a file in the Cowork folder can be found later without
   being attached. Ergonomics only; no skill depends on it.
 - **Setup:** none. The tester invents a check word.
-- **Conversation 1 task:** create `probe-ledger.md` in the Output folder
-  containing one line, `n = 1`, followed by one line holding the tester's check
-  word, which they type into the file request themselves. Say exactly where you
-  saved it.
-- **Conversation 2 (another day, nothing attached) task:** find
-  `probe-ledger.md` in the Cowork folder without it being attached, say what
-  `n` is and quote the second line, then save it back with `n = 2`. A third
-  conversation reads it again.
+- **Conversation 1 task:** "Create a file called probe-ledger.json in my Cowork
+  Output folder containing exactly {"probe":"lqc","n":1} and tell me where you
+  put it." The tester adds one field of their own, `"word":` followed by their
+  check word, typed into the request themselves — the one deliberate change to
+  the prompt in `probes.yaml`, so that `n` being 1 cannot be guessed into a
+  pass. Say exactly where you saved it.
+- **Conversation 2 (another day, nothing attached) task:** "Open
+  probe-ledger.json from my Cowork folder, tell me what n is, then save it back
+  with n increased by one." Quote the `word` field too. A third conversation
+  reads it again.
 - **Tester's check:** the check word comes back without the file being
   attached, `n` reads 1 then 2. Asking for the file to be attached is a fail;
   record it as a refusal.

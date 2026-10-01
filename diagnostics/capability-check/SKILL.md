@@ -39,7 +39,9 @@ shapes every rule below.
 
 1. **Synthetic material only.** Every file is one the tester invented for the
    probe. If anything attached looks like real client or matter material, stop
-   and say so before reading further.
+   and say so before reading further. P14 is the one probe that searches the
+   tenant's real content; its entry says what may be recorded from it, and
+   that is counts only.
 2. **You never grade yourself.** You report what you did and what you saw; the
    tester compares it with what they know is in the file and gives the
    verdict. A pass is recorded only in the tester's words. Most probes exist
@@ -47,9 +49,12 @@ shapes every rule below.
    right one, and you cannot tell those apart from the inside.
 3. **The tester's check words stay with the tester.** Setups ask the tester to
    plant words of their own invention in the probe files. Never ask what they
-   are, never guess them, and if the tester types them into the chat before the
-   probe has run, say the probe is spoiled for this conversation and ask them
-   to pick new words and start a fresh one.
+   are and never guess them. If the tester types a file's check word into the
+   chat before the probe has run, say the probe is spoiled for this
+   conversation and ask them to pick new words and start a fresh one. Three
+   probes — P2, P5 and P11 — are different by design: their setup has the
+   tester type the check word into an earlier conversation or an earlier
+   message, because what they test is whether it comes back.
 4. **Say what you could not see.** "I could not tell" is a result. "There is
    nothing there" is a different result, and you may say it only when you can
    show why — never as a stand-in for not being able to look.
@@ -73,6 +78,9 @@ per probe — its id, its question in plain words, and roughly how long it takes
 - **Run now, in one conversation:** P3, P4, P6, P7a, P8, P10, P11.
 - **Needs a second conversation on another day:** P2, P5, P9, P13.
 - **Needs an administrator first:** P12, and P6 when web search is off.
+- **Needs real tenant content:** P14. Only where the tester is allowed to
+  search the organisation's material, and nothing from it is recorded but
+  counts.
 - **Needs a separate probe package:** P1 and P7b. Say they cannot run from this
   skill today and are listed so the profile is complete.
 
@@ -98,22 +106,29 @@ The tester names a probe, or describes the capability; match it to its id.
 1. **Check the conversation is fresh** (rule 6). P11 is the one exception: its
    setup is the earlier work in the conversation, and the probe entry says
    which.
-2. **Give the setup** from [the probes](references/probes.md): what to make, how
+2. **Make sure the probe reaches you.** If any LegalQuants bundle or another
+   skill is installed in this tenant, a probe's task can be picked up by a
+   skill built for that kind of work — a tracked-changes request by a redline
+   skill, say — and the result then measures that skill, not Cowork. Ask the
+   tester to choose this skill in the conversation's Sources picker before
+   typing the task, and record in the profile whether other LegalQuants skills
+   were installed.
+3. **Give the setup** from [the probes](references/probes.md): what to make, how
    to plant their own check words, and what to write down for themselves. Wait
    until they say it is ready and have attached what the probe needs.
-3. **Say you are about to run it**, and run exactly the task the probe
+4. **Say you are about to run it**, and run exactly the task the probe
    describes, as a lawyer would ask for it, on the attached files. Do the task
    for real: if the probe asks for a file, produce the file.
-4. **Report in three parts**, in this order, under these headings:
+5. **Report in three parts**, in this order, under these headings:
    - **What I did** — the steps, including anything you tried that did not work.
    - **What I saw** — the exact text, pages, authors or cells, quoted.
    - **What I could not see or do** — every gap, named.
-5. **Hand over the check.** Give the tester the check from the probe's entry —
+6. **Hand over the check.** Give the tester the check from the probe's entry —
    what to compare, and where to look in Word, Excel or the file itself — and
    ask for their verdict: **pass**, **partial**, **fail**, or **disabled** (the
    tenant has the feature turned off). A refusal from you is not a fail of the
    probe; it is a result, and it is recorded as what happened.
-6. **Record it**, as in 3 below.
+7. **Record it**, as in 3 below.
 
 ### 3. Record a result
 
