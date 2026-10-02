@@ -14,6 +14,10 @@ in this document are generated from it by `lqcowork chart` (between `<!-- gen:..
 build fails when they drift. The [harness-probe skill](../../harness-probe/SKILL.md) judges a real
 harness against the same data.
 
+A standalone write-up of this research, for sharing outside the repository, is
+[harness-capability-research.md](harness-capability-research.md) (regenerate it with
+`tools/scripts/research_doc.py`).
+
 ## Baseline assumed
 
 The harness already has these, so they are not listed per skill:
