@@ -11,6 +11,60 @@ undocumented, so every published change gets its own version.
 
 ## [Unreleased]
 
+### Added
+
+- **`harness-probe`**, an Agent Skill that runs the capability probes on any
+  harness and reports which of the thirty-one skills run as intended, run on a
+  fallback, cannot run, or are untested. Standard library only (Python 3.8+):
+  fresh synthetic fixtures per run (PDF, Word, Excel, email, PNG, a folder
+  tree), a verifier per probe against a salted answer key, a stdio MCP test
+  server for P15, static fixtures for harnesses that cannot run scripts, and a
+  Markdown, HTML and JSON report with what to probe next. Its companion
+  `harness-probe-invoke` serves P24. Both ship as `dist/harness/*.skill`.
+- **`capabilities.yaml`**: every skill's required, degradable and optional
+  capabilities under two profiles (the vendored upstream skills and the
+  adapted Cowork cards), with each degradable level's fallback wording, the
+  probes that decide each capability, and the scripts' runtime needs. The
+  matrices in `docs/research/harness-capability-chart.md` are generated from it.
+- **Probes P15 to P27**: MCP connection, folder walk, file hash, raw fetch,
+  isolated worker, HTML round trip, skill folder on disk, PDF annotation, Word
+  template table edit, explicit invocation, tool execution, reading every
+  format whole, and handing a file back. Every probe now names the capability
+  codes it tests, its cost, and how the skill runs it.
+- **Verdicts**: `probe-results/` holds recorded runs (the first is Claude Code on
+  the web probing itself); the build report gains a *Harness verdicts* section
+  and the site a Verdicts page, both computed by the skill's own engine.
+- A **Probe report** issue form, and `lqcowork catalog`, `chart` and `verdicts`
+  (`make catalog`, `make chart`, `make verdicts`).
+- Validation `LQC-K004` to `LQC-K008`: capability and probe data, coverage of
+  every code, derived `TOOLS`, fallback wording for every degradable level,
+  each card's cited probe touching its profile, results files, and generated
+  files kept current.
+
+- Every harness-probe report now has **What to build next on this harness**:
+  each failed capability ranked by the skills it would unblock outright, help
+  unblock, and upgrade from a fallback. Capabilities carry plain-language
+  labels (`label` in `capabilities.yaml`), used by the report and by
+  `tools/scripts/capability_matrix.py`, which renders the one-page capability
+  matrix image `docs/research/capability-matrix-upstream.png`.
+
+### Changed
+
+- P12 accepts any of three stable public pages (example.com, the IANA
+  example-domains page, or the pinned LegalQuants LICENSE on GitHub), so a
+  harness behind an egress allow-list is judged on whether it can fetch at
+  all rather than on one host.
+- A probe's `unlocks` is derived from the codes it tests and the levels in
+  `capabilities.yaml`, no longer written by hand; the hand-kept lists disagreed
+  with the cards for nine of the fourteen probes.
+- P1, P6, P12 and P13 are tightened: P1 asks for Python 3.12 or later and the
+  full program list, P6 and P12 for the bytes received, P13 for what kind of
+  run it was.
+- The capability chart accepts a second audit's corrections: regulatory's NET
+  and FS, definition-check's FS and IN, and playbook-review's PERSIST are
+  degradable; cite-check, pressuretest, conform and definition-check rate HTML;
+  nine skills, not six, are explicit-invocation only.
+
 ## [0.2.0] - 2026-09-20
 
 Every upstream skill now ships, in three bundles that mirror the three plugins

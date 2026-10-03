@@ -1,0 +1,131 @@
+name: Probe report (a capability probe, or a whole harness-probe run)
+description: Report the outcome of one capability probe from probes.yaml, or attach the results.json a harness-probe run wrote.
+title: "Probe: "
+labels: ["uat", "probe"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        A probe asks what a harness can actually do. A pass and a fail are equally
+        useful: both move a skill's verdict. The probes are listed on the
+        [site](https://houfu.github.io/lq-plugin-cowork/probes.html) and in
+        [probes.yaml](https://github.com/houfu/lq-plugin-cowork/blob/main/probes.yaml);
+        the [harness-probe skill](https://github.com/houfu/lq-plugin-cowork/tree/main/harness-probe)
+        runs all of them on any harness and writes a results.json you can paste below.
+
+        **Synthetic files only.** Every probe uses invented documents. Never put
+        client or matter material into a probe or into this report.
+  - type: dropdown
+    id: scope
+    attributes:
+      label: What are you reporting?
+      options:
+        - One probe, run by hand
+        - A whole harness-probe run (results.json below)
+    validations:
+      required: true
+  - type: dropdown
+    id: probe
+    attributes:
+      label: Probe
+      description: For a whole run, pick the probe you most want to draw attention to, or the first.
+      options:
+        - "P1: Does a bundled script actually run, and in what?"
+        - "P2: Does a file written in one session come back in the next?"
+        - "P3: Does Cowork report tracked changes in a Word document?"
+        - "P4: Can Cowork tell what is on a page?"
+        - "P5: What does a resumed task remember?"
+        - "P6: Is web search on in this tenant, and what comes back?"
+        - "P7: Can a skill's output carry a file that shipped with the skill?"
+        - "P8: Can Cowork build a PDF out of chosen pages of supplied PDFs?"
+        - "P9: Does an Excel workbook survive a round trip with its arithmetic intact?"
+        - "P10: Can Cowork produce a Word document carrying real tracked changes?"
+        - "P11: What can a skill see and quote of its own session?"
+        - "P12: Browser use: does what it reads reach the skill?"
+        - "P13: Can a scheduled run work over files placed earlier?"
+        - "P14: Enterprise Search as a people finder"
+        - "P15: Can the harness connect to an MCP server and call one of its tools?"
+        - "P16: Can the agent walk a folder it was pointed at, and make one beside it?"
+        - "P17: Can the harness compute a file's SHA-256?"
+        - "P18: Can the harness fetch a URL's raw bytes into a file?"
+        - "P19: Can the harness run an isolated worker that sees only its packet?"
+        - "P20: Can the user open a generated page and hand back the file it saves?"
+        - "P21: Is the skill folder on disk, with its scripts and assets reachable?"
+        - "P22: Can the harness annotate a PDF with highlights and comment-pane notes?"
+        - "P23: Can the harness fill a packaged Word template and edit its table in place?"
+        - "P24: Does an explicit-invocation-only skill stay quiet until it is called by name?"
+        - "P25: Does a tool call actually execute?"
+        - "P26: Can the harness read every supplied format, whole?"
+        - "P27: Can the harness hand a file back to the user?"
+    validations:
+      required: true
+  - type: dropdown
+    id: outcome
+    attributes:
+      label: Outcome
+      description: >-
+        fluent-fake means a confident answer with nothing behind it; refused means
+        the harness or a policy stopped it; pending means a two-session probe
+        waiting for its second session.
+      options:
+        - pass
+        - fail
+        - refused
+        - fluent-fake
+        - not-run
+        - pending
+    validations:
+      required: true
+  - type: input
+    id: harness
+    attributes:
+      label: Harness
+      description: The product and surface, and the model if you know it.
+      placeholder: Microsoft 365 Copilot Cowork (web), tenant A · or · Claude Code on the web, Opus
+    validations:
+      required: true
+  - type: dropdown
+    id: profile
+    attributes:
+      label: Which skills were judged
+      options:
+        - cowork (the adapted Cowork cards)
+        - upstream (the vendored LegalQuants skills)
+    validations:
+      required: true
+  - type: input
+    id: date-tested
+    attributes:
+      label: Date tested
+      placeholder: 2026-10-01
+    validations:
+      required: true
+  - type: textarea
+    id: posture
+    attributes:
+      label: Posture
+      description: Web search on or off, browser use enabled or not and who had to enable it, admin settings, DLP or site blocking. Write "unknown" for what you cannot tell.
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you typed or did, and a trimmed excerpt of what came back. For the worst outcome, say how you could tell.
+    validations:
+      required: true
+  - type: textarea
+    id: results-json
+    attributes:
+      label: results.json (for a harness-probe run)
+      description: Paste the file the run wrote at <run>/results.json. It holds probe outcomes about synthetic fixtures only.
+      render: json
+    validations:
+      required: false
+  - type: checkboxes
+    id: sanitised
+    attributes:
+      label: Confidentiality
+      options:
+        - label: This report contains no client, matter or confidential material. Every file involved was synthetic, and any excerpt has been checked and trimmed.
+          required: true

@@ -193,7 +193,12 @@ def _known_issue_owners(config: Config, cards: dict[str, Card]) -> dict[str, lis
 def check_cards(
     config: Config, cards: dict[str, Card]
 ) -> tuple[list[Issue], list[Issue]]:
-    """LQC-K001, LQC-K002 (errors) and LQC-K003 (warnings) over ``cards``."""
+    """LQC-K001 to LQC-K008 over ``cards`` and the harness data.
+
+    LQC-K001, LQC-K002 and LQC-K003 are the card rules; LQC-K004 to LQC-K008
+    check capabilities.yaml, probes.yaml, the generated catalogue and chart,
+    and probe-results/ (see harness.check_capabilities).
+    """
     errors: list[Issue] = []
     warnings: list[Issue] = []
     owners = _known_issue_owners(config, cards)
@@ -255,7 +260,12 @@ def check_cards(
                     skill=name,
                 )
             )
-    return errors, warnings
+    from .harness import check_capabilities, load_capabilities
+
+    cap_errors, cap_warnings = check_capabilities(
+        config, load_capabilities(config.root), cards
+    )
+    return errors + cap_errors, warnings + cap_warnings
 
 
 def skills_only_bundle(config: Config) -> Bundle:

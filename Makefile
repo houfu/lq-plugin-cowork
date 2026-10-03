@@ -4,6 +4,9 @@
 #   make package        build + validate + zip + archives + trigger tests + report
 #   make archives       upload-ready dist/skills/<name>.skill from a build
 #   make site           package, then render the static site into dist/site/
+#   make catalog        harness-probe/data/catalog.json + references/probes.md
+#   make chart          regenerate the matrices in the harness capability chart
+#   make verdicts       summarise probe-results/ against capabilities.yaml
 #   make drift          report what moved upstream, without moving the pin
 #   make fmt-check      black --check, the formatting gate CI runs
 #   make release-check  does TAG agree with cowork.yaml, CHANGELOG.md and dist/?
@@ -34,7 +37,7 @@ SKILL_ARG := $(if $(SKILL),--skill $(SKILL),)
 REPORT_ARG := $(if $(REPORT),--report $(REPORT),)
 
 .PHONY: setup build validate package archives site triggers drift bump anchor \
-        test fmt fmt-check release-check release clean help
+        catalog chart verdicts test fmt fmt-check release-check release clean help
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | grep -v '^help$$' | sort
@@ -61,6 +64,15 @@ site: package
 triggers:
 	$(LQ) triggers $(BUNDLE_ARG)
 
+catalog:
+	$(LQ) catalog
+
+chart:
+	$(LQ) chart
+
+verdicts:
+	$(LQ) verdicts
+
 drift:
 	$(LQ) bump-upstream --dry-run --to $(TO) $(REPORT_ARG)
 
@@ -74,10 +86,10 @@ test:
 	$(PYTEST) tools/tests
 
 fmt:
-	$(BLACK) tools
+	$(BLACK) tools harness-probe
 
 fmt-check:
-	$(BLACK) --check tools
+	$(BLACK) --check tools harness-probe
 
 release-check:
 	@test -n "$(TAG)" || { \

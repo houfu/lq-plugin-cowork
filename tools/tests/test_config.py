@@ -284,11 +284,13 @@ class TestProbes:
         with pytest.raises(ConfigError, match="bad_outcome"):
             load_config(fixture_repo)
 
-    def test_the_real_repository_defines_p1_to_p14(self, real_root):
+    def test_the_real_repository_defines_p1_to_p27(self, real_root):
         from lqcowork.config import load_probes
 
         probes = load_probes(real_root)
-        assert [p.id for p in probes] == [f"P{n}" for n in range(1, 15)]
+        assert [p.id for p in probes] == [f"P{n}" for n in range(1, 28)]
+        assert all(p.tests and p.harness and p.cost for p in probes)
+        assert not any(p.declares_unlocks for p in probes)
         for probe in probes:
             assert probe.title and probe.settles and probe.prompt
             assert probe.passes and probe.fails

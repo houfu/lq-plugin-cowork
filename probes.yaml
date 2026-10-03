@@ -1,26 +1,39 @@
 # Capability probes.
 #
-# Fourteen questions about Microsoft 365 Copilot Cowork that nobody has
-# answered in a live tenant. Each one is a thing a card would like to rely on
-# and cannot, stated so a tester can settle it in one fresh conversation with
-# synthetic files.
+# Questions about what a harness can actually do, each one settled by
+# observation with synthetic files. P1 to P14 were written for Microsoft 365
+# Copilot Cowork and transcribed from docs/research/cowork-alternatives-and-
+# risk.md section 3; P15 to P27 close the gaps found in docs/research/probe-
+# coverage-review.md. Every probe now also carries a `harness` block, which is
+# how the harness-probe skill (harness-probe/) runs it on any harness.
 #
-# Transcribed from docs/research/cowork-alternatives-and-risk.md section 3.
-# Read by validation (LQC-K003, a card's `cowork.known_issues[].probe` must
-# name a probe defined here), by the build report, by the site, and by
-# `tools/scripts/uat_issues.py --probes`. See docs/CONTRACT.md section 4.
+# Read by validation (LQC-K003: a card's `cowork.known_issues[].probe` must
+# name a probe defined here; LQC-K004 to LQC-K006: codes and coverage against
+# capabilities.yaml), by the build report, by the site, by
+# `tools/scripts/uat_issues.py --probes`, and - as harness-probe/data/
+# catalog.json - by the harness-probe skill. See docs/CONTRACT.md section 4.
 #
 # Fields per probe:
-#   id           P1 to P14
-#   title        the question, as the research document asks it
+#   id           P1 to P27
+#   title        the question
 #   settles      what a result decides, and why it is not already documented
 #   setup        what the tester prepares first (omitted where there is none)
-#   prompt       the exact text a tester types
+#   prompt       the exact text a Cowork tester types
 #   pass         what a pass looks like
 #   fail         what a fail looks like
-#   bad_outcome  refusal | fluent-fake | silent | loud — the shape of the
+#   bad_outcome  refusal | fluent-fake | silent | loud - the shape of the
 #                worst result, which is what the tester must be ready to spot
-#   unlocks      the skills whose tier or shipping decision this probe settles
+#   tests        capability codes from capabilities.yaml this probe decides
+#   cost         free | low | setup | two-session | admin - what running it takes
+#   harness      how the harness-probe skill runs it anywhere:
+#                  method  script | agent | user | two-session
+#                  check   the `hprobe.py check` verifier, or null where the
+#                          outcome is recorded by observation
+#                  steps   what the agent does, in order
+#
+# Which skills a probe unlocks is no longer written here: it follows from
+# `tests` and the levels in capabilities.yaml, and the site and the issue
+# renderer derive it.
 
 probes:
   - id: P1
@@ -36,16 +49,35 @@ probes:
       Cannot be run from the released bundles, because no shipped skill
       contains a script. Needs a throwaway single-skill probe package
       containing scripts/probe.py, which prints one line naming sys.version,
-      platform.platform(), whether pypdf, pdfplumber, docx, openpyxl and PIL
-      import, and whether soffice, pdftoppm and tesseract are on the path.
-      The SKILL.md says to run it and report its output verbatim.
+      platform.platform(), whether pypdf, pdfplumber, docx, openpyxl, PIL,
+      fitz and playwright import, and whether pdftoppm, pdfinfo, pdftotext,
+      soffice, tesseract, chromium, rsvg-convert, magick, inkscape and codex
+      are on the path; it also reads one attached file and writes one file to
+      the Output folder. The SKILL.md says to run it and report its output
+      verbatim. The harness-probe skill's `hprobe.py env` is that script.
     prompt: Run the environment probe and show me its output exactly as printed.
-    pass: The reply contains the fingerprint line with a real Python version string.
+    pass: >-
+      The reply contains the fingerprint line with a real Python version
+      string of 3.12 or later, the package and executable lists, and a
+      confirmed read of the attached file and write to the Output folder.
     fail: >-
       A reply that paraphrases the script, describes what it would print, or
       reports the script's contents as instructions.
     bad_outcome: fluent-fake
-    unlocks: []
+    tests: [EXEC, BIN]
+    cost: free
+    harness:
+      method: script
+      check: env
+      steps: >-
+        Run `python3 <skill>/scripts/hprobe.py env --run <run>`. It records the
+        Python version, the importable packages (pypdf, pdfplumber, docx,
+        openpyxl, PIL, fitz, playwright), every executable the vendored skills
+        call (pdftoppm, pdfinfo, pdftotext, soffice, tesseract, chromium,
+        rsvg-convert, magick, inkscape, codex) and whether the script could
+        read a fixture and write to the output folder. Show the printed line
+        verbatim. If the command cannot be run, record P1 as fail with
+        observer agent and say why.
 
   - id: P2
     title: Does a file written in one session come back in the next?
@@ -64,7 +96,20 @@ probes:
       writes 2 — and a third session reads 2.
     fail: It cannot find the file, or asks the tester to attach it.
     bad_outcome: refusal
-    unlocks: []
+    tests: [PERSIST, FS]
+    cost: two-session
+    harness:
+      method: two-session
+      check: persist
+      steps: >-
+        Session one: run `hprobe.py check P2 --run <run> --phase write`, then
+        use your own file tool to write the printed token into
+        `lq-probe-persist.txt` in the user's workspace root (not the run
+        folder). Tell the user to come back in a new session on a later day.
+        Session two, with nothing attached: find `lq-probe-persist.txt`
+        yourself, then run `hprobe.py check P2 --run <run> --phase read
+        --answer <token you found>`. If the run folder itself is gone, record
+        P2 as fail.
 
   - id: P3
     title: Does Cowork report tracked changes in a Word document?
@@ -87,7 +132,18 @@ probes:
       It reads the document as though the changes had been accepted and
       reports no changes.
     bad_outcome: silent
-    unlocks: [read-redline, playbook-review]
+    tests: [IN, DOCX]
+    cost: low
+    harness:
+      method: agent
+      check: docx-read
+      steps: >-
+        Open `<run>/fixtures/docx/tracked.docx` and `clean.docx` with your own
+        tools. For tracked.docx list the inserted text and its author, the
+        deleted text and its author, and the comment text. Then run
+        `hprobe.py check P3 --run <run> --answer "ins=<text>;ins_author=<name>;
+        del=<text>;del_author=<name>;comment=<text>;clean=none"` (clean=none if
+        clean.docx has no tracked changes, otherwise list what you saw).
 
   - id: P4
     title: Can Cowork tell what is on a page?
@@ -111,7 +167,16 @@ probes:
       It describes pages it cannot see, or reports the scanned page as blank
       or as text.
     bad_outcome: fluent-fake
-    unlocks: [read-redline, diligence, docreview, closing-bible, regulatory, sigpack]
+    tests: [VISION]
+    cost: low
+    harness:
+      method: agent
+      check: vision
+      steps: >-
+        Look at `<run>/fixtures/vision/page.png` as an image (not via OCR text).
+        It shows a short code in large letters and a scribbled mark in one
+        corner. Run `hprobe.py check P4 --run <run> --answer
+        "code=<code>;corner=<top-left|top-right|bottom-left|bottom-right>"`.
 
   - id: P5
     title: What does a resumed task remember?
@@ -130,7 +195,17 @@ probes:
       The resumed task does not have it, or — the bigger finding — the new
       task does.
     bad_outcome: fluent-fake
-    unlocks: []
+    tests: [SESSION]
+    cost: two-session
+    harness:
+      method: two-session
+      check: resume
+      steps: >-
+        Session one: remember the token printed by `hprobe.py check P5 --run
+        <run> --phase token` and stop. Next day, resume that same task or
+        conversation and ask what the token was; then open a brand-new task
+        and ask the same. Record P5 pass if the resumed task has it and the
+        new one does not, with `hprobe.py record P5 pass --observer user`.
 
   - id: P6
     title: Is web search on in this tenant, and what comes back?
@@ -143,13 +218,26 @@ probes:
       Search the web and quote me, word for word, the opening sentence of the
       official text you find at legislation.gov.uk for the Bribery Act 2010
       section 1, and give me the address of the page you read.
-    pass: A URL and a quotation, plus whatever the client says about web search.
+    pass: >-
+      A URL and a quotation, the byte length of the page as fetched (or a
+      plain statement that only a rendering came back), plus whatever the
+      client says about web search.
     fail: >-
       A refusal naming a disabled web-search setting — which is an equally
       useful result and should be reported with the tenant's admin posture if
       known.
     bad_outcome: fluent-fake
-    unlocks: []
+    tests: [SEARCH]
+    cost: low
+    harness:
+      method: agent
+      check: search
+      steps: >-
+        Search the web (not from memory) for section 1 of the Bribery Act 2010 on
+        legislation.gov.uk. Run `hprobe.py check P6 --run <run> --url <the
+        address you read> --answer "<the opening sentence, word for word>"
+        --bytes <length of the page you fetched, or 0 if your tool only gave
+        you a rendering>`.
 
   - id: P7
     title: Can a skill's output carry a file that shipped with the skill?
@@ -175,7 +263,16 @@ probes:
       separately: the page renders without the image, or the reply claims an
       image that is not there.
     bad_outcome: fluent-fake
-    unlocks: [my-lq-moment, read-redline, docreview, definition-check]
+    tests: [OUT, SKILLDIR]
+    cost: free
+    harness:
+      method: agent
+      check: asset
+      steps: >-
+        Copy `<skill>/assets/fixtures/badge.png` into `<run>/outputs/` and write
+        `<run>/outputs/card.html` that shows it with an <img> tag. Then run
+        `hprobe.py check P7 --run <run>`. The badge must be the packaged file,
+        byte for byte, not a new image.
 
   - id: P8
     title: Can Cowork build a PDF out of chosen pages of supplied PDFs?
@@ -195,7 +292,16 @@ probes:
       A reply that describes the pages instead of producing the file, or a PDF
       with the wrong pages or order.
     bad_outcome: fluent-fake
-    unlocks: [sigpack, closing-bible]
+    tests: [OUT]
+    cost: low
+    harness:
+      method: agent
+      check: pdf-assemble
+      steps: >-
+        Build `<run>/outputs/assembled.pdf` containing page 3 of
+        `<run>/fixtures/pdf/first.pdf` followed by pages 1 and 2 of
+        `<run>/fixtures/pdf/second.pdf`, using your own tools. Then run
+        `hprobe.py check P8 --run <run>`.
 
   - id: P9
     title: Does an Excel workbook survive a round trip with its arithmetic intact?
@@ -215,7 +321,17 @@ probes:
       Rows dropped or reordered, columns renamed, or the count arriving as a
       hard-coded number rather than a live formula.
     bad_outcome: silent
-    unlocks: [diligence, docreview, closing-bible, definition-check, sigpack]
+    tests: [IN, OUT]
+    cost: low
+    harness:
+      method: agent
+      check: xlsx
+      steps: >-
+        Open `<run>/fixtures/xlsx/tracker.xlsx`. Add the four rows listed in
+        `<run>/fixtures/xlsx/new-rows.txt` below the existing six, keep the
+        count row's formula a live formula, and save the result as
+        `<run>/outputs/tracker-out.xlsx`. Then run `hprobe.py check P9 --run
+        <run>`.
 
   - id: P10
     title: Can Cowork produce a Word document carrying real tracked changes?
@@ -233,7 +349,16 @@ probes:
       A document with the edits applied as plain text, or coloured text that
       is not a tracked change.
     bad_outcome: loud
-    unlocks: [read-redline, conform]
+    tests: [OUT, DOCX]
+    cost: low
+    harness:
+      method: agent
+      check: docx-tracked-write
+      steps: >-
+        Open `<run>/fixtures/docx/clause.docx` and apply the three edits in
+        `<run>/fixtures/docx/edits.txt` as Word tracked changes attributed to
+        "Review", not as plain edits. Save as `<run>/outputs/clause-tracked.docx`
+        and run `hprobe.py check P10 --run <run>`.
 
   - id: P11
     title: What can a skill see and quote of its own session?
@@ -257,7 +382,18 @@ probes:
       Two distinguishable ways: a refusal (usable — the cards adapt around it)
       or a fluent paraphrase presented as a quote.
     bad_outcome: fluent-fake
-    unlocks: [lq-reflect, my-lq-moment]
+    tests: [SESSION]
+    cost: free
+    harness:
+      method: user
+      check: null
+      steps: >-
+        Ask the user to type a sentence of their own choosing at the start of the
+        session (before the probes). Near the end, quote it back word for word,
+        list the files created in this session and the tools and skills used,
+        and say for each whether you are reading it or reconstructing it. The
+        user judges and you record with `hprobe.py record P11 <pass|fail|
+        fluent-fake> --observer user`.
 
   - id: P12
     title: "Browser use: does what it reads reach the skill?"
@@ -275,8 +411,9 @@ probes:
       declines is a reportable result, not a failed run.
     prompt: >-
       Open the page at <public URL> and quote its first heading and the first
-      sentence under it. Tell me how you retrieved it, and tell me whether
-      that page is now one of my session files.
+      sentence under it. Tell me how you retrieved it, how many bytes the page
+      was as you received it (or that you only received a rendering), and
+      whether that page is now one of my session files.
     pass: >-
       The quote comes back, Cowork names the route, and it states plainly
       whether the content is now a session file.
@@ -285,7 +422,20 @@ probes:
       refusal citing a blocked site (still a useful result — record it with
       the posture).
     bad_outcome: fluent-fake
-    unlocks: [lq-connect, lq-apply, lq-ask]
+    tests: [NET]
+    cost: low
+    harness:
+      method: agent
+      check: fetch-page
+      steps: >-
+        Fetch the first of these pages your harness allows, with your own
+        tool (a fetch or browser tool, not search): https://example.com/,
+        https://www.iana.org/help/example-domains, or
+        https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE.
+        Run `hprobe.py check P12 --run <run> --url <the page you fetched>
+        --answer "<its first heading, verbatim>" --bytes <byte length if your
+        tool reports it, else 0>`. A block on one page is not a fail while
+        another is allowed; record which were blocked in --notes.
 
   - id: P13
     title: Can a scheduled run work over files placed earlier?
@@ -302,11 +452,23 @@ probes:
     pass: >-
       The Runs tab shows it ran; an output file appears; the output reflects
       the placed file; and the run history shows the custom skill was loaded.
+      Record whether the run was a scheduled prompt or a process that
+      outlived the turn.
     fail: >-
       The schedule exists but the skill is not invoked, or nothing is written,
       or the run reports success with no output.
     bad_outcome: silent
-    unlocks: []
+    tests: [SCHED]
+    cost: two-session
+    harness:
+      method: two-session
+      check: sched
+      steps: >-
+        Run `hprobe.py check P13 --run <run> --phase arm` and note the command it
+        prints. Use the harness's own scheduler to run that command at least
+        ten minutes from now, after this turn has ended. In a later session run
+        `hprobe.py check P13 --run <run> --phase verify`. Record whether it was
+        a scheduled prompt or a process that outlived the turn in --notes.
 
   - id: P14
     title: Enterprise Search as a people finder
@@ -323,4 +485,350 @@ probes:
     pass: Named people, each with a quotable document.
     fail: Documents with no people attached, or names with nothing behind them.
     bad_outcome: fluent-fake
-    unlocks: [lq-connect]
+    tests: [SEARCH]
+    cost: admin
+    harness:
+      method: user
+      check: null
+      steps: >-
+        Cowork only: run the Cowork prompt above in a tenant with real internal
+        material and record the outcome with `hprobe.py record P14 <outcome>
+        --observer user`. On any other harness, record P14 as not-run.
+
+  - id: P15
+    title: Can the harness connect to an MCP server and call one of its tools?
+    settles: >-
+      Whether the harness can reach an MCP server at all - start or connect to
+      it, list its tools and route a call to it - which is how lq-mcp,
+      CourtListener and the C5 integrations of definition-check and conform
+      would arrive. No skill requires MCP, but fifteen use it if present.
+    setup: >-
+      A connected MCP server. The harness-probe skill ships one:
+      `harness-probe/scripts/mcp_probe_server.py`, a standard-library stdio
+      server whose `probe_challenge` tool answers a nonce with a keyed digest
+      only the server can compute. In Cowork, a declarative agent connector
+      pointing at any remote MCP server the tenant has approved.
+    prompt: >-
+      List the tools the connected probe server offers, call probe_challenge
+      with the nonce 7Q4-ALDER, and give me exactly what it returned.
+    pass: The digest the server logged for that nonce comes back verbatim, and the server is named.
+    fail: >-
+      A digest the server never issued, a description of what the tool would
+      return, or a reply that the server is not reachable.
+    bad_outcome: fluent-fake
+    tests: [MCP, TOOLS]
+    cost: setup
+    harness:
+      method: agent
+      check: mcp
+      steps: >-
+        Register the bundled server with the harness (see
+        references/mcp-setup.md; for example `claude mcp add hprobe -- python3
+        <skill>/scripts/mcp_probe_server.py --run <run>`). Run `hprobe.py check
+        P15 --run <run> --phase nonce` for a nonce, call the server's
+        `probe_challenge` tool with it, and run `hprobe.py check P15 --run
+        <run> --answer <digest>`. If only some other MCP server is connected,
+        call one of its read-only tools, quote the result, and record P15 with
+        `hprobe.py record P15 pass --observer user` once the user confirms it.
+
+  - id: P16
+    title: Can the agent walk a folder it was pointed at, and make one beside it?
+    settles: >-
+      Whether the harness can list a user-named folder recursively with exact
+      relative paths and an exact count, and create a sibling run folder - the
+      filesystem fifteen upstream skills require for a data room, a
+      production, a closing folder or a matter folder.
+    setup: A folder of 23 synthetic files in nested subfolders (the skill generates it).
+    prompt: >-
+      List every file under the attached folder by its path relative to the
+      folder, tell me how many there are, then create a folder called run
+      beside it and save the list there as listing.txt.
+    pass: Every relative path, the exact count, and listing.txt in a new sibling folder.
+    fail: >-
+      A partial list, a count that does not match the list, or paths invented
+      from the folder's apparent naming pattern.
+    bad_outcome: fluent-fake
+    tests: [FS]
+    cost: low
+    harness:
+      method: agent
+      check: tree
+      steps: >-
+        With your own file tools (not hprobe.py), list every file under
+        `<run>/fixtures/tree/` by its path relative to that folder, one per
+        line, and save the list as `<run>/outputs/sibling-run/listing.txt`,
+        creating the sibling-run folder. Then run `hprobe.py check P16 --run
+        <run> --count <how many files you found>`.
+
+  - id: P17
+    title: Can the harness compute a file's SHA-256?
+    settles: >-
+      Whether the host can fingerprint a file when no bundled script does it.
+      organize-case-docs requires it for its manifest, and every fallback
+      receipt in the review skills depends on it.
+    setup: Any small binary file; the skill generates one with random bytes.
+    prompt: Give me the SHA-256 of the attached file, in hex, and say how you computed it.
+    pass: The digest matches one computed independently.
+    fail: A digest that does not match, or a plausible-looking hex string with no computation behind it.
+    bad_outcome: fluent-fake
+    tests: [HASH]
+    cost: free
+    harness:
+      method: agent
+      check: hash
+      steps: >-
+        Compute the SHA-256 of `<run>/fixtures/hash/blob.bin` with your own
+        tool (a shell, a code tool, or a hash tool - not hprobe.py), then run
+        `hprobe.py check P17 --run <run> --answer <hex digest>`.
+
+  - id: P18
+    title: Can the harness fetch a URL's raw bytes into a file?
+    settles: >-
+      Whether a fetch returns the bytes a publisher served, saved where they
+      can be hashed, rather than a rendering. regulatory's verified route
+      rests on it; a model's summary of a page is not the page.
+    prompt: >-
+      Download https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE
+      byte for byte into my Output folder and tell me its size in bytes and its SHA-256.
+    pass: The saved file's size and SHA-256 match the published file.
+    fail: A file whose bytes differ (re-encoded, reformatted, summarised), or a size and digest with no file behind them.
+    bad_outcome: fluent-fake
+    tests: [NET, HASH]
+    cost: low
+    harness:
+      method: agent
+      check: raw-fetch
+      steps: >-
+        Download
+        https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE
+        byte for byte to `<run>/outputs/fetched-LICENSE` with your own tool,
+        then run `hprobe.py check P18 --run <run>`.
+
+  - id: P19
+    title: Can the harness run an isolated worker that sees only its packet?
+    settles: >-
+      Whether the harness can hand a sealed packet to a fresh-context worker
+      (a subagent or a separate model call) that cannot see the parent's
+      context, and say which model ran it. Nine upstream skills fan out work
+      this way, and docreview and diligence also need the model chosen per
+      worker.
+    setup: >-
+      A packet file holding one instruction and a token, and a canary phrase
+      that only the parent conversation holds (the skill generates both).
+    prompt: >-
+      Remember the phrase SILVER-HERON. Now give the attached packet to a
+      separate worker with none of this conversation, and show me its reply
+      and which model ran it.
+    pass: The worker does what the packet says, does not know the canary, and the model is named.
+    fail: The worker knows the canary (it shared the context), or the parent answers in the worker's name.
+    bad_outcome: fluent-fake
+    tests: [SUB]
+    cost: low
+    harness:
+      method: agent
+      check: worker
+      steps: >-
+        Run `hprobe.py check P19 --run <run> --phase canary` and keep the
+        printed canary in this conversation only. Start a fresh worker
+        (subagent or separate model call) whose whole input is the contents of
+        `<run>/fixtures/sub/packet.txt`. Save the worker's reply verbatim to
+        `<run>/outputs/worker-reply.txt`, then run `hprobe.py check P19 --run
+        <run> --model "<model the worker ran on>"`.
+
+  - id: P20
+    title: Can the user open a generated page and hand back the file it saves?
+    settles: >-
+      Whether the interactive HTML round trip works: the user opens an offline
+      page the skill generated, makes choices, the page saves them as a JSON
+      download, and that file comes back to the skill. legaldesign, docreview
+      and diligence require it.
+    setup: A generated roundtrip.html (the skill writes one with a nonce).
+    prompt: >-
+      Open the attached page, tick Alpha and Gamma, press Download decisions,
+      and give the downloaded file back to me.
+    pass: The returned JSON carries the page's nonce, Alpha and Gamma ticked, and whether browser storage worked.
+    fail: >-
+      The page will not open, the download never happens, the file cannot be
+      handed back, or the agent describes the choices instead of reading the file.
+    bad_outcome: loud
+    tests: [HTML]
+    cost: low
+    harness:
+      method: user
+      check: roundtrip
+      steps: >-
+        Give the user `<run>/outputs/roundtrip.html` (written by init). Ask
+        them to open it in a browser, tick Alpha and Gamma, press Download
+        decisions and hand the downloaded `hprobe-decisions.json` back to you;
+        put it at `<run>/inputs/hprobe-decisions.json`, then run `hprobe.py
+        check P20 --run <run>`.
+
+  - id: P21
+    title: Is the skill folder on disk, with its scripts and assets reachable?
+    settles: >-
+      Whether a skill's own folder exists on a real filesystem, so a bundled
+      script can import its sibling modules and read ../assets by relative
+      path - which every scripted upstream skill, and the cross-skill calls
+      of the companion set and conform, assume.
+    setup: A probe skill whose script imports a sibling module and reads a packaged asset.
+    prompt: Run the skill's self-check script and show me its output exactly as printed.
+    pass: The script reports its own path, a successful sibling import and the asset's digest.
+    fail: The script cannot be found or run, or the output is described rather than printed.
+    bad_outcome: fluent-fake
+    tests: [SKILLDIR, EXEC]
+    cost: free
+    harness:
+      method: script
+      check: skilldir
+      steps: >-
+        Run `python3 <skill>/scripts/hprobe.py check P21 --run <run>`. It
+        imports its sibling module, reads `<skill>/assets/fixtures/marker.bin`
+        by relative path and lists any sibling skill folders it can see.
+
+  - id: P22
+    title: Can the harness annotate a PDF with highlights and comment-pane notes?
+    settles: >-
+      Whether a PDF can be returned carrying real annotations - a highlight
+      and a note in the comments pane - rather than a description of them.
+      read-redline's annotated copy depends on it.
+    setup: A one-page synthetic PDF with a known sentence.
+    prompt: >-
+      Highlight the sentence that starts "The Purchaser shall" in the attached
+      PDF and add a comment on it saying REVIEW-7, and give me the annotated PDF.
+    pass: Opening the PDF shows the highlight and the comment in the comments pane.
+    fail: A PDF with no annotations, coloured text drawn into the page, or a description of the change.
+    bad_outcome: loud
+    tests: [OUT]
+    cost: low
+    harness:
+      method: agent
+      check: pdf-annotate
+      steps: >-
+        Add a highlight annotation and a comment (text) annotation whose
+        contents are the token in `<run>/fixtures/pdf/annotate-token.txt` to
+        `<run>/fixtures/pdf/plain.pdf`, with your own tools, and save it as
+        `<run>/outputs/annotated.pdf`. Then run `hprobe.py check P22 --run <run>`.
+
+  - id: P23
+    title: Can the harness fill a packaged Word template and edit its table in place?
+    settles: >-
+      Whether a .docx shipped inside a skill can be copied, have one table
+      cell changed in place and come back with its formatting intact - what
+      document-discovery's response shell and closing-checklist's table edit
+      need.
+    setup: A packaged template.docx with a styled three-row table.
+    prompt: >-
+      Using your packaged template, change the Status cell in the second row
+      to AGREED, leave everything else as it is, and give me the document.
+    pass: The returned document has the same table style and rows, with only that cell changed.
+    fail: A rebuilt table, lost styling, a different row count, or a new document that only looks similar.
+    bad_outcome: silent
+    tests: [OUT, DOCX, SKILLDIR]
+    cost: low
+    harness:
+      method: agent
+      check: docx-template
+      steps: >-
+        Copy `<skill>/assets/fixtures/template.docx` to
+        `<run>/outputs/template-filled.docx`, change the second data row's
+        Status cell to the token in `<run>/fixtures/docx/status-token.txt`
+        without touching anything else, and run `hprobe.py check P23 --run <run>`.
+
+  - id: P24
+    title: Does an explicit-invocation-only skill stay quiet until it is called by name?
+    settles: >-
+      Whether the harness honours `disable-model-invocation` (or
+      `allow_implicit_invocation: false`): the skill must not fire on a
+      matching prompt, but must fire when the user calls it by name. Nine
+      upstream skills are explicit-only and are unreachable without this.
+    setup: >-
+      The companion skill harness-probe-invoke installed beside harness-probe.
+      It is explicit-only and answers with a fixed token when called.
+    prompt: >-
+      First: "Check whether the invoke probe is wired up." Then, in a new
+      message, call the harness-probe-invoke skill by name.
+    pass: The first message does not run the skill; the second does and returns its token.
+    fail: The skill fires on the first message, or cannot be called by name at all.
+    bad_outcome: silent
+    tests: [INVOKE]
+    cost: low
+    harness:
+      method: user
+      check: invoke
+      steps: >-
+        Ask the user to install `harness-probe-invoke` beside this skill. Ask
+        them to send "Check whether the invoke probe is wired up." and note
+        whether that skill fired; then ask them to call it by name (for
+        example `/harness-probe-invoke`). Run `hprobe.py check P24 --run <run>
+        --answer <token it returned> --implicit <fired|quiet>`.
+
+  - id: P25
+    title: Does a tool call actually execute?
+    settles: >-
+      Whether the harness runs the model's tool calls and returns real
+      results, rather than letting a call be narrated. Nineteen upstream
+      skills need tool execution and nine more fall back without it.
+    setup: A file whose contents nobody has seen (the skill generates it).
+    prompt: >-
+      Read the attached file with a tool and give me its exact contents.
+    pass: The exact contents, which cannot be guessed.
+    fail: Contents that do not match, or an account of reading it with nothing read.
+    bad_outcome: fluent-fake
+    tests: [TOOLS]
+    cost: free
+    harness:
+      method: agent
+      check: tools
+      steps: >-
+        Read `<run>/fixtures/tools/token.txt` with a file-reading tool and run
+        `hprobe.py check P25 --run <run> --answer "<exact contents>"`. If you
+        have no tools, say so and record P25 as fail.
+
+  - id: P26
+    title: Can the harness read every supplied format, whole?
+    settles: >-
+      Whether a PDF, a Word file, a workbook, an email and a long text file
+      can each be read in full, so a code on the last page is found. IN is
+      required by sixteen upstream skills, and pressuretest and cite-check
+      read documents whole.
+    setup: Five synthetic files, each with a code buried at the end.
+    prompt: >-
+      Each attached file has a line starting CODE: near its end. Give me the
+      code from every file, naming the file.
+    pass: All five codes, each from the right file.
+    fail: Any code missing, wrong, or invented; or a long file read only in part.
+    bad_outcome: fluent-fake
+    tests: [IN]
+    cost: free
+    harness:
+      method: agent
+      check: formats
+      steps: >-
+        Read every file in `<run>/fixtures/in/` (report.pdf, memo.docx,
+        sheet.xlsx, message.eml, long.txt) in full and run `hprobe.py check
+        P26 --run <run> --answer "pdf=<code>;docx=<code>;xlsx=<code>;eml=<code>;txt=<code>"`.
+        On a harness without file tools, ask the user to attach the static
+        copies in `in/` inside `<skill>/assets/fixtures/static.zip` instead.
+
+  - id: P27
+    title: Can the harness hand a file back to the user?
+    settles: >-
+      Whether the skill can produce a file the user receives and can open -
+      the most basic output every document skill relies on.
+    prompt: >-
+      Make me a text file called hello-probe.txt whose only line is
+      HELLO-9F2, and give it to me as a file.
+    pass: A downloadable file with exactly that line.
+    fail: The text shown in chat with no file, or a file with different contents.
+    bad_outcome: loud
+    tests: [OUT]
+    cost: free
+    harness:
+      method: agent
+      check: hand-back
+      steps: >-
+        Write the token in `<run>/fixtures/out/token.txt` as the only line of
+        `<run>/outputs/hello-probe.txt` with your own file tool, tell the user
+        where it is, and run `hprobe.py check P27 --run <run>`. If your harness
+        returns files by download rather than a shared folder, ask the user to
+        confirm they received it.

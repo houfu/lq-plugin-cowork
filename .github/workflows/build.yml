@@ -36,5 +36,6 @@ jobs:
           path: |
             dist/*.zip
             dist/skills/*.skill
+            dist/harness/*.skill
             dist/*.md
           if-no-files-found: error

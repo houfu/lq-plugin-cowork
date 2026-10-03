@@ -40,6 +40,41 @@ def skill_archive_path(config: Config, name: str, out_dir: Path | None = None) -
     return skill_archive_dir(config, out_dir) / f"{name}.skill"
 
 
+# The repository's own skills, packaged beside the bundles (contract 5c).
+HARNESS_SKILLS = ("harness-probe", "harness-probe-invoke")
+
+
+def harness_archive_dir(config: Config, out_dir: Path | None = None) -> Path:
+    return dist_root(config, out_dir) / "harness"
+
+
+def write_harness_archives(config: Config, out_dir: Path | None = None) -> list[Path]:
+    """``dist/harness/<name>.skill`` for the harness probe and its companion.
+
+    Same layout as a single-skill archive: the skill folder at the root, plus
+    the Apache-2.0 licence. No ``__pycache__`` and no dotfiles.
+    """
+    licence = config.root / config.root_files[0] if config.root_files else None
+    written: list[Path] = []
+    for name in HARNESS_SKILLS:
+        source = config.root / name
+        if not (source / "SKILL.md").is_file():
+            continue
+        entries = [
+            (path.relative_to(source).as_posix(), path)
+            for path in source.rglob("*")
+            if path.is_file() and "__pycache__" not in path.parts
+        ]
+        if licence is not None and licence.is_file():
+            entries.append(("LICENSE", licence))
+        written.append(
+            _write_archive(
+                harness_archive_dir(config, out_dir) / f"{name}.skill", entries
+            )
+        )
+    return written
+
+
 def allowed_roots(config: Config) -> set[str]:
     roots = {"manifest.json", "color.png", "outline.png", "skills"}
     roots |= {Path(rel).name for rel in config.root_files}
@@ -424,6 +459,7 @@ def write_build_report(
                 lines.append(f"- **{skill.name}** — {note}")
             lines.append("")
 
+    lines += _harness_lines(config)
     lines += _archive_table(result, list(archives or []))
     lines += _suppressed_table(suppressed or [])
     lines += _issue_table("## Errors", errors)
@@ -433,6 +469,12 @@ def write_build_report(
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     return target
+
+
+def _harness_lines(config: Config) -> list[str]:
+    from .harness import build_report_lines, harness_reports, load_capabilities
+
+    return build_report_lines(harness_reports(config, load_capabilities(config.root)))
 
 
 def summarise(built: BundleBuild) -> str:

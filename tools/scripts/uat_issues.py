@@ -49,6 +49,8 @@ REPO_URL = "https://github.com/houfu/lq-plugin-cowork"
 TESTING_DOC = f"{REPO_URL}/blob/main/docs/TESTING.md"
 INSTALL_DOC = f"{REPO_URL}/blob/main/docs/INSTALL.md"
 ISSUE_FORM = f"{REPO_URL}/issues/new?template=uat-report.yml"
+PROBE_FORM = f"{REPO_URL}/issues/new?template=probe-report.yml"
+HARNESS_PROBE = f"{REPO_URL}/tree/main/harness-probe"
 LATEST_RELEASE = f"{REPO_URL}/releases/latest"
 TRACKING_TITLE = "UAT status board"
 DEFAULT_OUT = "dist/uat-issues"
@@ -178,13 +180,17 @@ def render_probe_body(config: Config, probe: Probe) -> str:
         f"**What this settles.** {probe.settles}",
         "",
         "Nothing in this repository has been exercised in a live Microsoft "
-        "365 Copilot Cowork tenant, and this is one of the fourteen questions "
-        "the cards had to write around. One fresh conversation, synthetic "
-        "files only, and a result either way is worth having.",
+        "365 Copilot Cowork tenant, and this is one of the questions the cards "
+        "had to write around. One fresh conversation, synthetic files only, "
+        "and a result either way is worth having. On any other harness, the "
+        f"[harness-probe skill]({HARNESS_PROBE}) runs this probe for you and "
+        "checks the result.",
         "",
         f"- **Probe:** `{probe.id}`",
         f"- **Package version:** {config.version} — "
         f"[download the packages]({LATEST_RELEASE})",
+        f"- **Tests:** {', '.join(f'`{t}`' for t in probe.tests) or '—'}"
+        + (f" (cost: {probe.cost})" if probe.cost else ""),
         f"- **Unlocks:** {unlocks or 'no tier turns on it; it bounds a design'}",
         f"- **Watch for:** {BAD_OUTCOME_NOTE.get(probe.bad_outcome, probe.bad_outcome)}",
         "",
@@ -214,7 +220,7 @@ def render_probe_body(config: Config, probe: Probe) -> str:
         "",
         "## How to report",
         "",
-        f"File one [UAT report]({ISSUE_FORM}), or answer in a comment here. "
+        f"File one [Probe report]({PROBE_FORM}), or answer in a comment here. "
         "A fail is as useful as a pass: it is what the cards are written "
         f"against. The whole programme is [docs/TESTING.md]({TESTING_DOC}).",
         "",
