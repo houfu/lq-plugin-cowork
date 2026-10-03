@@ -204,6 +204,14 @@ def codes_by_id(catalog: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return {code["id"]: code for code in catalog["codes"]}
 
 
+def label_for(catalog: Dict[str, Any], key: str) -> str:
+    """A capability (or facet) in plain words: "Hand back files: pdf assemble"."""
+    base, _, facet = key.partition(":")
+    code = codes_by_id(catalog).get(base, {})
+    label = code.get("label") or code.get("name") or base
+    return f"{label}: {facet.replace('-', ' ')}" if facet else label
+
+
 def probes_by_id(catalog: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return {probe["id"]: probe for probe in catalog["probes"]}
 
@@ -398,6 +406,7 @@ def skill_verdict(
     for code in _ordered_codes(catalog, levels):
         status = capability_status(catalog, skill, profile, code, latest)
         status["level"] = levels[code]
+        status["label"] = label_for(catalog, code)
         caps.append(status)
 
     required = [c for c in caps if c["level"] == "R"]
@@ -422,6 +431,7 @@ def skill_verdict(
         fallback_items.append(
             {
                 "code": cap["code"],
+                "label": cap["label"],
                 "status": cap["status"],
                 "text": wording.get("text", ""),
                 "ref": wording.get("ref", ""),
@@ -436,13 +446,18 @@ def skill_verdict(
         "blocking": [
             {
                 "code": c["code"],
+                "label": c["label"],
                 "probes": [p["id"] for p in c["probes"]],
                 "reason": c["reason"],
             }
             for c in blocking
         ],
         "unknown": [
-            {"code": c["code"], "probes": [p["id"] for p in c["probes"]]}
+            {
+                "code": c["code"],
+                "label": c["label"],
+                "probes": [p["id"] for p in c["probes"]],
+            }
             for c in unknown
         ],
         "fallbacks": fallback_items,
@@ -534,6 +549,55 @@ def next_probes(
     return ranking
 
 
+def build_next(
+    catalog: Dict[str, Any], verdicts: List[Dict[str, Any]]
+) -> List[Dict[str, Any]]:
+    """Failed capabilities, ranked by what building them would change here.
+
+    unblocks: skills that cannot run and whose only blocking capability is
+    this one. helps: skills it is one of several blockers for. upgrades:
+    skills running on a fallback because this capability failed.
+    """
+    rows: Dict[str, Dict[str, Any]] = {}
+
+    def row(key: str) -> Dict[str, Any]:
+        if key not in rows:
+            rows[key] = {
+                "capability": key,
+                "label": label_for(catalog, key),
+                "unblocks": [],
+                "helps": [],
+                "upgrades": [],
+                "probes": [],
+            }
+        return rows[key]
+
+    for verdict in verdicts:
+        blocking = verdict["blocking"]
+        for item in blocking:
+            entry = row(item["code"])
+            bucket = "unblocks" if len(blocking) == 1 else "helps"
+            entry[bucket].append(verdict["skill"])
+            entry["probes"] = sorted(set(entry["probes"]) | set(item["probes"]))
+        if verdict["verdict"] != "fallback":
+            continue  # a skill that cannot run, or is untested, is not on a fallback
+        for item in verdict["fallbacks"]:
+            if item["status"] == "fail":
+                entry = row(item["code"])
+                entry["upgrades"].append(verdict["skill"])
+                entry["probes"] = sorted(set(entry["probes"]) | set(item["probes"]))
+    ranked = list(rows.values())
+    ranked.sort(
+        key=lambda r: (
+            -len(r["unblocks"]),
+            -len(r["helps"]),
+            -len(r["upgrades"]),
+            r["label"],
+        )
+    )
+    return ranked
+
+
 def capability_table(
     catalog: Dict[str, Any], latest: Dict[str, Dict[str, Any]]
 ) -> List[Dict[str, Any]]:
@@ -568,6 +632,7 @@ def capability_table(
             {
                 "code": code["id"],
                 "name": code["name"],
+                "label": code.get("label") or code["name"],
                 "column": code.get("column", True),
                 "status": status,
                 "probes": probes,
@@ -694,6 +759,7 @@ def build_report(
         "capabilities": capability_table(catalog, latest),
         "coverage": coverage(catalog),
         "next": next_probes(catalog, verdicts, latest),
+        "build": build_next(catalog, verdicts),
         "disagreements": disagreements(verdicts) if profile == "cowork" else [],
         "facts": facts,
     }
@@ -793,7 +859,7 @@ def render_markdown(report: Dict[str, Any]) -> str:
     for cap in report["capabilities"]:
         probes = ", ".join(f"{p['id']} {p['outcome']}" for p in cap["probes"]) or "—"
         lines.append(
-            f"| {cap['code']} | {_md_escape(cap['name'])} | "
+            f"| {cap['code']} | {_md_escape(cap.get('label') or cap['name'])} | "
             f"{_status_word(cap['status'])} | {probes} |"
         )
     lines.append("")
@@ -818,6 +884,29 @@ def render_markdown(report: Dict[str, Any]) -> str:
             f"{probe['observer']} | {_md_escape(probe['evidence'])[:160]} |"
         )
     lines.append("")
+
+    if report.get("build"):
+        lines += [
+            "## What to build next on this harness",
+            "",
+            "Each capability that failed here, ranked by the skills it would unblock "
+            "outright (its only blocker), then those it is one of several blockers "
+            "for, then those it would lift off a fallback.",
+            "",
+            "| Capability | Unblocks | Helps unblock | Upgrades from a fallback | Probes |",
+            "| --- | --- | --- | --- | --- |",
+        ]
+        for row in report["build"]:
+
+            def names(items: List[str]) -> str:
+                return f"{len(items)}: {', '.join(items)}" if items else "0"
+
+            lines.append(
+                f"| {_md_escape(row['label'])} (`{row['capability']}`) | "
+                f"{names(row['unblocks'])} | {names(row['helps'])} | "
+                f"{names(row['upgrades'])} | {', '.join(row['probes'])} |"
+            )
+        lines.append("")
 
     if report["next"]:
         lines += [
@@ -878,7 +967,7 @@ def _md_detail(verdict: Dict[str, Any]) -> str:
         parts.append(
             "blocked by "
             + "; ".join(
-                f"{b['code']} ({', '.join(b['probes'])}{': ' + b['reason'] if b['reason'] else ''})"
+                f"{b.get('label', b['code'])} ({', '.join(b['probes'])}{': ' + b['reason'] if b['reason'] else ''})"
                 for b in verdict["blocking"]
             )
         )
@@ -886,13 +975,16 @@ def _md_detail(verdict: Dict[str, Any]) -> str:
         parts.append(
             "waiting on "
             + "; ".join(
-                f"{u['code']} ({', '.join(u['probes'])})" for u in verdict["unknown"]
+                f"{u.get('label', u['code'])} ({', '.join(u['probes'])})"
+                for u in verdict["unknown"]
             )
         )
     if verdict["fallbacks"] and verdict["verdict"] in ("fallback",):
         items = []
         for f in verdict["fallbacks"]:
-            label = f["code"] + (" failed" if f["status"] == "fail" else " unprobed")
+            label = f.get("label", f["code"]) + (
+                " failed" if f["status"] == "fail" else " unprobed"
+            )
             if f["text"]:
                 text = (
                     f["text"]
@@ -1018,7 +1110,7 @@ def render_html(report: Dict[str, Any]) -> str:
         cells = {"R": [], "D": [], "O": []}
         for cap in s["capabilities"]:
             cells[cap["level"]].append(
-                f"<span class='cap c-{cap['status']}' title='{_e(cap['status'])}'>"
+                f"<span class='cap c-{cap['status']}' title='{_e(cap.get('label', cap['code']) + ': ' + cap['status'])}'>"
                 f"{_e(cap['code'])}</span>"
             )
         out.append(
@@ -1039,7 +1131,7 @@ def render_html(report: Dict[str, Any]) -> str:
     for cap in report["capabilities"]:
         probes = ", ".join(f"{p['id']} {p['outcome']}" for p in cap["probes"]) or "—"
         out.append(
-            f"<tr><td><code>{_e(cap['code'])}</code></td><td>{_e(cap['name'])}</td>"
+            f"<tr><td><code>{_e(cap['code'])}</code></td><td>{_e(cap.get('label') or cap['name'])}</td>"
             f"<td><span class='pill p-{cap['status']}'>{_e(cap['status'])}</span></td>"
             f"<td>{_e(probes)}</td></tr>"
         )
@@ -1066,6 +1158,29 @@ def render_html(report: Dict[str, Any]) -> str:
             f"<td><small>{_e(p['evidence'][:300])}</small></td></tr>"
         )
     out.append("</tbody></table></div>")
+
+    if report.get("build"):
+        out.append("<h2>What to build next on this harness</h2>")
+        out.append(
+            "<p class='muted'>Each capability that failed here, ranked by the skills it "
+            "would unblock outright, then those it is one of several blockers for, then "
+            "those it would lift off a fallback.</p>"
+        )
+        out.append("<div class='scroll'><table><thead><tr><th>Capability</th>")
+        out.append(
+            "<th>Unblocks</th><th>Helps unblock</th><th>Upgrades from a fallback</th>"
+            "<th>Probes</th></tr></thead><tbody>"
+        )
+        for row in report["build"]:
+            cells = "".join(
+                f"<td><b>{len(row[k])}</b> <small>{_e(', '.join(row[k]))}</small></td>"
+                for k in ("unblocks", "helps", "upgrades")
+            )
+            out.append(
+                f"<tr><td>{_e(row['label'])} <small><code>{_e(row['capability'])}</code>"
+                f"</small></td>{cells}<td>{_e(', '.join(row['probes']))}</td></tr>"
+            )
+        out.append("</tbody></table></div>")
 
     if report["next"]:
         out.append("<h2>What to probe next</h2><div class='scroll'><table><thead><tr>")

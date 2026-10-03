@@ -39,6 +39,19 @@ A degradable capability that has not been probed counts against "as
 intended": nobody can claim a skill runs in full on evidence that does not
 exist. It is shown as "unprobed" rather than "failed".
 
+## What to build next
+
+Every capability that **failed** on this harness is ranked by what building
+or enabling it would change here:
+
+1. **unblocks**: skills that cannot run and whose only blocking capability it
+   is; they would leave "cannot run" as soon as it passes;
+2. **helps unblock**: skills it is one of several blockers for;
+3. **upgrades**: skills running on a fallback because it failed.
+
+Untested capabilities are not ranked here: they need probing, not building,
+and appear under What to probe next.
+
 ## What to probe next
 
 Probes not yet run are ranked by how many Untested skills they would clear

@@ -26,24 +26,6 @@ sys.path.insert(0, str(ROOT / "tools" / "src"))
 from lqcowork.harness import column_levels, load_capabilities  # noqa: E402
 
 GROUPS = ("core", "companion", "litigation", "transactional")
-LABELS = {
-    "TOOLS": "Tool calling",
-    "IN": "Read uploaded files",
-    "OUT": "Hand back files",
-    "FS": "Folders on disk",
-    "PERSIST": "Memory across sessions",
-    "EXEC": "Run Python scripts",
-    "BIN": "PDF and Office programs",
-    "NET": "Fetch web pages",
-    "SEARCH": "Web search",
-    "VISION": "See page images",
-    "DOCX": "Word tracked changes",
-    "SUB": "Sub-agents",
-    "SESSION": "Read chat history",
-    "SCHED": "Scheduled runs",
-    "HTML": "Interactive HTML pages",
-    "MCP": "MCP connectors",
-}
 TITLES = {
     "upstream": "the 31 LegalQuants skills",
     "cowork": "the 31 LegalQuants skills, as adapted for Copilot Cowork",
@@ -65,7 +47,8 @@ INK = {"R": "#ffffff", "D": "#ffffff", "O": "#0b0b0b"}
 
 def build(profile: str) -> tuple[str, int, int]:
     caps = load_capabilities(ROOT)
-    codes = [c for c in caps.column_codes() if c in LABELS]
+    labels = {c["id"]: c.get("label") or c["name"] for c in caps.codes}
+    codes = list(caps.column_codes())
     rows = {
         name: column_levels((skill.get(profile) or {}).get("levels") or {})
         for name, skill in caps.skills.items()
@@ -88,7 +71,7 @@ def build(profile: str) -> tuple[str, int, int]:
 
     head = "".join(
         f'<th class="cap"><div class="barwrap">{bar(c)}</div>'
-        f'<div class="label">{html.escape(LABELS[c])}</div></th>'
+        f'<div class="label">{html.escape(labels[c])}</div></th>'
         for c in codes
     )
     body = []

@@ -111,8 +111,14 @@ in the chat, briefly:
 - each skill that **cannot run**, with the capability and probe that block it;
 - each skill **on a fallback**, with the capability lost and the skill's own
   fallback wording from the report;
+- the top three entries of **What to build next on this harness**: the
+  capabilities that failed here, ranked by how many skills each would unblock
+  or upgrade, which is what to tell whoever builds or configures the harness;
 - the top three entries of **What to probe next**, so the user knows what
   would settle the untested ones.
+
+Use the capabilities' plain names from the report ("Folders on disk", "Run
+Python scripts"), not their codes, when you talk to the user.
 
 [references/verdict-rule.md](references/verdict-rule.md) explains how a
 verdict is reached; quote it if the user asks why.

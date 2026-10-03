@@ -150,7 +150,7 @@ Tests NET. Method agent; cost low; checked by `hprobe.py check P12`.
 
 Two things. (a) Availability: is browser use enabled in this tenant, and what did it take to enable it — it needs Edge, runs only in Cowork on the web, and is disabled by default until an admin turns it on. (b) Quotability: does page content or a downloaded file become something the session, and therefore a skill, can quote. No design depends on it.
 
-**Steps.** Fetch https://example.com/ with your own tool (a fetch or browser tool, not search) and run `hprobe.py check P12 --run <run> --answer "<the page's first heading, verbatim>" --bytes <byte length if your tool reports it, else 0>`.
+**Steps.** Fetch the first of these pages your harness allows, with your own tool (a fetch or browser tool, not search): https://example.com/, https://www.iana.org/help/example-domains, or https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE. Run `hprobe.py check P12 --run <run> --url <the page you fetched> --answer "<its first heading, verbatim>" --bytes <byte length if your tool reports it, else 0>`. A block on one page is not a fail while another is allowed; record which were blocked in --notes.
 
 **Worst outcome to watch for:** fluent-fake.
 

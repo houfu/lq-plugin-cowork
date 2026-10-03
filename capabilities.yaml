@@ -5,7 +5,8 @@
 # harness probe skill and the site judge every skill against it. See
 # docs/CONTRACT.md section 4b for the schema.
 #
-#   codes      one entry per capability. `evidence` lists the probes in
+#   codes      one entry per capability. `label` is its name in plain words
+#              (the report and the matrix image use it). `evidence` lists the probes in
 #              probes.yaml whose results decide the capability for every
 #              skill (its primary probes). `column: false` marks the
 #              auxiliary codes the chart does not draw as matrix columns.
@@ -33,80 +34,99 @@
 
 codes:
   - id: TOOLS
+    label: Tool calling
     name: Tool execution
     summary: The harness gives the model callable tools, runs each call and returns the result within the turn.
     evidence: [P25]
   - id: MCP
+    label: MCP connectors
     name: MCP connection
     summary: Connect to an MCP server (local stdio or remote HTTP), discover its tools and route calls to it; equivalent connector mechanisms count.
     evidence: [P15]
   - id: IN
+    label: Read uploaded files
     name: Read supplied files
     summary: Read files the user supplies (pdf, docx, xlsx, eml, text, images) whole.
     evidence: [P26]
   - id: OUT
+    label: Hand back files
     name: Hand back files
     summary: Write a file and hand it to the user.
     evidence: [P27]
   - id: FS
+    label: Folders on disk
     name: Real filesystem
     summary: User-named paths, recursive folder walks, run and sibling output folders, stable paths.
     evidence: [P16]
   - id: PERSIST
+    label: Memory across sessions
     name: Storage that outlives the session
     summary: A file written in one session can be found in a later one without being attached again.
     evidence: [P2]
   - id: EXEC
+    label: Run Python scripts
     name: Run bundled scripts
     summary: Run the skills' bundled Python scripts; P1's facts are judged against each skill's exact needs.
     evidence: [P1]
   - id: BIN
+    label: PDF and Office programs
     name: External executables
     summary: Poppler, LibreOffice, tesseract, headless Chromium, an SVG rasteriser or the codex CLI on the path.
     evidence: [P1]
   - id: NET
+    label: Fetch web pages
     name: Fetch a URL
     summary: Fetch a public page and quote it; skills that hash what they fetch add the raw-bytes probe.
     evidence: [P12]
   - id: SEARCH
+    label: Web search
     name: Web search
     summary: Search the web and return an address the user can check.
     evidence: [P6]
   - id: VISION
+    label: See page images
     name: See rendered pages
     summary: The model looks at a rendered page image and reports what is on it.
     evidence: [P4]
   - id: DOCX
+    label: Word tracked changes
     name: Word OOXML structure
     summary: Read tracked changes, comments and tables in a Word file, not just its text.
     evidence: [P3]
   - id: SUB
+    label: Sub-agents
     name: Isolated workers
     summary: A fresh-context worker that sees only its packet, with the model chosen per worker.
     evidence: [P19]
   - id: SESSION
+    label: Read chat history
     name: Conversation transcripts
     summary: Quote the current session's own words and events, and say which are read and which reconstructed.
     evidence: [P11]
   - id: SCHED
+    label: Scheduled runs
     name: Background or scheduled runs
     summary: A run that happens after the turn ends and can read and write files.
     evidence: [P13]
   - id: HTML
+    label: Interactive HTML pages
     name: Interactive HTML round trip
     summary: The user opens a generated offline HTML page, and the file it downloads comes back to the skill.
     evidence: [P20]
   - id: HASH
+    label: File fingerprints
     name: File digest by the host
     summary: Compute a SHA-256 of a file where no bundled script does it for the skill.
     evidence: [P17]
     column: false
   - id: SKILLDIR
+    label: Skill folder on disk
     name: Skill folder on disk
     summary: The skill's scripts, assets and sibling skills are reachable by path.
     evidence: [P21]
     column: false
   - id: INVOKE
+    label: Call a skill by name
     name: Call a skill by name
     summary: An explicit-invocation-only skill does not fire on its own, but fires when the user calls it by name.
     evidence: [P24]

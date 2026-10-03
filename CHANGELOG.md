@@ -41,8 +41,19 @@ undocumented, so every published change gets its own version.
   each card's cited probe touching its profile, results files, and generated
   files kept current.
 
+- Every harness-probe report now has **What to build next on this harness**:
+  each failed capability ranked by the skills it would unblock outright, help
+  unblock, and upgrade from a fallback. Capabilities carry plain-language
+  labels (`label` in `capabilities.yaml`), used by the report and by
+  `tools/scripts/capability_matrix.py`, which renders the one-page capability
+  matrix image `docs/research/capability-matrix-upstream.png`.
+
 ### Changed
 
+- P12 accepts any of three stable public pages (example.com, the IANA
+  example-domains page, or the pinned LegalQuants LICENSE on GitHub), so a
+  harness behind an egress allow-list is judged on whether it can fetch at
+  all rather than on one host.
 - A probe's `unlocks` is derived from the codes it tests and the levels in
   `capabilities.yaml`, no longer written by hand; the hand-kept lists disagreed
   with the cards for nine of the fourteen probes.

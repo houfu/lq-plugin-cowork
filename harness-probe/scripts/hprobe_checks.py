@@ -38,6 +38,13 @@ RAW_FETCH_URL = (
 RAW_FETCH_SHA256 = "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
 RAW_FETCH_BYTES = 11358
 EXAMPLE_HEADING = "example domain"
+# P12 accepts any one of these stable public pages, so a harness behind an
+# egress allow-list is judged on whether it can fetch at all, not on one host.
+FETCH_PAGES = (
+    ("example.com/", EXAMPLE_HEADING),
+    ("www.iana.org/help/example-domains", "example domains"),
+    (RAW_FETCH_URL.split("://", 1)[1], "apache license"),
+)
 BRIBERY_PATH = "/ukpga/2010/23/section/1"
 BRIBERY_SENTENCE = "is guilty of an offence if either of the following cases applies"
 INVOKE_TOKEN = "INVOKE-OK-4K7R"
@@ -245,12 +252,27 @@ def check_docx_read(run: Run, args: Any) -> Check:
     return Check(outcome, "wrong or missing: " + ", ".join(sorted(wrong)))
 
 
+def _page_key(url: str) -> str:
+    """A URL without scheme, query, fragment or trailing slash, for comparison."""
+    url = (url or "https://example.com/").strip().split("://", 1)[-1]
+    return url.split("#", 1)[0].split("?", 1)[0].rstrip("/")
+
+
 def check_fetch_page(run: Run, args: Any) -> Check:
-    ok = normalise(args.answer or "") == EXAMPLE_HEADING
-    facts = {"bytes_reported": int(args.bytes or 0)}
+    key = _page_key(args.url)
+    heading = next((h for page, h in FETCH_PAGES if key == page.rstrip("/")), None)
+    facts = {"url": key, "bytes_reported": int(args.bytes or 0)}
+    if heading is None:
+        return Check(
+            "fail",
+            f"{key} is not one of the probe's pages: "
+            + ", ".join(p for p, _ in FETCH_PAGES),
+            facts=facts,
+        )
+    ok = normalise(args.answer or "") == heading
     return Check(
         "pass" if ok else "fail",
-        "heading quoted verbatim" if ok else f"heading was '{args.answer}'",
+        f"heading of {key} quoted verbatim" if ok else f"heading was '{args.answer}'",
         facts=facts,
     )
 

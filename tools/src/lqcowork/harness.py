@@ -380,6 +380,7 @@ def build_catalog(config: Config, caps: Capabilities) -> dict[str, Any]:
             {
                 "id": code["id"],
                 "name": code["name"],
+                "label": code.get("label") or code["name"],
                 "summary": code["summary"],
                 "evidence": list(code.get("evidence") or []),
                 "column": bool(code.get("column", True)),

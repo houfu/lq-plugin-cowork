@@ -417,8 +417,10 @@ otherwise. Then:
 | cannot run | at least one R failed |
 | untested | no R failed; at least one R is unprobed |
 
-O levels never change a verdict. The report also ranks unrun probes by how
-many untested skills each would clear, and, for the cowork profile, flags a
+O levels never change a verdict. The report also ranks each failed
+capability by the skills it would unblock (as their only blocker), help
+unblock and upgrade from a fallback - what to build next on that harness -
+and ranks unrun probes by how many untested skills each would clear, and, for the cowork profile, flags a
 card whose hand-set `status` or `tier` disagrees with its verdict without
 changing it.
 

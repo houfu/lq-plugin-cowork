@@ -423,6 +423,30 @@ class TestChecks:
         decisions.write_text(json.dumps(data))
         assert checks.check_roundtrip(run, args()).outcome == "fluent-fake"
 
+    def test_p12_accepts_any_listed_page(self, run):
+        raw = checks.RAW_FETCH_URL
+        good = [
+            ("https://example.com/", "Example Domain"),
+            ("https://www.iana.org/help/example-domains", "Example Domains"),
+            (raw, "Apache License"),
+            (raw + "?plain=1", "  Apache License  "),
+        ]
+        for url, heading in good:
+            assert (
+                checks.check_fetch_page(run, args(url=url, answer=heading)).outcome
+                == "pass"
+            ), url
+        assert (
+            checks.check_fetch_page(run, args(url=raw, answer="Example Domain")).outcome
+            == "fail"
+        )
+        other = checks.check_fetch_page(
+            run, args(url="https://example.org/", answer="x")
+        )
+        assert (
+            other.outcome == "fail" and "not one of the probe's pages" in other.evidence
+        )
+
     def test_p12_and_p6_answers(self, run):
         assert (
             checks.check_fetch_page(
@@ -553,7 +577,13 @@ def tiny_catalog() -> dict:
         "schema": engine.CATALOG_SCHEMA,
         "codes": [
             {"id": "TOOLS", "name": "Tools", "summary": "", "evidence": ["P25"]},
-            {"id": "EXEC", "name": "Exec", "summary": "", "evidence": ["P1"]},
+            {
+                "id": "EXEC",
+                "name": "Exec",
+                "label": "Run Python scripts",
+                "summary": "",
+                "evidence": ["P1"],
+            },
             {"id": "NET", "name": "Net", "summary": "", "evidence": ["P12"]},
             {"id": "OUT", "name": "Out", "summary": "", "evidence": ["P27"]},
         ],
@@ -680,6 +710,32 @@ class TestEngine:
         assert v["verdict"] == "fallback"
         assert v["fallbacks"][0]["code"] == "OUT:pdf-assemble"
         assert report["disagreements"][0]["skill"] == "scripted"
+
+    def test_build_next_ranks_failed_capabilities(self):
+        old = {"facts": {"python": "3.11.4", "packages": {}}}
+        report = engine.build_report(
+            tiny_catalog(),
+            results(("P25", "pass"), ("P1", "pass", old), ("P12", "fail")),
+        )
+        build = {row["capability"]: row for row in report["build"]}
+        assert build["EXEC"]["unblocks"] == ["scripted"]
+        assert build["EXEC"]["label"] == "Run Python scripts"
+        assert report["build"][0]["capability"] == "EXEC"
+        # A skill that cannot run is not "on a fallback", so NET upgrades nothing yet.
+        assert "NET" not in build
+        markdown = engine.render_markdown(report)
+        assert "## What to build next on this harness" in markdown
+        assert "Run Python scripts (`EXEC`)" in markdown
+        assert "What to build next" in engine.render_html(report)
+        doc = results(
+            ("P25", "pass"),
+            ("P1", "pass", {"facts": {"python": "3.12.0"}}),
+            ("P12", "fail"),
+        )
+        fallback = engine.build_report(tiny_catalog(), doc)
+        assert {r["capability"]: r for r in fallback["build"]}["NET"]["upgrades"] == [
+            "scripted"
+        ]
 
     def test_next_probes_ranks_what_clears_untested_skills(self):
         report = engine.build_report(tiny_catalog(), results(("P1", "pass")))

@@ -1409,7 +1409,7 @@ A skill's verdict on a harness follows from the probe results:
 
 Before any probe has run, the upstream skills stand at 0 as intended, 7 on a fallback and 24 untested; the Cowork cards at 5, 7 and 19.
 
-**One measured harness.** Claude Code on the web, probing its own cloud container on 1 October 2026: 6 skills run as intended, 6 on a fallback, 3 cannot run and 16 remain untested. The blocks were concrete: the container's default `python3` is 3.11, below the 3.12 floor of closing-bible and conform; its egress allow-list blocks the public pages lq-connect reads; and the PDF libraries read-redline expects are absent, so it runs on its documented fallback. The untested skills wait on probes that need a person (opening a page, calling a skill by name, judging a quotation) or a second session.
+**One measured harness.** Claude Code on the web, probing its own cloud container on 1 October 2026: 8 skills run as intended, 4 on a fallback, 2 cannot run and 17 remain untested. The blocks were concrete: the container's default `python3` is 3.11, below the 3.12 floor of closing-bible and conform, and without the PDF libraries read-redline expects it runs on its documented fallback. The report's *what to build next* therefore names one capability, running Python scripts on 3.12 or later, which would unblock two skills and upgrade two more. Its egress allow-list blocks some public sites but not GitHub, so fetching passes. The untested skills wait on probes that need a person (opening a page, calling a skill by name, judging a quotation) or a second session.
 
 The probe skill is `harness-probe` in the [houfu/lq-plugin-cowork](https://github.com/houfu/lq-plugin-cowork) repository; the levels in this study are its `capabilities.yaml`.
 

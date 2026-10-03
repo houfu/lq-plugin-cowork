@@ -8,6 +8,7 @@
     {
       "id": "TOOLS",
       "name": "Tool execution",
+      "label": "Tool calling",
       "summary": "The harness gives the model callable tools, runs each call and returns the result within the turn.",
       "evidence": [
         "P25"
@@ -17,6 +18,7 @@
     {
       "id": "MCP",
       "name": "MCP connection",
+      "label": "MCP connectors",
       "summary": "Connect to an MCP server (local stdio or remote HTTP), discover its tools and route calls to it; equivalent connector mechanisms count.",
       "evidence": [
         "P15"
@@ -26,6 +28,7 @@
     {
       "id": "IN",
       "name": "Read supplied files",
+      "label": "Read uploaded files",
       "summary": "Read files the user supplies (pdf, docx, xlsx, eml, text, images) whole.",
       "evidence": [
         "P26"
@@ -35,6 +38,7 @@
     {
       "id": "OUT",
       "name": "Hand back files",
+      "label": "Hand back files",
       "summary": "Write a file and hand it to the user.",
       "evidence": [
         "P27"
@@ -44,6 +48,7 @@
     {
       "id": "FS",
       "name": "Real filesystem",
+      "label": "Folders on disk",
       "summary": "User-named paths, recursive folder walks, run and sibling output folders, stable paths.",
       "evidence": [
         "P16"
@@ -53,6 +58,7 @@
     {
       "id": "PERSIST",
       "name": "Storage that outlives the session",
+      "label": "Memory across sessions",
       "summary": "A file written in one session can be found in a later one without being attached again.",
       "evidence": [
         "P2"
@@ -62,6 +68,7 @@
     {
       "id": "EXEC",
       "name": "Run bundled scripts",
+      "label": "Run Python scripts",
       "summary": "Run the skills' bundled Python scripts; P1's facts are judged against each skill's exact needs.",
       "evidence": [
         "P1"
@@ -71,6 +78,7 @@
     {
       "id": "BIN",
       "name": "External executables",
+      "label": "PDF and Office programs",
       "summary": "Poppler, LibreOffice, tesseract, headless Chromium, an SVG rasteriser or the codex CLI on the path.",
       "evidence": [
         "P1"
@@ -80,6 +88,7 @@
     {
       "id": "NET",
       "name": "Fetch a URL",
+      "label": "Fetch web pages",
       "summary": "Fetch a public page and quote it; skills that hash what they fetch add the raw-bytes probe.",
       "evidence": [
         "P12"
@@ -89,6 +98,7 @@
     {
       "id": "SEARCH",
       "name": "Web search",
+      "label": "Web search",
       "summary": "Search the web and return an address the user can check.",
       "evidence": [
         "P6"
@@ -98,6 +108,7 @@
     {
       "id": "VISION",
       "name": "See rendered pages",
+      "label": "See page images",
       "summary": "The model looks at a rendered page image and reports what is on it.",
       "evidence": [
         "P4"
@@ -107,6 +118,7 @@
     {
       "id": "DOCX",
       "name": "Word OOXML structure",
+      "label": "Word tracked changes",
       "summary": "Read tracked changes, comments and tables in a Word file, not just its text.",
       "evidence": [
         "P3"
@@ -116,6 +128,7 @@
     {
       "id": "SUB",
       "name": "Isolated workers",
+      "label": "Sub-agents",
       "summary": "A fresh-context worker that sees only its packet, with the model chosen per worker.",
       "evidence": [
         "P19"
@@ -125,6 +138,7 @@
     {
       "id": "SESSION",
       "name": "Conversation transcripts",
+      "label": "Read chat history",
       "summary": "Quote the current session's own words and events, and say which are read and which reconstructed.",
       "evidence": [
         "P11"
@@ -134,6 +148,7 @@
     {
       "id": "SCHED",
       "name": "Background or scheduled runs",
+      "label": "Scheduled runs",
       "summary": "A run that happens after the turn ends and can read and write files.",
       "evidence": [
         "P13"
@@ -143,6 +158,7 @@
     {
       "id": "HTML",
       "name": "Interactive HTML round trip",
+      "label": "Interactive HTML pages",
       "summary": "The user opens a generated offline HTML page, and the file it downloads comes back to the skill.",
       "evidence": [
         "P20"
@@ -152,6 +168,7 @@
     {
       "id": "HASH",
       "name": "File digest by the host",
+      "label": "File fingerprints",
       "summary": "Compute a SHA-256 of a file where no bundled script does it for the skill.",
       "evidence": [
         "P17"
@@ -161,6 +178,7 @@
     {
       "id": "SKILLDIR",
       "name": "Skill folder on disk",
+      "label": "Skill folder on disk",
       "summary": "The skill's scripts, assets and sibling skills are reachable by path.",
       "evidence": [
         "P21"
@@ -170,6 +188,7 @@
     {
       "id": "INVOKE",
       "name": "Call a skill by name",
+      "label": "Call a skill by name",
       "summary": "An explicit-invocation-only skill does not fire on its own, but fires when the user calls it by name.",
       "evidence": [
         "P24"
@@ -427,7 +446,7 @@
       "harness": {
         "method": "agent",
         "check": "fetch-page",
-        "steps": "Fetch https://example.com/ with your own tool (a fetch or browser tool, not search) and run `hprobe.py check P12 --run <run> --answer \"<the page's first heading, verbatim>\" --bytes <byte length if your tool reports it, else 0>`."
+        "steps": "Fetch the first of these pages your harness allows, with your own tool (a fetch or browser tool, not search): https://example.com/, https://www.iana.org/help/example-domains, or https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE. Run `hprobe.py check P12 --run <run> --url <the page you fetched> --answer \"<its first heading, verbatim>\" --bytes <byte length if your tool reports it, else 0>`. A block on one page is not a fail while another is allowed; record which were blocked in --notes."
       },
       "cowork": {
         "setup": "Cowork on the web in Microsoft Edge, on a device where Edge is installed, in a tenant where an admin has performed the enable steps. Record what the posture was before the tester asked, who had to act, and the tenant's DLP and site-blocking posture. A tenant where the admin declines is a reportable result, not a failed run.",

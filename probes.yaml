@@ -428,10 +428,14 @@ probes:
       method: agent
       check: fetch-page
       steps: >-
-        Fetch https://example.com/ with your own tool (a fetch or browser tool,
-        not search) and run `hprobe.py check P12 --run <run> --answer "<the
-        page's first heading, verbatim>" --bytes <byte length if your tool
-        reports it, else 0>`.
+        Fetch the first of these pages your harness allows, with your own
+        tool (a fetch or browser tool, not search): https://example.com/,
+        https://www.iana.org/help/example-domains, or
+        https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE.
+        Run `hprobe.py check P12 --run <run> --url <the page you fetched>
+        --answer "<its first heading, verbatim>" --bytes <byte length if your
+        tool reports it, else 0>`. A block on one page is not a fail while
+        another is allowed; record which were blocked in --notes.
 
   - id: P13
     title: Can a scheduled run work over files placed earlier?

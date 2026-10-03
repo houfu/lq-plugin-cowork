@@ -273,6 +273,18 @@
       "date": "2026-10-01T06:07:01+00:00",
       "observer": "agent",
       "evidence": "Cowork Enterprise Search; not applicable to this harness."
+    },
+    {
+      "probe": "P12",
+      "outcome": "pass",
+      "date": "2026-10-03T01:00:40+00:00",
+      "observer": "script",
+      "facts": {
+        "url": "raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE",
+        "bytes_reported": 0
+      },
+      "evidence": "heading of raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE quoted verbatim",
+      "notes": "WebFetch tool. example.com and www.iana.org are blocked by the egress allow-list; raw.githubusercontent.com is allowed. The tool returns a model-processed rendering, so bytes are not reported. Sites a skill needs (e.g. legalquants.com for lq-connect) may still be blocked here."
     }
   ]
 }
