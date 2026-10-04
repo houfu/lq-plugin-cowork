@@ -42,7 +42,12 @@ upstream's `LICENSE` travels at the zip root.
 lq-cowork/
   upstream/                    # git submodule, read-only, pinned SHA
   cowork.yaml                  # bundles, developer block, global transforms, pin
-  probes.yaml                  # the capability probes the cards are written around
+  probes.yaml                  # the capability probes (section 3), each tied to capability codes
+  capabilities.yaml            # every skill's capability levels, two profiles (section 4b)
+  probe-results/*.json         # recorded harness-probe runs, judged by the build and the site
+  harness-probe/               # the repository's own Agent Skill: runs the probes, writes the report
+    SKILL.md, references/, scripts/, assets/fixtures/, data/catalog.json (generated)
+  harness-probe-invoke/        # its explicit-invocation companion, for probe P24
   skills/README.md             # says these folders are build inputs, not skills (section 5b)
   skills/<name>/               # one adaptation folder per shipped skill
     skill.yaml                 #   the card (required)
@@ -61,7 +66,8 @@ lq-cowork/
     tests/...
   docs/CONTRACT.md             # this file
   docs/RELEASING.md            # how a release is cut (contract section 7)
-  dist/                        # generated, gitignored: bundles, zips, dist/skills/<name>.skill, reports
+  dist/                        # generated, gitignored: bundles, zips, dist/skills/<name>.skill,
+                               #   dist/harness/<name>.skill, reports
   .github/workflows/           # build.yml, release.yml, site.yml, upstream-drift.yml
   .github/dependabot.yml       # keeps the pinned action versions current
   Makefile                     # thin wrappers around `uv run --project tools lqcowork ...`
@@ -181,8 +187,9 @@ bundle added after it.
 ### `probes.yaml`
 
 At the repository root: the capability probes, each one a question about
-Cowork that no card can answer for itself, transcribed from
-`docs/research/cowork-alternatives-and-risk.md` section 3.
+what a harness can actually do. P1 to P14 were written for Cowork and
+transcribed from `docs/research/cowork-alternatives-and-risk.md` section 3;
+P15 to P27 close the gaps in `docs/research/probe-coverage-review.md`.
 
 ```yaml
 probes:
@@ -194,17 +201,33 @@ probes:
     pass: "..."
     fail: "..."
     bad_outcome: silent           # refusal | fluent-fake | silent | loud
-    unlocks: [read-redline]       # skill names; may be empty
+    tests: [IN, DOCX]             # capability codes from capabilities.yaml
+    cost: low                     # free | low | setup | two-session | admin
+    harness:                      # how the harness-probe skill runs it on any harness
+      method: agent               # script | agent | user | two-session
+      check: docx-read            # the `hprobe.py check` verifier, or null
+      steps: "..."                # what the agent does; <run> and <skill> are filled in
 ```
 
 `id`, `title`, `settles`, `prompt`, `pass`, `fail` and `bad_outcome` are
-required; `setup` and `unlocks` are optional. Duplicate ids and an unknown
-`bad_outcome` are config errors. An absent `probes.yaml` is not: every card
-that names a probe then gets `LQC-K003`, which says exactly that.
+required; `setup` is optional. Duplicate ids, an unknown `bad_outcome`, an
+unknown `cost` and an unknown `harness.method` are config errors. An absent
+`probes.yaml` is not: every card that names a probe then gets `LQC-K003`,
+which says exactly that. With `capabilities.yaml` present, `tests` and
+`harness` are required (`LQC-K004`).
 
-It is read by validation (`LQC-K003`), the build report, the site and
-`tools/scripts/uat_issues.py --probes`. `docs/TESTING.md` Part E summarises it
-and links to the site.
+**`unlocks` is derived, not written.** The skills a probe unlocks are the
+skills whose cowork-profile required or degradable levels it decides: a
+probe decides a code when it is one of the code's `evidence` probes, or one
+of a skill's extra `evidence` probes for that code or facet. `load_config`
+fills `Probe.unlocks` that way; a `probes.yaml` that still declares
+`unlocks:` is refused (`LQC-K004`). Without `capabilities.yaml`, a declared
+`unlocks` list is read as before.
+
+It is read by validation (`LQC-K003` to `LQC-K008`), the build report, the
+site, `tools/scripts/uat_issues.py --probes` and, as
+`harness-probe/data/catalog.json`, by the harness-probe skill.
+`docs/TESTING.md` Part E summarises it and links to the site.
 
 ## 4. The skill card: `skills/<name>/skill.yaml`
 
@@ -319,6 +342,95 @@ Rules for cards:
   matching warnings and the build report lists every one of them under
   "Suppressed warnings" with its bundle, skill, code, file and reason.
 
+## 4b. Capabilities, the probe skill and verdicts
+
+### `capabilities.yaml`
+
+At the repository root: what every vendored skill needs from a harness,
+under two profiles - `upstream` (the skill as vendored) and `cowork` (the
+adapted card as built). It is the data behind
+`docs/research/harness-capability-chart.md`.
+
+```yaml
+codes:
+  - id: OUT
+    name: Hand back files
+    summary: Write a file and hand it to the user.
+    evidence: [P27]               # primary probes: decide this code for every skill
+    column: true                  # false for auxiliary codes (HASH, SKILLDIR, INVOKE)
+unprobed: []                      # [{code, reason}] for a code no probe tests, on purpose
+skills:
+  sigpack:
+    group: transactional
+    upstream:
+      levels: {TOOLS: R, IN: R, OUT: R, OUT:pdf-assemble: R, VISION: R, EXEC: D}
+      evidence: {OUT:pdf-assemble: [P8]}   # extra probes, per code or facet
+      needs: {python: "3.8", packages: [pypdf], binaries: [pdftoppm, soffice]}
+      fallbacks:
+        EXEC: {text: "the skill's own words for what happens without it", ref: "file:line"}
+    cowork:
+      levels: {...}
+      evidence: {...}
+      fallbacks: {...}
+      notes: "what the adaptation changed"
+```
+
+Levels are `R` (required: the core deliverable cannot be produced, or the
+skill stops), `D` (degradable: the skill documents a fallback and what it
+costs) and `O` (optional). A **facet** (`CODE:name`) narrows a code to the one
+thing a probe tests; it has no primary probes, only its own `evidence`.
+**TOOLS is derived**: the strongest level among the action codes OUT, FS,
+PERSIST, EXEC, BIN, NET, SEARCH, VISION, DOCX, SUB, SESSION, SCHED, MCP, HASH
+and SKILLDIR, facets included. `needs` (upstream only) is judged against
+probe P1's recorded facts for EXEC and BIN.
+
+### The harness-probe skill
+
+`harness-probe/` is an Agent Skill this repository ships, not an adaptation.
+On any harness it initialises a run folder with freshly generated synthetic
+fixtures, walks the agent through every probe's `harness.steps`, verifies
+each result against a salted answer key with `scripts/hprobe.py check`, and
+writes the report. Its scripts are standard library only and Python 3.8
+compatible. Static fixtures in `assets/fixtures/static.zip` serve harnesses that
+cannot run scripts, and their answers can be checked later anywhere.
+`harness-probe-invoke/` is its explicit-invocation companion for P24.
+
+`harness-probe/data/catalog.json` and `harness-probe/references/probes.md`
+are **generated** from `probes.yaml`, `capabilities.yaml` and the cards by
+`lqcowork catalog`; the cards contribute each skill's tier, status and cited
+probes to the cowork profile. `assets/fixtures/` is generated by
+`hprobe.py fixtures` and checked for drift by the tests.
+
+### The verdict
+
+`harness-probe/scripts/hprobe_engine.py` is the only implementation; the
+build tooling imports it. For one skill under one profile, a capability
+passes when every probe deciding it passed (the newest result per probe
+wins; a result's `codes` map can override single codes), fails when any
+failed, was refused or was caught as a fluent fake, and is untested
+otherwise. Then:
+
+| Verdict | Rule |
+| --- | --- |
+| runs as intended | every R and every D passes |
+| runs on a fallback | every R passes; at least one D failed or is unprobed (the report quotes its fallback wording) |
+| cannot run | at least one R failed |
+| untested | no R failed; at least one R is unprobed |
+
+O levels never change a verdict. The report also ranks each failed
+capability by the skills it would unblock (as their only blocker), help
+unblock and upgrade from a fallback - what to build next on that harness -
+and ranks unrun probes by how many untested skills each would clear, and, for the cowork profile, flags a
+card whose hand-set `status` or `tier` disagrees with its verdict without
+changing it.
+
+### `probe-results/`
+
+One `lq-harness-probe-results/1` JSON file per harness run
+(`harness-probe/references/results-format.md`). The build validates each
+(`LQC-K007`); the build report's **Harness verdicts** section and the site's
+`verdicts.html` judge each one, beside an empty baseline per profile.
+
 ## 5. Build pipeline (per skill, in this order)
 
 1. Resolve source `upstream/skills/<upstream>`; missing folder is an error.
@@ -429,6 +541,14 @@ the bundle lines, the build report gets a `## Single-skill archives` section
 publishes them all next to the bundles with their checksums (section 7 of
 RELEASING.md).
 
+## 5c. Harness-probe archives: `dist/harness/<name>.skill`
+
+`package` also writes `dist/harness/harness-probe.skill` and
+`dist/harness/harness-probe-invoke.skill`: the skill folder at the archive
+root plus `LICENSE`, no `__pycache__` and no dotfiles, through the same
+reproducible zip writer as section 5b. They are release assets, covered by
+`SHA256SUMS` and the reproducibility check.
+
 ## 6. Validation rules
 
 Error codes reuse Microsoft's where a rule matches; ours are `LQC-…`.
@@ -473,9 +593,14 @@ Errors (fail the build):
 | LQC-B001 | a mirrored bundle derives a skill that has no card under `skills/<name>/`. The message names the skill and says: write a card, or exclude it with a reason. One error per missing card, however many bundles derive it |
 | LQC-K001 | `cowork` missing, or `tier`/`status`/`differs` missing or malformed; `tier` not an integer 0 to 4; `status` not one of the two; a known issue without `id`, `title`, `detail` or `failure`; a workaround without both keys; a duplicate known-issue `id` anywhere in the repository |
 | LQC-K002 | `tier: 4` on a card in any bundle; `tier` 2 or 3 with no known issue; `status: probe-gated` with no known issue carrying `probe` |
+| LQC-K004 | `capabilities.yaml` or `probes.yaml` malformed against each other: a code's evidence names an undefined probe; a probe tests an unknown code, has no `tests`, has no `harness`, or still declares `unlocks`; a skill level uses an unknown code or a level other than R/D/O; a facet has no evidence; evidence names an undefined probe; a card in the build has no capability entry |
+| LQC-K005 | a capability code that no probe tests and that is not listed under `unprobed` with a reason (a warning when a listed code is in fact tested) |
+| LQC-K006 | a profile's `TOOLS` differs from the strongest action-code level; a D level has no fallback wording; a card's known issue cites a probe whose `tests` touch none of the codes its cowork profile rates |
+| LQC-K007 | a file in `probe-results/` is not valid `lq-harness-probe-results/1`, or records a probe `probes.yaml` does not define |
+| LQC-K008 | `harness-probe/data/catalog.json`, `harness-probe/references/probes.md` or the generated blocks in the capability chart are out of date with their sources (`lqcowork catalog`, `lqcowork chart`) |
 
-`LQC-B001`, `LQC-K001` and `LQC-K002` are read off the cards before anything
-is copied, and any of them stops the build there: half a bundle would bury
+`LQC-B001`, `LQC-K001`, `LQC-K002` and `LQC-K004` to `LQC-K008` are read off
+the cards and the repository data before anything is copied, and any of them stops the build there: half a bundle would bury
 them under a manifest's worth of consequential errors. Every one is reported,
 so a run names every card that needs work rather than the first.
 
@@ -525,7 +650,14 @@ uv run --project tools lqcowork anchor     [--skill NAME]              # set anc
 uv run --project tools lqcowork triggers   [--bundle ID] [--out DIR]   # write dist/<bundle>-trigger-tests.md only
 uv run --project tools lqcowork archives   [--bundle ID] [--out DIR]   # write and validate dist/skills/<name>.skill from an existing build
 uv run --project tools lqcowork release-check --tag vX.Y.Z [--out DIR] # does a tag agree with the tree?
+uv run --project tools lqcowork catalog    [--check]                  # harness-probe/data/catalog.json + references/probes.md
+uv run --project tools lqcowork chart      [--check]                  # regenerate the chart's <!-- gen:... --> blocks
+uv run --project tools lqcowork verdicts                              # one line per probe-results file and baseline
 ```
+
+The harness-probe skill has its own CLI, `harness-probe/scripts/hprobe.py`
+(`init`, `status`, `steps`, `env`, `check`, `record`, `posture`, `report`,
+`verdict`, `fixtures`), documented in its `SKILL.md`.
 
 Exit codes: 0 ok, 1 error, 2 validation/anchor/release-check failure. Every
 command prints a one-line summary per bundle; `package` prints one line per
@@ -771,6 +903,7 @@ supported way to get one.
 | `cowork.yaml` | bundles, manifest names and descriptions, mirror lines, the package version, the upstream pin, the transform lists |
 | `skills/<name>/skill.yaml` | the description, the triggers, the `cowork` block (tier, status, `differs`, known issues, workarounds), `notes`, `bucket` |
 | `probes.yaml` | the probes page, and the link from a known issue to the probe that settles it |
+| `capabilities.yaml`, `probe-results/*.json`, `harness-probe/scripts/hprobe_engine.py` | the verdicts page, the derived `unlocks` on the probes page |
 | `upstream/plugin.release.yaml` | what upstream calls each mirrored plugin |
 | `upstream/skills/<group>/<name>/SKILL.md` | the original description, quoted on the skill page |
 | `<out>/<bundle>/skills/<name>/` | the files each skill actually ships; a skill in two bundles is read once |
@@ -791,7 +924,8 @@ says which file it would have rendered and where to read it instead.
 | `bundles/<id>.html` | manifest name, ids and descriptions; the `Mirrors upstream plugin …` line with upstream's display name and description; the skills table (name, one-line purpose, tier, status, known-issue count); the trigger-test checklist as a table; a **Download** block at the top linking the zip, the trigger-test checklist and `SHA256SUMS`, and a `.skill` link on every row of the skills table |
 | `skills/<name>.html` | what it does (the description's first sentence); when to use it (positive triggers); not for (negative triggers with the hand-off the checklist would print); the bundles it ships in; tier, status and bucket badges carrying the rubric; a **Get this skill** block after the badges with the `.skill` archive, what it is, its size and file count where one was built, and the bundle zips it also ships in; **How it differs from the original** (`cowork.differs`, with `notes` under a "Build notes" disclosure); known issues with failure shape and probe link; the workarounds table; the original description quoted; the upstream link at the pinned SHA; the files shipped; the build warnings; the UAT issue search |
 | `known-issues.html` | every known issue across every card, with its skill, tier, failure shape and probe |
-| `probes.html` | every probe in `probes.yaml`, its prompt verbatim, what a pass and a fail look like, the worst outcome, and what it unlocks |
+| `probes.html` | every probe in `probes.yaml`, the capability codes it tests and its cost, its prompt verbatim, what a pass and a fail look like, the worst outcome, what it unlocks (derived), and the harness-probe skill's steps for it |
+| `verdicts.html` | the harness verdicts: one block per `probe-results/` file plus an empty baseline per profile, each with its four verdict lists (blocking capability and probe, or the fallback wording lost), what to probe next, cards that disagree with the verdict, and the probe coverage table |
 | `differences.html` | the capability picture from section 8 in one screen; the mechanical transforms of section 5 in plain words; the claim-words rule with the list from `cowork.yaml`; the bundle structure against upstream's; the tier rubric with a count per tier; a table of every skill with its tier and a one-line `differs` excerpt |
 | `downloads.html` | every published file in two tables: the bundle packages (name, skill count, `<id>.zip`, `<id>-trigger-tests.md`) and all the skill archives (skill, bundles, `<name>.skill`, and its size where one was built); then `SHA256SUMS`, `build-report.md`, the releases page, and the sentence about what "latest" resolves to |
 | `install.html`, `testing.html`, `changelog.html` | the Markdown sources, rendered |

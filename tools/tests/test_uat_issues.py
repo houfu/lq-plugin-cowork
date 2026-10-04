@@ -164,7 +164,7 @@ def probe_issues(script: ModuleType, real_root: Path) -> list:
 def test_one_issue_per_probe(script: ModuleType, real_root: Path, probe_issues):
     config = load_config(real_root)
     assert [issue.name for issue in probe_issues] == [p.id for p in config.probes]
-    assert len(probe_issues) == 14
+    assert len(probe_issues) == 27
 
 
 def test_probe_titles_and_labels(script: ModuleType, real_root: Path, probe_issues):
@@ -192,6 +192,9 @@ def test_probe_body_carries_every_field(
             assert (f"> {line}" if line.strip() else ">") in body
         for name in probe.unlocks:
             assert f"`{name}`" in body
+        for code in probe.tests:
+            assert f"`{code}`" in body
+        assert "probe-report.yml" in body
 
 
 def test_probes_flag_writes_files_and_creates_nothing(

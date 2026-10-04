@@ -6,16 +6,20 @@
 {% if probes %}
 <p class="lede">
   {{ probes | length }} question{{ "" if probes | length == 1 else "s" }}
-  about Microsoft 365 Copilot Cowork that nobody has answered in a live
-  tenant. Each one is something a skill would like to rely on and cannot,
-  stated so a tester can settle it in one fresh conversation with synthetic
-  files.
+  about what a harness can actually do. Each one is something a skill would
+  like to rely on, stated so a tester can settle it in one fresh conversation
+  with synthetic files: in Microsoft 365 Copilot Cowork by typing the prompt
+  below, or on any harness by running the <code>harness-probe</code> skill,
+  which carries out every probe, checks the result and writes a report.
 </p>
 
 <p>
   A probe is not a bug report. It is a question whose answer changes what this
   adaptation may promise: the skills a result unlocks are named under each
-  one. The <em>worst outcome</em> is what a tester has to be ready to spot —
+  one, worked out from the capability codes it tests and the levels in
+  <code>capabilities.yaml</code> (the Cowork cards' required and degradable
+  capabilities). <a href="verdicts.html">Verdicts</a> shows what the recorded
+  results add up to. The <em>worst outcome</em> is what a tester has to be ready to spot —
   a <strong>fluent-fake</strong> answer is a plausible reply to a thing that
   never happened, and it is the reason every probe says what a pass looks
   like before you run it.
@@ -28,6 +32,8 @@
       <tr>
         <th scope="col">Probe</th>
         <th scope="col">Question</th>
+        <th scope="col">Tests</th>
+        <th scope="col">Cost</th>
         <th scope="col">Worst outcome</th>
         <th scope="col">Unlocks</th>
       </tr>
@@ -37,6 +43,8 @@
       <tr>
         <th scope="row"><a href="#{{ probe.id }}">{{ probe.id }}</a></th>
         <td>{{ probe.title }}</td>
+        <td><code>{{ probe.tests | join(" ") }}</code></td>
+        <td>{{ probe.cost }}</td>
         <td>{{ probe.bad_outcome }}</td>
         <td>
           {%- if probe.unlocks %}
@@ -58,6 +66,10 @@
 <dl class="facts">
   <dt>Settles</dt>
   <dd>{{ probe.settles }}</dd>
+  {%- if probe.tests %}
+  <dt>Tests</dt>
+  <dd><code>{{ probe.tests | join(" ") }}</code>{% if probe.cost %} · cost {{ probe.cost }}{% endif %}</dd>
+  {%- endif %}
   {%- if probe.setup %}
   <dt>Setup</dt>
   <dd>{{ probe.setup }}</dd>
@@ -85,6 +97,11 @@
   <p>{{ para }}</p>
   {%- endfor %}
 </blockquote>
+
+{% if probe.steps %}
+<p>On any harness, the <code>harness-probe</code> skill does this ({{ probe.method }}):</p>
+<blockquote><p>{{ probe.steps }}</p></blockquote>
+{% endif %}
 
 {% if probe.issues %}
 <p class="subtle">

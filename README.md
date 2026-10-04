@@ -147,8 +147,8 @@ See [CHANGELOG.md](CHANGELOG.md) for what changed and
 
 [docs/TESTING.md](docs/TESTING.md) is the acceptance-testing programme: routing
 tests (does the right skill activate?), behaviour tests (does it do what its
-description promises?) and the fourteen capability probes (what can Cowork
-actually do?), with synthetic inputs and pass criteria for every one. About ten
+description promises?) and the twenty-seven capability probes (what can the
+harness actually do?), with synthetic inputs and pass criteria for every one. About ten
 minutes per skill, and no client material — never use any. Report through the
 [UAT report form](https://github.com/houfu/lq-plugin-cowork/issues/new?template=uat-report.yml),
 or pick up one of the open
@@ -158,6 +158,24 @@ or pick up one of the open
 all. A misfire is a description problem, and a description is one line in a YAML
 card, so a good report usually turns into a one-line fix. A probe result is
 worth more than that: several skills move a tier on one.
+
+### Probe a harness, get a verdict
+
+`harness-probe` is an Agent Skill this repository ships (release asset
+`harness-probe.skill`, source in [harness-probe/](harness-probe/SKILL.md)). Load
+it on any harness — Cowork, Claude Code, Codex, anything with Agent Skills — and
+ask it to probe the harness. It runs the capability probes against fresh
+synthetic fixtures, checks every answer instead of trusting it, and writes a
+Markdown, HTML and JSON report saying which of the thirty-one skills **run as
+intended**, which **run on a fallback** (quoting the skill's own fallback
+wording), which **cannot run** (naming the capability and the probe that block
+them) and which are still **untested**, with the probes to run next. Every
+verdict comes from [capabilities.yaml](capabilities.yaml), each skill's
+required, degradable and optional capabilities under two profiles, explained in
+the [harness capability chart](docs/research/harness-capability-chart.md).
+Recorded runs live in [probe-results/](probe-results/README.md) and are judged on
+the site's Verdicts page; report one with the
+[Probe report form](https://github.com/houfu/lq-plugin-cowork/issues/new?template=probe-report.yml).
 
 ## What is inside
 
@@ -302,11 +320,14 @@ Every target is a thin wrapper around `uv run --project tools lqcowork …`.
 | `make archives` | write and validate `dist/skills/<name>.skill` from an existing build |
 | `make site` | render the static site into `dist/site/` from a built `dist/` |
 | `make triggers` | write `dist/<bundle>-trigger-tests.md` only |
+| `make catalog` | regenerate `harness-probe/data/catalog.json` and `references/probes.md` |
+| `make chart` | regenerate the matrices and ladders in the harness capability chart |
+| `make verdicts` | one summary line per `probe-results/` file, against `capabilities.yaml` |
 | `make drift` | `bump-upstream --dry-run`: report drift, move nothing |
 | `make bump` | fetch upstream, report, move the submodule and the pin |
 | `make anchor` | set every card's `anchored_to` to the current pin |
 | `make test` | `pytest tools/tests` |
-| `make fmt` / `make fmt-check` | `black tools`, and the check CI runs |
+| `make fmt` / `make fmt-check` | `black tools harness-probe`, and the check CI runs |
 | `make release-check TAG=vX.Y.Z` | does the tag agree with `cowork.yaml`, `CHANGELOG.md` and `dist/`? |
 | `make release TAG=vX.Y.Z` | check, tag, push; CI publishes ([docs/RELEASING.md](docs/RELEASING.md)) |
 | `make clean` | `rm -rf dist` |

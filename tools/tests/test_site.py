@@ -112,6 +112,7 @@ class TestPages:
             "skills/beta.html",
             "skills/gamma.html",
             "testing.html",
+            "verdicts.html",
         ]
 
     def test_the_stylesheet_is_the_only_asset(self, site):

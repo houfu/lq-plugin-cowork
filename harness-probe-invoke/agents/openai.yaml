@@ -1,0 +1,7 @@
+interface:
+  display_name: "Harness probe P24"
+  short_description: "Answers a fixed token when called by name; used by harness-probe"
+  default_prompt: "Use $harness-probe-invoke"
+
+policy:
+  allow_implicit_invocation: false

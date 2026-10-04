@@ -46,6 +46,10 @@ CARD_STATUSES = ("shipped", "probe-gated")
 FAILURE_SHAPES = ("silent", "loud")
 # The shape of a probe's worst outcome, in the research document's vocabulary.
 BAD_OUTCOMES = ("refusal", "fluent-fake", "silent", "loud")
+# What running a probe takes, cheapest first (probes.yaml `cost`).
+PROBE_COSTS = ("free", "low", "setup", "two-session", "admin")
+# How the harness-probe skill runs a probe (probes.yaml `harness.method`).
+PROBE_METHODS = ("script", "agent", "user", "two-session")
 MIN_TIER, MAX_TIER = 0, 4
 
 
@@ -364,7 +368,14 @@ class Probe:
     fails: str
     bad_outcome: str
     setup: str | None = None
+    # Skills a result settles. Derived from `tests` and capabilities.yaml by
+    # load_config when that file exists; read from probes.yaml only without it.
     unlocks: tuple[str, ...] = ()
+    tests: tuple[str, ...] = ()
+    cost: str | None = None
+    harness: dict[str, Any] = field(default_factory=dict)
+    # True when probes.yaml itself still carries an `unlocks:` list.
+    declares_unlocks: bool = False
 
 
 def load_probes(root: Path) -> tuple[Probe, ...]:
@@ -406,6 +417,17 @@ def load_probes(root: Path) -> tuple[Probe, ...]:
         setup = item.get("setup")
         if setup is not None and not isinstance(setup, str):
             raise ConfigError(f"{where}.setup: expected a string")
+        cost = item.get("cost")
+        if cost is not None and cost not in PROBE_COSTS:
+            raise ConfigError(f"{where}.cost: expected one of {', '.join(PROBE_COSTS)}")
+        harness = item.get("harness") or {}
+        if not isinstance(harness, dict):
+            raise ConfigError(f"{where}.harness: expected a mapping")
+        method = harness.get("method")
+        if harness and method not in PROBE_METHODS:
+            raise ConfigError(
+                f"{where}.harness.method: expected one of {', '.join(PROBE_METHODS)}"
+            )
         probes.append(
             Probe(
                 id=probe_id,
@@ -419,6 +441,10 @@ def load_probes(root: Path) -> tuple[Probe, ...]:
                 bad_outcome=bad_outcome,
                 setup=setup.strip() if isinstance(setup, str) else None,
                 unlocks=tuple(_str_list(item.get("unlocks"), f"{where}.unlocks")),
+                tests=tuple(_str_list(item.get("tests"), f"{where}.tests")),
+                cost=cost,
+                harness=dict(harness),
+                declares_unlocks="unlocks" in item,
             )
         )
     return tuple(probes)
@@ -848,8 +874,21 @@ def load_config(root: Path) -> Config:
         transforms=transforms,
         replace=replace,
         bundles=tuple(bundles),
-        probes=load_probes(root),
+        probes=_with_derived_unlocks(root, load_probes(root)),
     )
+
+
+def _with_derived_unlocks(root: Path, probes: tuple[Probe, ...]) -> tuple[Probe, ...]:
+    """Fill each probe's ``unlocks`` from capabilities.yaml when it exists."""
+    from dataclasses import replace
+
+    from .harness import derive_unlocks, load_capabilities
+
+    caps = load_capabilities(root)
+    if caps is None:
+        return probes
+    derived = derive_unlocks(caps, probes)
+    return tuple(replace(p, unlocks=derived.get(p.id, ())) for p in probes)
 
 
 def load_card(config: Config, name: str) -> Card:

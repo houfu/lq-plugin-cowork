@@ -15,8 +15,10 @@ a half allows, and they are worth running in this order:
   [release](https://github.com/houfu/lq-plugin-cowork/releases/latest)).
 - **Part B — behaviour.** Does the skill then produce what it says it produces?
   One smoke test per shipped skill, below.
-- **Part E — capability probes.** Fourteen questions about what Cowork itself
-  can do that nobody has answered, each one a single prompt. These are the
+- **Part E — capability probes.** Twenty-seven questions about what a harness
+  can actually do, each one a single prompt in Cowork, and all of them runnable
+  on any harness by the `harness-probe` skill, which checks each result and
+  writes the verdict report. These are the
   highest-value thing a tester can run: several skills move a risk tier on one
   result, and one of them, P7a, costs nothing because it runs against a skill
   that already ships.
@@ -1148,8 +1150,8 @@ name the skill, and the status board below moves.
 ## Part E — capability probes
 
 Parts A and B ask whether a skill works. These ask what **Cowork** can do, and
-they are the most valuable thing in this document. Fourteen questions sit
-behind the thirty-one cards, each one a thing a card would like to rely on and
+they are the most valuable thing in this document. Fourteen of the questions
+(P1 to P14) sit behind the thirty-one cards, each one a thing a card would like to rely on and
 cannot, because Microsoft's documentation does not answer it. A single result
 moves a skill's risk tier: P3 releases `read-redline` from the degrade it ships
 with, P9 settles the workbook pattern that four skills carry their state in,
@@ -1159,9 +1161,63 @@ all, and P14 decides whether `lq-connect` has a pool to search.
 `probes.yaml` at the repository root is the source for everything below — the
 same file the build report, the site and the issue renderer read — so if this
 page and that file ever disagree, the file wins. The
-[site](https://houfu.github.io/lq-plugin-cowork/probes.html) renders the same
-fourteen. Each probe has, or will have, its own issue labelled `uat` and
-`probe`; claim one in a comment the way you would claim a skill.
+[site](https://houfu.github.io/lq-plugin-cowork/probes.html) renders all
+twenty-seven, with the skills each one unlocks — worked out from the capability
+codes it tests and the levels in `capabilities.yaml`, so the list there is the
+current one. Each probe has, or will have, its own issue labelled `uat` and
+`probe`; claim one in a comment the way you would claim a skill, and report the
+result with the [Probe report](https://github.com/houfu/lq-plugin-cowork/issues/new?template=probe-report.yml)
+form.
+
+### The quick way: run the harness-probe skill
+
+`harness-probe` (released as `harness-probe.skill`, source in `harness-probe/`)
+runs every probe on whatever harness loads it — Cowork, Claude Code, Codex or
+anything else with Agent Skills support — and says which of the thirty-one
+skills **run as intended**, which **run on a fallback**, which **cannot run**,
+and which are still **untested**. It generates fresh synthetic fixtures, has
+the agent do each task with its own tools, checks every answer against a
+hashed key rather than trusting it, and writes `report.md`, `report.html` and
+`report.json`. Install it (Route 0 works: upload the `.skill`), install
+`harness-probe-invoke.skill` beside it for P24, start a new conversation and
+type:
+
+> Probe this harness with the harness-probe skill and give me the report.
+
+It asks for a name for the harness, which profile to judge (`cowork` for the
+adapted cards, `upstream` for the vendored originals) and a sentence of your
+own for P11, then works through the probes and stops where it needs you: to
+open a page and hand back the file it saves (P20), to call the companion skill
+by name (P24), to judge a quotation (P11), and to come back in a later session
+for the two-session probes. Attach the `results.json` it writes to a Probe
+report; a maintainer adds it to `probe-results/`, and the site's Verdicts page
+judges it. If the harness cannot run scripts at all, the skill switches to its
+static fixtures and the answers are checked later on any machine
+(`harness-probe/references/no-exec.md`).
+
+### P15 to P27 at a glance
+
+These close the gaps in `docs/research/probe-coverage-review.md`. Each has its
+Cowork prompt in `probes.yaml` and on the site, and its harness-probe steps in
+`harness-probe/references/probes.md`.
+
+| Probe | Tests | Question |
+| --- | --- | --- |
+| P15 | MCP, TOOLS | Can the harness connect to an MCP server and call one of its tools? |
+| P16 | FS | Can the agent walk a folder it was pointed at, and make one beside it? |
+| P17 | HASH | Can the harness compute a file's SHA-256? |
+| P18 | NET, HASH | Can the harness fetch a URL's raw bytes into a file? |
+| P19 | SUB | Can the harness run an isolated worker that sees only its packet? |
+| P20 | HTML | Can the user open a generated page and hand back the file it saves? |
+| P21 | SKILLDIR, EXEC | Is the skill folder on disk, with its scripts and assets reachable? |
+| P22 | OUT | Can the harness annotate a PDF with highlights and comment-pane notes? |
+| P23 | OUT, DOCX, SKILLDIR | Can the harness fill a packaged Word template and edit its table in place? |
+| P24 | INVOKE | Does an explicit-invocation-only skill stay quiet until it is called by name? |
+| P25 | TOOLS | Does a tool call actually execute? |
+| P26 | IN | Can the harness read every supplied format, whole? |
+| P27 | OUT | Can the harness hand a file back to the user? |
+
+### P1 to P14 by hand in Cowork
 
 **How to run one.**
 
@@ -1177,9 +1233,10 @@ fourteen. Each probe has, or will have, its own issue labelled `uat` and
 4. **Read "worst outcome" before you run it.** For most of these the dangerous
    result is not a refusal but a confident answer with nothing behind it. If
    you get one, say so in those words and paste what it said.
-5. Two probes need a throwaway probe package rather than a shipped bundle (P1
-   and the P7b arm). P7a needs nothing: it runs against the `legaldesign` skill
-   that ships today, which is why it is the one to run first.
+5. P1 and the P7b arm need a package that carries a script or a binary file:
+   `harness-probe.skill` is that package (`hprobe.py env` is P1's script). P7a
+   needs nothing: it runs against the `legaldesign` skill that ships today,
+   which is why it is the one to run first by hand.
 
 **One standing check that is not a probe.** On any run, note **the exact names
 of the built-in skills your tenant actually offers**, as they appear in the side
@@ -1220,10 +1277,6 @@ or reports the script's contents as instructions.
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
 
-**Unlocks:** no tier directly. It settles a question the cards are written
-around rather than one they wait on, and a result still changes what they can
-offer.
-
 ### P2 — Does a file written in one session come back in the next?
 
 **Settles:** Whether state written to the Cowork folder is reachable from a
@@ -1251,10 +1304,6 @@ writes 2 — and a third session reads 2.
 and watch for the dangerous variant where it answers without having read
 anything.
 
-**Unlocks:** no tier directly. It settles a question the cards are written
-around rather than one they wait on, and a result still changes what they can
-offer.
-
 ### P3 — Does Cowork report tracked changes in a Word document?
 
 **Settles:** Whether Cowork can see tracked insertions, deletions and comments
@@ -1279,8 +1328,6 @@ reports no changes.
 
 **Worst outcome:** **silent** — a wrong result that looks exactly like a right
 one. Check the artifact, not the reply.
-
-**Unlocks:** `read-redline`, `playbook-review`.
 
 ### P4 — Can Cowork tell what is on a page?
 
@@ -1309,9 +1356,6 @@ blank or as text.
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
 
-**Unlocks:** `read-redline`, `diligence`, `docreview`, `closing-bible`,
-`regulatory`, `sigpack`.
-
 ### P5 — What does a resumed task remember?
 
 **Settles:** What re-enters the model's context when a task is resumed, and
@@ -1339,10 +1383,6 @@ task does.
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
 
-**Unlocks:** no tier directly. It settles a question the cards are written
-around rather than one they wait on, and a result still changes what they can
-offer.
-
 ### P6 — Is web search on in this tenant, and what comes back?
 
 **Settles:** Whether web search is enabled here, and whether what comes back
@@ -1365,10 +1405,6 @@ useful result and should be reported with the tenant's admin posture if known.
 **Worst outcome:** a **fluent fake** — a confident answer with nothing behind
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
-
-**Unlocks:** no tier directly. It settles a question the cards are written
-around rather than one they wait on, and a result still changes what they can
-offer.
 
 ### P7 — Can a skill's output carry a file that shipped with the skill?
 
@@ -1401,8 +1437,6 @@ that is not there.
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
 
-**Unlocks:** `my-lq-moment`, `read-redline`, `docreview`, `definition-check`.
-
 ### P8 — Can Cowork build a PDF out of chosen pages of supplied PDFs?
 
 **Settles:** Whether Cowork can assemble a new PDF from chosen pages of
@@ -1425,8 +1459,6 @@ PDF with the wrong pages or order.
 **Worst outcome:** a **fluent fake** — a confident answer with nothing behind
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
-
-**Unlocks:** `sigpack`, `closing-bible`.
 
 ### P9 — Does an Excel workbook survive a round trip with its arithmetic intact?
 
@@ -1455,9 +1487,6 @@ a hard-coded number rather than a live formula.
 **Worst outcome:** **silent** — a wrong result that looks exactly like a right
 one. Check the artifact, not the reply.
 
-**Unlocks:** `diligence`, `docreview`, `closing-bible`, `definition-check`,
-`sigpack`.
-
 ### P10 — Can Cowork produce a Word document carrying real tracked changes?
 
 **Settles:** Whether Cowork can write a Word file whose edits are recorded as
@@ -1480,8 +1509,6 @@ that is not a tracked change.
 
 **Worst outcome:** **loud** — you will see it fail, which makes this the
 comfortable kind of probe.
-
-**Unlocks:** `read-redline`, `conform`.
 
 ### P11 — What can a skill see and quote of its own session?
 
@@ -1508,8 +1535,6 @@ it) or a fluent paraphrase presented as a quote.
 **Worst outcome:** a **fluent fake** — a confident answer with nothing behind
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
-
-**Unlocks:** `lq-reflect`, `my-lq-moment`.
 
 ### P12 — Browser use: does what it reads reach the skill?
 
@@ -1542,8 +1567,6 @@ posture).
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
 
-**Unlocks:** `lq-connect`, `lq-apply`, `lq-ask`.
-
 ### P13 — Can a scheduled run work over files placed earlier?
 
 **Settles:** Whether an automated run can read files the lawyer placed
@@ -1570,10 +1593,6 @@ written, or the run reports success with no output.
 **Worst outcome:** **silent** — a wrong result that looks exactly like a right
 one. Check the artifact, not the reply.
 
-**Unlocks:** no tier directly. It settles a question the cards are written
-around rather than one they wait on, and a result still changes what they can
-offer.
-
 ### P14 — Enterprise Search as a people finder
 
 **Settles:** Whether Enterprise Search can answer who in the organisation has
@@ -1597,8 +1616,6 @@ them.
 **Worst outcome:** a **fluent fake** — a confident answer with nothing behind
 it. That is worse than a refusal, and it is a separate result: record it with
 the exact wording.
-
-**Unlocks:** `lq-connect`.
 
 ## Status board
 

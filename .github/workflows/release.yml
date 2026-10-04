@@ -75,12 +75,15 @@ jobs:
           for archive in dist/skills/*.skill; do
             compare "$archive" "$RUNNER_TEMP/recheck/skills/$(basename "$archive")"
           done
+          for archive in dist/harness/*.skill; do
+            compare "$archive" "$RUNNER_TEMP/recheck/harness/$(basename "$archive")"
+          done
 
       - name: Checksum the assets
         run: |
           set -euo pipefail
           cd dist
-          sha256sum *.zip *-trigger-tests.md build-report.md skills/*.skill > SHA256SUMS
+          sha256sum *.zip *-trigger-tests.md build-report.md skills/*.skill harness/*.skill > SHA256SUMS
           cat SHA256SUMS
 
       - name: Compose the release notes
@@ -197,6 +200,7 @@ jobs:
           assets=(
             dist/*.zip
             dist/skills/*.skill
+            dist/harness/*.skill
             dist/*-trigger-tests.md
             dist/build-report.md
             dist/SHA256SUMS

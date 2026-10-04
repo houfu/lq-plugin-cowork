@@ -231,6 +231,9 @@ def cmd_package(args: argparse.Namespace) -> int:
         triggers = pkg.write_trigger_tests(config, built.bundle, cards, out)
         _echo(f"  {_rel(config, triggers)}")
 
+    for harness_archive in pkg.write_harness_archives(config, out):
+        _echo(f"  {_rel(config, harness_archive)}")
+
     if not result.bundles:
         _echo("no bundle was built: the cards below have to be fixed first")
 
@@ -292,6 +295,62 @@ def cmd_triggers(args: argparse.Namespace) -> int:
             for n in bundle.skills
         )
         _echo(f"{bundle.id}: {count} prompts -> {_rel(config, target)}")
+    return EXIT_OK
+
+
+def _capabilities(config: Config):
+    from .harness import CAPABILITIES_NAME, load_capabilities
+
+    caps = load_capabilities(config.root)
+    if caps is None:
+        raise ConfigError(f"{CAPABILITIES_NAME} is missing")
+    return caps
+
+
+def cmd_catalog(args: argparse.Namespace) -> int:
+    from .harness import CATALOG_REL, write_catalog
+
+    config = _load(args)
+    caps = _capabilities(config)
+    if args.check:
+        if write_catalog(config, caps, check=True):
+            _echo(f"{CATALOG_REL} is current")
+            return EXIT_OK
+        _echo(f"{CATALOG_REL} is out of date; run `lqcowork catalog`")
+        return EXIT_INVALID
+    write_catalog(config, caps)
+    _echo(f"wrote {CATALOG_REL}")
+    return EXIT_OK
+
+
+def cmd_chart(args: argparse.Namespace) -> int:
+    from .harness import CHART_REL, write_chart
+
+    config = _load(args)
+    caps = _capabilities(config)
+    if args.check:
+        if write_chart(config, caps, check=True):
+            _echo(f"{CHART_REL} is current")
+            return EXIT_OK
+        _echo(f"{CHART_REL} is out of date; run `lqcowork chart`")
+        return EXIT_INVALID
+    write_chart(config, caps)
+    _echo(f"regenerated the matrices in {CHART_REL}")
+    return EXIT_OK
+
+
+def cmd_verdicts(args: argparse.Namespace) -> int:
+    """Print one summary line per results file (and the two baselines)."""
+    from .harness import harness_reports
+
+    config = _load(args)
+    for item in harness_reports(config, _capabilities(config)):
+        s = item.report["summary"]
+        _echo(
+            f"{item.report['harness'].get('name')} [{item.report['profile']}]: "
+            f"as intended {s['as-intended']}, fallback {s['fallback']}, "
+            f"cannot run {s['cannot-run']}, untested {s['untested']}"
+        )
     return EXIT_OK
 
 
@@ -431,6 +490,23 @@ def build_parser() -> argparse.ArgumentParser:
     triggers.add_argument("--bundle", help="only this bundle id")
     triggers.add_argument("--out", help="output directory (default: dist)")
     triggers.set_defaults(func=cmd_triggers)
+
+    catalog = subparsers.add_parser(
+        "catalog", help="write harness-probe/data/catalog.json from the YAML sources"
+    )
+    catalog.add_argument("--check", action="store_true", help="only report staleness")
+    catalog.set_defaults(func=cmd_catalog)
+
+    chart = subparsers.add_parser(
+        "chart", help="regenerate the matrices in the harness capability chart"
+    )
+    chart.add_argument("--check", action="store_true", help="only report staleness")
+    chart.set_defaults(func=cmd_chart)
+
+    verdicts = subparsers.add_parser(
+        "verdicts", help="summarise probe-results/ against capabilities.yaml"
+    )
+    verdicts.set_defaults(func=cmd_verdicts)
 
     site = subparsers.add_parser("site", help="render <out>/site/ from a built <out>/")
     site.add_argument("--out", help="output directory (default: dist)")

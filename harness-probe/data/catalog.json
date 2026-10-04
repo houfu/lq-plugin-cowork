@@ -1,0 +1,2998 @@
+{
+  "schema": "lq-harness-probe-catalog/1",
+  "source": {
+    "upstream": "LegalQuants/lq-plugin-oss@fa5a668",
+    "package": "0.2.0"
+  },
+  "codes": [
+    {
+      "id": "TOOLS",
+      "name": "Tool execution",
+      "label": "Tool calling",
+      "summary": "The harness gives the model callable tools, runs each call and returns the result within the turn.",
+      "evidence": [
+        "P25"
+      ],
+      "column": true
+    },
+    {
+      "id": "MCP",
+      "name": "MCP connection",
+      "label": "MCP connectors",
+      "summary": "Connect to an MCP server (local stdio or remote HTTP), discover its tools and route calls to it; equivalent connector mechanisms count.",
+      "evidence": [
+        "P15"
+      ],
+      "column": true
+    },
+    {
+      "id": "IN",
+      "name": "Read supplied files",
+      "label": "Read uploaded files",
+      "summary": "Read files the user supplies (pdf, docx, xlsx, eml, text, images) whole.",
+      "evidence": [
+        "P26"
+      ],
+      "column": true
+    },
+    {
+      "id": "OUT",
+      "name": "Hand back files",
+      "label": "Hand back files",
+      "summary": "Write a file and hand it to the user.",
+      "evidence": [
+        "P27"
+      ],
+      "column": true
+    },
+    {
+      "id": "FS",
+      "name": "Real filesystem",
+      "label": "Folders on disk",
+      "summary": "User-named paths, recursive folder walks, run and sibling output folders, stable paths.",
+      "evidence": [
+        "P16"
+      ],
+      "column": true
+    },
+    {
+      "id": "PERSIST",
+      "name": "Storage that outlives the session",
+      "label": "Memory across sessions",
+      "summary": "A file written in one session can be found in a later one without being attached again.",
+      "evidence": [
+        "P2"
+      ],
+      "column": true
+    },
+    {
+      "id": "EXEC",
+      "name": "Run bundled scripts",
+      "label": "Run Python scripts",
+      "summary": "Run the skills' bundled Python scripts; P1's facts are judged against each skill's exact needs.",
+      "evidence": [
+        "P1"
+      ],
+      "column": true
+    },
+    {
+      "id": "BIN",
+      "name": "External executables",
+      "label": "PDF and Office programs",
+      "summary": "Poppler, LibreOffice, tesseract, headless Chromium, an SVG rasteriser or the codex CLI on the path.",
+      "evidence": [
+        "P1"
+      ],
+      "column": true
+    },
+    {
+      "id": "NET",
+      "name": "Fetch a URL",
+      "label": "Fetch web pages",
+      "summary": "Fetch a public page and quote it; skills that hash what they fetch add the raw-bytes probe.",
+      "evidence": [
+        "P12"
+      ],
+      "column": true
+    },
+    {
+      "id": "SEARCH",
+      "name": "Web search",
+      "label": "Web search",
+      "summary": "Search the web and return an address the user can check.",
+      "evidence": [
+        "P6"
+      ],
+      "column": true
+    },
+    {
+      "id": "VISION",
+      "name": "See rendered pages",
+      "label": "See page images",
+      "summary": "The model looks at a rendered page image and reports what is on it.",
+      "evidence": [
+        "P4"
+      ],
+      "column": true
+    },
+    {
+      "id": "DOCX",
+      "name": "Word OOXML structure",
+      "label": "Word tracked changes",
+      "summary": "Read tracked changes, comments and tables in a Word file, not just its text.",
+      "evidence": [
+        "P3"
+      ],
+      "column": true
+    },
+    {
+      "id": "SUB",
+      "name": "Isolated workers",
+      "label": "Sub-agents",
+      "summary": "A fresh-context worker that sees only its packet, with the model chosen per worker.",
+      "evidence": [
+        "P19"
+      ],
+      "column": true
+    },
+    {
+      "id": "SESSION",
+      "name": "Conversation transcripts",
+      "label": "Read chat history",
+      "summary": "Quote the current session's own words and events, and say which are read and which reconstructed.",
+      "evidence": [
+        "P11"
+      ],
+      "column": true
+    },
+    {
+      "id": "SCHED",
+      "name": "Background or scheduled runs",
+      "label": "Scheduled runs",
+      "summary": "A run that happens after the turn ends and can read and write files.",
+      "evidence": [
+        "P13"
+      ],
+      "column": true
+    },
+    {
+      "id": "HTML",
+      "name": "Interactive HTML round trip",
+      "label": "Interactive HTML pages",
+      "summary": "The user opens a generated offline HTML page, and the file it downloads comes back to the skill.",
+      "evidence": [
+        "P20"
+      ],
+      "column": true
+    },
+    {
+      "id": "HASH",
+      "name": "File digest by the host",
+      "label": "File fingerprints",
+      "summary": "Compute a SHA-256 of a file where no bundled script does it for the skill.",
+      "evidence": [
+        "P17"
+      ],
+      "column": false
+    },
+    {
+      "id": "SKILLDIR",
+      "name": "Skill folder on disk",
+      "label": "Skill folder on disk",
+      "summary": "The skill's scripts, assets and sibling skills are reachable by path.",
+      "evidence": [
+        "P21"
+      ],
+      "column": false
+    },
+    {
+      "id": "INVOKE",
+      "name": "Call a skill by name",
+      "label": "Call a skill by name",
+      "summary": "An explicit-invocation-only skill does not fire on its own, but fires when the user calls it by name.",
+      "evidence": [
+        "P24"
+      ],
+      "column": false
+    }
+  ],
+  "unprobed": [],
+  "probes": [
+    {
+      "id": "P1",
+      "title": "Does a bundled script actually run, and in what?",
+      "settles": "Whether a script packaged inside a skill is executed at all, and what interpreter and libraries it would run under. Nothing ships with a script under the no-scripts policy, so a result changes no tier; it is the input to the maintainer's decision about that policy and to the original, not re-scoped, paths of closing-bible, definition-check and read-redline.",
+      "tests": [
+        "EXEC",
+        "BIN"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "script",
+        "check": "env",
+        "steps": "Run `python3 <skill>/scripts/hprobe.py env --run <run>`. It records the Python version, the importable packages (pypdf, pdfplumber, docx, openpyxl, PIL, fitz, playwright), every executable the vendored skills call (pdftoppm, pdfinfo, pdftotext, soffice, tesseract, chromium, rsvg-convert, magick, inkscape, codex) and whether the script could read a fixture and write to the output folder. Show the printed line verbatim. If the command cannot be run, record P1 as fail with observer agent and say why."
+      },
+      "cowork": {
+        "setup": "Cannot be run from the released bundles, because no shipped skill contains a script. Needs a throwaway single-skill probe package containing scripts/probe.py, which prints one line naming sys.version, platform.platform(), whether pypdf, pdfplumber, docx, openpyxl, PIL, fitz and playwright import, and whether pdftoppm, pdfinfo, pdftotext, soffice, tesseract, chromium, rsvg-convert, magick, inkscape and codex are on the path; it also reads one attached file and writes one file to the Output folder. The SKILL.md says to run it and report its output verbatim. The harness-probe skill's `hprobe.py env` is that script.",
+        "prompt": "Run the environment probe and show me its output exactly as printed.",
+        "pass": "The reply contains the fingerprint line with a real Python version string of 3.12 or later, the package and executable lists, and a confirmed read of the attached file and write to the Output folder.",
+        "fail": "A reply that paraphrases the script, describes what it would print, or reports the script's contents as instructions.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P2",
+      "title": "Does a file written in one session come back in the next?",
+      "settles": "Whether state written to the Cowork folder is reachable from a later session without the lawyer attaching it. No tier turns on it, by design: every cross-session design brings its own state instead. It is an ergonomics upgrade for sigpack's ledger, regulatory's refresh baseline, legalquants step 3b, lq-reflect step 8b and lq-apply step 2b.",
+      "tests": [
+        "PERSIST",
+        "FS"
+      ],
+      "cost": "two-session",
+      "harness": {
+        "method": "two-session",
+        "check": "persist",
+        "steps": "Session one: run `hprobe.py check P2 --run <run> --phase write`, then use your own file tool to write the printed token into `lq-probe-persist.txt` in the user's workspace root (not the run folder). Tell the user to come back in a new session on a later day. Session two, with nothing attached: find `lq-probe-persist.txt` yourself, then run `hprobe.py check P2 --run <run> --phase read --answer <token you found>`. If the run folder itself is gone, record P2 as fail."
+      },
+      "cowork": {
+        "setup": "None beyond two sessions on different days.",
+        "prompt": "Session 1: Create a file called probe-ledger.json in my Cowork Output folder containing exactly {\"probe\":\"lqc\",\"n\":1} and tell me where you put it.\nA new session on a later day, with nothing attached: Open probe-ledger.json from my Cowork folder, tell me what n is, then save it back with n increased by one.",
+        "pass": "It finds the file without the tester attaching it, reports n as 1, writes 2 — and a third session reads 2.",
+        "fail": "It cannot find the file, or asks the tester to attach it.",
+        "bad_outcome": "refusal"
+      }
+    },
+    {
+      "id": "P3",
+      "title": "Does Cowork report tracked changes in a Word document?",
+      "settles": "Whether Cowork can see tracked insertions, deletions and comments in a Word document at all, and whether it returns an honest nil on a clean copy. Word tracked changes are nowhere mentioned in Microsoft's pages.",
+      "tests": [
+        "IN",
+        "DOCX"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "docx-read",
+        "steps": "Open `<run>/fixtures/docx/tracked.docx` and `clean.docx` with your own tools. For tracked.docx list the inserted text and its author, the deleted text and its author, and the comment text. Then run `hprobe.py check P3 --run <run> --answer \"ins=<text>;ins_author=<name>; del=<text>;del_author=<name>;comment=<text>;clean=none\"` (clean=none if clean.docx has no tracked changes, otherwise list what you saw)."
+      },
+      "cowork": {
+        "setup": "A two-page synthetic DOCX with tracked insertions and deletions by two named authors and one comment; plus a clean copy of the same file with the changes accepted.",
+        "prompt": "List every tracked change in this agreement: the exact inserted and deleted text, who made it, and where it sits. Tell me if there are none.",
+        "pass": "Insertions and deletions listed separately with authors, and the comment noted; and, on the clean copy, it says there are none rather than inventing some.",
+        "fail": "It reads the document as though the changes had been accepted and reports no changes.",
+        "bad_outcome": "silent"
+      }
+    },
+    {
+      "id": "P4",
+      "title": "Can Cowork tell what is on a page?",
+      "settles": "Whether Cowork can say, page by page, what a PDF carries — strikethrough and underline, handwriting and signatures, and whether a page is scanned rather than typed. OCR, scanned PDFs and handwriting are nowhere mentioned.",
+      "tests": [
+        "VISION"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "vision",
+        "steps": "Look at `<run>/fixtures/vision/page.png` as an image (not via OCR text). It shows a short code in large letters and a scribbled mark in one corner. Run `hprobe.py check P4 --run <run> --answer \"code=<code>;corner=<top-left|top-right|bottom-left|bottom-right>\"`."
+      },
+      "cowork": {
+        "setup": "A four-page synthetic PDF: page 2 carries redline markup (strikethrough and underline), page 3 is a scanned image of a signature block signed over a printed name, page 4 is clean.",
+        "prompt": "Go through this PDF page by page. For each page tell me whether anything is struck through or underlined, whether there is handwriting or a signature, and whether the page is scanned rather than typed.",
+        "pass": "Correct per-page answers, including that page 3 is an image and is signed, without being told.",
+        "fail": "It describes pages it cannot see, or reports the scanned page as blank or as text.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P5",
+      "title": "What does a resumed task remember?",
+      "settles": "What re-enters the model's context when a task is resumed, and whether a brand-new task can see the previous one. The mechanism of continuation is documented; what it carries is not. No tier turns on it: it bounds lq-reflect's week-wide alternative.",
+      "tests": [
+        "SESSION"
+      ],
+      "cost": "two-session",
+      "harness": {
+        "method": "two-session",
+        "check": "resume",
+        "steps": "Session one: remember the token printed by `hprobe.py check P5 --run <run> --phase token` and stop. Next day, resume that same task or conversation and ask what the token was; then open a brand-new task and ask the same. Record P5 pass if the resumed task has it and the new one does not, with `hprobe.py record P5 pass --observer user`."
+      },
+      "cowork": {
+        "setup": "Two sessions plus one resumption, over two days.",
+        "prompt": "Session 1: Remember this reference for later: ALDERNEY-7. Draft me two lines about anything.\nResuming that task from the task list the next day: What was the reference I gave you?\nThen, in a brand-new task: What did I ask you in my previous Cowork task?",
+        "pass": "The resumed task returns ALDERNEY-7 unprompted; the new task does not know.",
+        "fail": "The resumed task does not have it, or — the bigger finding — the new task does.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P6",
+      "title": "Is web search on in this tenant, and what comes back?",
+      "settles": "Whether web search is enabled here, and whether what comes back is a page address the lawyer can check or a rendering they cannot. It confirms a limit rather than lifting one, and informs lq-ask's optional step and regulatory's locator-only use of search.",
+      "tests": [
+        "SEARCH"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "search",
+        "steps": "Search the web (not from memory) for section 1 of the Bribery Act 2010 on legislation.gov.uk. Run `hprobe.py check P6 --run <run> --url <the address you read> --answer \"<the opening sentence, word for word>\" --bytes <length of the page you fetched, or 0 if your tool only gave you a rendering>`."
+      },
+      "cowork": {
+        "setup": "",
+        "prompt": "Search the web and quote me, word for word, the opening sentence of the official text you find at legislation.gov.uk for the Bribery Act 2010 section 1, and give me the address of the page you read.",
+        "pass": "A URL and a quotation, the byte length of the page as fetched (or a plain statement that only a rendering came back), plus whatever the client says about web search.",
+        "fail": "A refusal naming a disabled web-search setting — which is an equally useful result and should be reported with the tenant's admin posture if known.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P7",
+      "title": "Can a skill's output carry a file that shipped with the skill?",
+      "settles": "Whether a companion file packaged inside a skill reaches something the lawyer receives. Carrying the asset is documented; reaching an output is not. Two arms, one probe: P7a a text or HTML template, P7b a bundled binary image. P7a is free today and should be the first probe the programme runs.",
+      "tests": [
+        "OUT",
+        "SKILLDIR"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "agent",
+        "check": "asset",
+        "steps": "Copy `<skill>/assets/fixtures/badge.png` into `<run>/outputs/` and write `<run>/outputs/card.html` that shows it with an <img> tag. Then run `hprobe.py check P7 --run <run>`. The badge must be the packaged file, byte for byte, not a new image."
+      },
+      "cowork": {
+        "setup": "P7a: none; run it against the shipped legaldesign skill, which carries HTML templates as companions. P7b: package a probe skill carrying a small PNG and an HTML template that references it.",
+        "prompt": "P7a: Turn the attached advice note into a one-pager using your supplied template, and tell me which of your template files you used.\nP7b: Build the card from your supplied template and tell me which of your packaged files it used.",
+        "pass": "P7a: the produced HTML visibly uses the packaged template's structure and the reply names the companion file. P7b: the rendered page shows the image and the reply names the file.",
+        "fail": "P7a: generic HTML, or a named file that was not used. P7b, recorded separately: the page renders without the image, or the reply claims an image that is not there.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P8",
+      "title": "Can Cowork build a PDF out of chosen pages of supplied PDFs?",
+      "settles": "Whether Cowork can assemble a new PDF from chosen pages of supplied ones. Merging or splitting PDFs is nowhere mentioned, and the PDF built-in's entire description is the single line \"Work with PDF documents\".",
+      "tests": [
+        "OUT"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "pdf-assemble",
+        "steps": "Build `<run>/outputs/assembled.pdf` containing page 3 of `<run>/fixtures/pdf/first.pdf` followed by pages 1 and 2 of `<run>/fixtures/pdf/second.pdf`, using your own tools. Then run `hprobe.py check P8 --run <run>`."
+      },
+      "cowork": {
+        "setup": "Two synthetic four-page PDFs with distinguishable page content.",
+        "prompt": "Make me one new PDF containing page 3 of the first document and pages 1 and 2 of the second, in that order, and tell me how many pages it has.",
+        "pass": "A downloadable PDF in the Output folder with exactly those three pages in that order and their content intact.",
+        "fail": "A reply that describes the pages instead of producing the file, or a PDF with the wrong pages or order.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P9",
+      "title": "Does an Excel workbook survive a round trip with its arithmetic intact?",
+      "settles": "Whether a workbook's structure and formulas survive being handed back and forth. The round trip itself is documented; whether the arithmetic survives is not. After P3, the probe with the widest reach in the document-pipeline half.",
+      "tests": [
+        "IN",
+        "OUT"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "xlsx",
+        "steps": "Open `<run>/fixtures/xlsx/tracker.xlsx`. Add the four rows listed in `<run>/fixtures/xlsx/new-rows.txt` below the existing six, keep the count row's formula a live formula, and save the result as `<run>/outputs/tracker-out.xlsx`. Then run `hprobe.py check P9 --run <run>`."
+      },
+      "cowork": {
+        "setup": "None; two sessions.",
+        "prompt": "Session 1: Build me a tracker workbook with columns Document, Issue, Status, Quote, Locator and these six rows, and add a row at the bottom that counts how many rows are filled.\nA fresh session with the returned workbook attached: Add these four documents as new rows, fill the Status column for them, and give the workbook back to me unchanged apart from the new rows.",
+        "pass": "The returned file keeps the original six rows, the column order, the count formula as a formula, and its recalculated value.",
+        "fail": "Rows dropped or reordered, columns renamed, or the count arriving as a hard-coded number rather than a live formula.",
+        "bad_outcome": "silent"
+      }
+    },
+    {
+      "id": "P10",
+      "title": "Can Cowork produce a Word document carrying real tracked changes?",
+      "settles": "Whether Cowork can write a Word file whose edits are recorded as tracked changes rather than applied as plain text. Producing a Word document with tracked changes or comments is nowhere stated. Neither dependent step is load-bearing; both improve.",
+      "tests": [
+        "OUT",
+        "DOCX"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "docx-tracked-write",
+        "steps": "Open `<run>/fixtures/docx/clause.docx` and apply the three edits in `<run>/fixtures/docx/edits.txt` as Word tracked changes attributed to \"Review\", not as plain edits. Save as `<run>/outputs/clause-tracked.docx` and run `hprobe.py check P10 --run <run>`."
+      },
+      "cowork": {
+        "setup": "A short supplied agreement clause.",
+        "prompt": "Give me back this clause as a Word document with my three edits recorded as tracked changes attributed to \"Review\", not as plain edited text.",
+        "pass": "Opening the file in Word shows insertions and deletions in the review pane.",
+        "fail": "A document with the edits applied as plain text, or coloured text that is not a tracked change.",
+        "bad_outcome": "loud"
+      }
+    },
+    {
+      "id": "P11",
+      "title": "What can a skill see and quote of its own session?",
+      "settles": "Whether a skill can quote the lawyer's own words back verbatim, list the files created and list the skills and tools used, and whether it says honestly which of those it is reading and which it is reconstructing. A refusal blocks nothing: it forces every quote to come from an attached file.",
+      "tests": [
+        "SESSION"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "user",
+        "check": null,
+        "steps": "Ask the user to type a sentence of their own choosing at the start of the session (before the probes). Near the end, quote it back word for word, list the files created in this session and the tools and skills used, and say for each whether you are reading it or reconstructing it. The user judges and you record with `hprobe.py record P11 <pass|fail| fluent-fake> --observer user`."
+      },
+      "cowork": {
+        "setup": "In one conversation, do some work first: type a distinctive sentence, have a file created, invoke a second skill.",
+        "prompt": "Quote back, word for word, the sentence I typed at the start of this session; list the files created in this session; and list the skills and tools used. Say for each whether you are reading it or reconstructing it.",
+        "pass": "A verbatim quote, the correct file list, the correct skill and tool list, each with honest attribution.",
+        "fail": "Two distinguishable ways: a refusal (usable — the cards adapt around it) or a fluent paraphrase presented as a quote.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P12",
+      "title": "Browser use: does what it reads reach the skill?",
+      "settles": "Two things. (a) Availability: is browser use enabled in this tenant, and what did it take to enable it — it needs Edge, runs only in Cowork on the web, and is disabled by default until an admin turns it on. (b) Quotability: does page content or a downloaded file become something the session, and therefore a skill, can quote. No design depends on it.",
+      "tests": [
+        "NET"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "fetch-page",
+        "steps": "Fetch the first of these pages your harness allows, with your own tool (a fetch or browser tool, not search): https://example.com/, https://www.iana.org/help/example-domains, or https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE. Run `hprobe.py check P12 --run <run> --url <the page you fetched> --answer \"<its first heading, verbatim>\" --bytes <byte length if your tool reports it, else 0>`. A block on one page is not a fail while another is allowed; record which were blocked in --notes."
+      },
+      "cowork": {
+        "setup": "Cowork on the web in Microsoft Edge, on a device where Edge is installed, in a tenant where an admin has performed the enable steps. Record what the posture was before the tester asked, who had to act, and the tenant's DLP and site-blocking posture. A tenant where the admin declines is a reportable result, not a failed run.",
+        "prompt": "Open the page at <public URL> and quote its first heading and the first sentence under it. Tell me how you retrieved it, how many bytes the page was as you received it (or that you only received a rendering), and whether that page is now one of my session files.",
+        "pass": "The quote comes back, Cowork names the route, and it states plainly whether the content is now a session file.",
+        "fail": "The content comes back as a summary rather than quotable text; or a refusal citing a blocked site (still a useful result — record it with the posture).",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P13",
+      "title": "Can a scheduled run work over files placed earlier?",
+      "settles": "Whether an automated run can read files the lawyer placed earlier, write outputs, and load a custom skill. The scheduling machinery is documented; what a run can reach is not. No card is built on it; any of them may offer a cadence as a closing line, and must name the twenty-five scheduled-prompt cap when they do.",
+      "tests": [
+        "SCHED"
+      ],
+      "cost": "two-session",
+      "harness": {
+        "method": "two-session",
+        "check": "sched",
+        "steps": "Run `hprobe.py check P13 --run <run> --phase arm` and note the command it prints. Use the harness's own scheduler to run that command at least ten minutes from now, after this turn has ended. In a later session run `hprobe.py check P13 --run <run> --phase verify`. Record whether it was a scheduled prompt or a process that outlived the turn in --notes."
+      },
+      "cowork": {
+        "setup": "A file already sitting in the Cowork folder, and a custom skill installed.",
+        "prompt": "Every Monday at 9am, use the <name> skill on closing-register.xlsx in my Cowork folder and save the updated register back.",
+        "pass": "The Runs tab shows it ran; an output file appears; the output reflects the placed file; and the run history shows the custom skill was loaded. Record whether the run was a scheduled prompt or a process that outlived the turn.",
+        "fail": "The schedule exists but the skill is not invoked, or nothing is written, or the run reports success with no output.",
+        "bad_outcome": "silent"
+      }
+    },
+    {
+      "id": "P14",
+      "title": "Enterprise Search as a people finder",
+      "settles": "Whether Enterprise Search can answer who in the organisation has worked on a topic, with a quotable document behind each name. Microsoft's whole statement about it is the line \"Enterprise Search Search across your organization\".",
+      "tests": [
+        "SEARCH"
+      ],
+      "cost": "admin",
+      "harness": {
+        "method": "user",
+        "check": null,
+        "steps": "Cowork only: run the Cowork prompt above in a tenant with real internal material and record the outcome with `hprobe.py record P14 <outcome> --observer user`. On any other harness, record P14 as not-run."
+      },
+      "cowork": {
+        "setup": "A tenant with real internal material behind the chosen topic.",
+        "prompt": "Who in my organisation has worked on <a topic with real internal material behind it>? Name up to three people and, for each, quote the document that shows it.",
+        "pass": "Named people, each with a quotable document.",
+        "fail": "Documents with no people attached, or names with nothing behind them.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P15",
+      "title": "Can the harness connect to an MCP server and call one of its tools?",
+      "settles": "Whether the harness can reach an MCP server at all - start or connect to it, list its tools and route a call to it - which is how lq-mcp, CourtListener and the C5 integrations of definition-check and conform would arrive. No skill requires MCP, but fifteen use it if present.",
+      "tests": [
+        "MCP",
+        "TOOLS"
+      ],
+      "cost": "setup",
+      "harness": {
+        "method": "agent",
+        "check": "mcp",
+        "steps": "Register the bundled server with the harness (see references/mcp-setup.md; for example `claude mcp add hprobe -- python3 <skill>/scripts/mcp_probe_server.py --run <run>`). Run `hprobe.py check P15 --run <run> --phase nonce` for a nonce, call the server's `probe_challenge` tool with it, and run `hprobe.py check P15 --run <run> --answer <digest>`. If only some other MCP server is connected, call one of its read-only tools, quote the result, and record P15 with `hprobe.py record P15 pass --observer user` once the user confirms it."
+      },
+      "cowork": {
+        "setup": "A connected MCP server. The harness-probe skill ships one: `harness-probe/scripts/mcp_probe_server.py`, a standard-library stdio server whose `probe_challenge` tool answers a nonce with a keyed digest only the server can compute. In Cowork, a declarative agent connector pointing at any remote MCP server the tenant has approved.",
+        "prompt": "List the tools the connected probe server offers, call probe_challenge with the nonce 7Q4-ALDER, and give me exactly what it returned.",
+        "pass": "The digest the server logged for that nonce comes back verbatim, and the server is named.",
+        "fail": "A digest the server never issued, a description of what the tool would return, or a reply that the server is not reachable.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P16",
+      "title": "Can the agent walk a folder it was pointed at, and make one beside it?",
+      "settles": "Whether the harness can list a user-named folder recursively with exact relative paths and an exact count, and create a sibling run folder - the filesystem fifteen upstream skills require for a data room, a production, a closing folder or a matter folder.",
+      "tests": [
+        "FS"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "tree",
+        "steps": "With your own file tools (not hprobe.py), list every file under `<run>/fixtures/tree/` by its path relative to that folder, one per line, and save the list as `<run>/outputs/sibling-run/listing.txt`, creating the sibling-run folder. Then run `hprobe.py check P16 --run <run> --count <how many files you found>`."
+      },
+      "cowork": {
+        "setup": "A folder of 23 synthetic files in nested subfolders (the skill generates it).",
+        "prompt": "List every file under the attached folder by its path relative to the folder, tell me how many there are, then create a folder called run beside it and save the list there as listing.txt.",
+        "pass": "Every relative path, the exact count, and listing.txt in a new sibling folder.",
+        "fail": "A partial list, a count that does not match the list, or paths invented from the folder's apparent naming pattern.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P17",
+      "title": "Can the harness compute a file's SHA-256?",
+      "settles": "Whether the host can fingerprint a file when no bundled script does it. organize-case-docs requires it for its manifest, and every fallback receipt in the review skills depends on it.",
+      "tests": [
+        "HASH"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "agent",
+        "check": "hash",
+        "steps": "Compute the SHA-256 of `<run>/fixtures/hash/blob.bin` with your own tool (a shell, a code tool, or a hash tool - not hprobe.py), then run `hprobe.py check P17 --run <run> --answer <hex digest>`."
+      },
+      "cowork": {
+        "setup": "Any small binary file; the skill generates one with random bytes.",
+        "prompt": "Give me the SHA-256 of the attached file, in hex, and say how you computed it.",
+        "pass": "The digest matches one computed independently.",
+        "fail": "A digest that does not match, or a plausible-looking hex string with no computation behind it.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P18",
+      "title": "Can the harness fetch a URL's raw bytes into a file?",
+      "settles": "Whether a fetch returns the bytes a publisher served, saved where they can be hashed, rather than a rendering. regulatory's verified route rests on it; a model's summary of a page is not the page.",
+      "tests": [
+        "NET",
+        "HASH"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "raw-fetch",
+        "steps": "Download https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE byte for byte to `<run>/outputs/fetched-LICENSE` with your own tool, then run `hprobe.py check P18 --run <run>`."
+      },
+      "cowork": {
+        "setup": "",
+        "prompt": "Download https://raw.githubusercontent.com/LegalQuants/lq-plugin-oss/fa5a6681dc3cc9a08fa9ed48a5fd213057edafa0/LICENSE byte for byte into my Output folder and tell me its size in bytes and its SHA-256.",
+        "pass": "The saved file's size and SHA-256 match the published file.",
+        "fail": "A file whose bytes differ (re-encoded, reformatted, summarised), or a size and digest with no file behind them.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P19",
+      "title": "Can the harness run an isolated worker that sees only its packet?",
+      "settles": "Whether the harness can hand a sealed packet to a fresh-context worker (a subagent or a separate model call) that cannot see the parent's context, and say which model ran it. Nine upstream skills fan out work this way, and docreview and diligence also need the model chosen per worker.",
+      "tests": [
+        "SUB"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "worker",
+        "steps": "Run `hprobe.py check P19 --run <run> --phase canary` and keep the printed canary in this conversation only. Start a fresh worker (subagent or separate model call) whose whole input is the contents of `<run>/fixtures/sub/packet.txt`. Save the worker's reply verbatim to `<run>/outputs/worker-reply.txt`, then run `hprobe.py check P19 --run <run> --model \"<model the worker ran on>\"`."
+      },
+      "cowork": {
+        "setup": "A packet file holding one instruction and a token, and a canary phrase that only the parent conversation holds (the skill generates both).",
+        "prompt": "Remember the phrase SILVER-HERON. Now give the attached packet to a separate worker with none of this conversation, and show me its reply and which model ran it.",
+        "pass": "The worker does what the packet says, does not know the canary, and the model is named.",
+        "fail": "The worker knows the canary (it shared the context), or the parent answers in the worker's name.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P20",
+      "title": "Can the user open a generated page and hand back the file it saves?",
+      "settles": "Whether the interactive HTML round trip works: the user opens an offline page the skill generated, makes choices, the page saves them as a JSON download, and that file comes back to the skill. legaldesign, docreview and diligence require it.",
+      "tests": [
+        "HTML"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "user",
+        "check": "roundtrip",
+        "steps": "Give the user `<run>/outputs/roundtrip.html` (written by init). Ask them to open it in a browser, tick Alpha and Gamma, press Download decisions and hand the downloaded `hprobe-decisions.json` back to you; put it at `<run>/inputs/hprobe-decisions.json`, then run `hprobe.py check P20 --run <run>`."
+      },
+      "cowork": {
+        "setup": "A generated roundtrip.html (the skill writes one with a nonce).",
+        "prompt": "Open the attached page, tick Alpha and Gamma, press Download decisions, and give the downloaded file back to me.",
+        "pass": "The returned JSON carries the page's nonce, Alpha and Gamma ticked, and whether browser storage worked.",
+        "fail": "The page will not open, the download never happens, the file cannot be handed back, or the agent describes the choices instead of reading the file.",
+        "bad_outcome": "loud"
+      }
+    },
+    {
+      "id": "P21",
+      "title": "Is the skill folder on disk, with its scripts and assets reachable?",
+      "settles": "Whether a skill's own folder exists on a real filesystem, so a bundled script can import its sibling modules and read ../assets by relative path - which every scripted upstream skill, and the cross-skill calls of the companion set and conform, assume.",
+      "tests": [
+        "SKILLDIR",
+        "EXEC"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "script",
+        "check": "skilldir",
+        "steps": "Run `python3 <skill>/scripts/hprobe.py check P21 --run <run>`. It imports its sibling module, reads `<skill>/assets/fixtures/marker.bin` by relative path and lists any sibling skill folders it can see."
+      },
+      "cowork": {
+        "setup": "A probe skill whose script imports a sibling module and reads a packaged asset.",
+        "prompt": "Run the skill's self-check script and show me its output exactly as printed.",
+        "pass": "The script reports its own path, a successful sibling import and the asset's digest.",
+        "fail": "The script cannot be found or run, or the output is described rather than printed.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P22",
+      "title": "Can the harness annotate a PDF with highlights and comment-pane notes?",
+      "settles": "Whether a PDF can be returned carrying real annotations - a highlight and a note in the comments pane - rather than a description of them. read-redline's annotated copy depends on it.",
+      "tests": [
+        "OUT"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "pdf-annotate",
+        "steps": "Add a highlight annotation and a comment (text) annotation whose contents are the token in `<run>/fixtures/pdf/annotate-token.txt` to `<run>/fixtures/pdf/plain.pdf`, with your own tools, and save it as `<run>/outputs/annotated.pdf`. Then run `hprobe.py check P22 --run <run>`."
+      },
+      "cowork": {
+        "setup": "A one-page synthetic PDF with a known sentence.",
+        "prompt": "Highlight the sentence that starts \"The Purchaser shall\" in the attached PDF and add a comment on it saying REVIEW-7, and give me the annotated PDF.",
+        "pass": "Opening the PDF shows the highlight and the comment in the comments pane.",
+        "fail": "A PDF with no annotations, coloured text drawn into the page, or a description of the change.",
+        "bad_outcome": "loud"
+      }
+    },
+    {
+      "id": "P23",
+      "title": "Can the harness fill a packaged Word template and edit its table in place?",
+      "settles": "Whether a .docx shipped inside a skill can be copied, have one table cell changed in place and come back with its formatting intact - what document-discovery's response shell and closing-checklist's table edit need.",
+      "tests": [
+        "OUT",
+        "DOCX",
+        "SKILLDIR"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "agent",
+        "check": "docx-template",
+        "steps": "Copy `<skill>/assets/fixtures/template.docx` to `<run>/outputs/template-filled.docx`, change the second data row's Status cell to the token in `<run>/fixtures/docx/status-token.txt` without touching anything else, and run `hprobe.py check P23 --run <run>`."
+      },
+      "cowork": {
+        "setup": "A packaged template.docx with a styled three-row table.",
+        "prompt": "Using your packaged template, change the Status cell in the second row to AGREED, leave everything else as it is, and give me the document.",
+        "pass": "The returned document has the same table style and rows, with only that cell changed.",
+        "fail": "A rebuilt table, lost styling, a different row count, or a new document that only looks similar.",
+        "bad_outcome": "silent"
+      }
+    },
+    {
+      "id": "P24",
+      "title": "Does an explicit-invocation-only skill stay quiet until it is called by name?",
+      "settles": "Whether the harness honours `disable-model-invocation` (or `allow_implicit_invocation: false`): the skill must not fire on a matching prompt, but must fire when the user calls it by name. Nine upstream skills are explicit-only and are unreachable without this.",
+      "tests": [
+        "INVOKE"
+      ],
+      "cost": "low",
+      "harness": {
+        "method": "user",
+        "check": "invoke",
+        "steps": "Ask the user to install `harness-probe-invoke` beside this skill. Ask them to send \"Check whether the invoke probe is wired up.\" and note whether that skill fired; then ask them to call it by name (for example `/harness-probe-invoke`). Run `hprobe.py check P24 --run <run> --answer <token it returned> --implicit <fired|quiet>`."
+      },
+      "cowork": {
+        "setup": "The companion skill harness-probe-invoke installed beside harness-probe. It is explicit-only and answers with a fixed token when called.",
+        "prompt": "First: \"Check whether the invoke probe is wired up.\" Then, in a new message, call the harness-probe-invoke skill by name.",
+        "pass": "The first message does not run the skill; the second does and returns its token.",
+        "fail": "The skill fires on the first message, or cannot be called by name at all.",
+        "bad_outcome": "silent"
+      }
+    },
+    {
+      "id": "P25",
+      "title": "Does a tool call actually execute?",
+      "settles": "Whether the harness runs the model's tool calls and returns real results, rather than letting a call be narrated. Nineteen upstream skills need tool execution and nine more fall back without it.",
+      "tests": [
+        "TOOLS"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "agent",
+        "check": "tools",
+        "steps": "Read `<run>/fixtures/tools/token.txt` with a file-reading tool and run `hprobe.py check P25 --run <run> --answer \"<exact contents>\"`. If you have no tools, say so and record P25 as fail."
+      },
+      "cowork": {
+        "setup": "A file whose contents nobody has seen (the skill generates it).",
+        "prompt": "Read the attached file with a tool and give me its exact contents.",
+        "pass": "The exact contents, which cannot be guessed.",
+        "fail": "Contents that do not match, or an account of reading it with nothing read.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P26",
+      "title": "Can the harness read every supplied format, whole?",
+      "settles": "Whether a PDF, a Word file, a workbook, an email and a long text file can each be read in full, so a code on the last page is found. IN is required by sixteen upstream skills, and pressuretest and cite-check read documents whole.",
+      "tests": [
+        "IN"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "agent",
+        "check": "formats",
+        "steps": "Read every file in `<run>/fixtures/in/` (report.pdf, memo.docx, sheet.xlsx, message.eml, long.txt) in full and run `hprobe.py check P26 --run <run> --answer \"pdf=<code>;docx=<code>;xlsx=<code>;eml=<code>;txt=<code>\"`. On a harness without file tools, ask the user to attach the static copies in `in/` inside `<skill>/assets/fixtures/static.zip` instead."
+      },
+      "cowork": {
+        "setup": "Five synthetic files, each with a code buried at the end.",
+        "prompt": "Each attached file has a line starting CODE: near its end. Give me the code from every file, naming the file.",
+        "pass": "All five codes, each from the right file.",
+        "fail": "Any code missing, wrong, or invented; or a long file read only in part.",
+        "bad_outcome": "fluent-fake"
+      }
+    },
+    {
+      "id": "P27",
+      "title": "Can the harness hand a file back to the user?",
+      "settles": "Whether the skill can produce a file the user receives and can open - the most basic output every document skill relies on.",
+      "tests": [
+        "OUT"
+      ],
+      "cost": "free",
+      "harness": {
+        "method": "agent",
+        "check": "hand-back",
+        "steps": "Write the token in `<run>/fixtures/out/token.txt` as the only line of `<run>/outputs/hello-probe.txt` with your own file tool, tell the user where it is, and run `hprobe.py check P27 --run <run>`. If your harness returns files by download rather than a shared folder, ask the user to confirm they received it."
+      },
+      "cowork": {
+        "setup": "",
+        "prompt": "Make me a text file called hello-probe.txt whose only line is HELLO-9F2, and give it to me as a file.",
+        "pass": "A downloadable file with exactly that line.",
+        "fail": "The text shown in chat with no file, or a file with different contents.",
+        "bad_outcome": "loud"
+      }
+    }
+  ],
+  "skills": [
+    {
+      "name": "legalquants",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "FS": "D",
+            "PERSIST": "D",
+            "EXEC": "D",
+            "SKILLDIR": "D",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "No explicit tool fallback. Closest: a verb that is not installed is not an option; say the next step in plain words instead and move on.",
+              "ref": "upstream/skills/companion/legalquants/SKILL.md:51-54"
+            },
+            "FS": {
+              "text": "No explicit fallback for an unreadable ~/.lq. Closest: store status returning exists:false is 'a normal answer, never an error'.",
+              "ref": "upstream/skills/companion/legalquants/SKILL.md:46"
+            },
+            "PERSIST": {
+              "text": "'{\"exists\": false}' is a normal answer, never an error (missing store is expected on a fresh machine).",
+              "ref": "upstream/skills/companion/legalquants/SKILL.md:46"
+            },
+            "EXEC": {
+              "text": "No explicit fallback for missing scripts. Closest: exists:false is normal, and only skills that appear in catalog output may be offered; otherwise say the next step in plain words.",
+              "ref": "upstream/skills/companion/legalquants/SKILL.md:46,51-54"
+            },
+            "SKILLDIR": {
+              "text": "Sibling scripts (onboarding.py, ../lq-reflect profile_store.py, ../lq-start catalog.py) are called by relative path. Same closest wording as EXEC; the SKILL.md states no fallback for an unreachable skill folder.",
+              "ref": "upstream/skills/companion/legalquants/SKILL.md:38-54"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "IN": "D",
+            "FS": "D",
+            "PERSIST": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If they say the note is already in their Cowork folder, ask what it is called, look for it, and say in one line whether you found it.",
+              "ref": "dist/legalquants-companion-cowork/skills/legalquants/SKILL.md:58-60"
+            },
+            "IN": {
+              "text": "With nothing to go on, ask one question rather than guess.",
+              "ref": "dist/legalquants-companion-cowork/skills/legalquants/SKILL.md:68-69"
+            },
+            "FS": {
+              "text": "Look for the named note and say in one line whether you found it; name anything looked for and not found before saying where they are.",
+              "ref": "dist/legalquants-companion-cowork/skills/legalquants/SKILL.md:58-60,65-68"
+            }
+          },
+          "notes": "Removed the onboarding marker, ~/.lq profile, store counters and catalog script (no scripts, no PERSIST, no SKILLDIR); it now works from the conversation plus an attached lqplaybook.md or note and states what it had. Frontmatter has no disable-model-invocation, so no INVOKE.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "lq-apply",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "O",
+            "OUT": "R",
+            "FS": "O",
+            "PERSIST": "D",
+            "EXEC": "D",
+            "NET": "D",
+            "SKILLDIR": "D",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "PERSIST": {
+              "text": "Empty or missing store: say so honestly and start one now, then compile from what they give you in this session. Never send them away to wait.",
+              "ref": "upstream/skills/companion/lq-apply/SKILL.md:64-67"
+            },
+            "EXEC": {
+              "text": "already_shown, another_session_is_showing_it or any error -> straight to the task. The task is never gated on this.",
+              "ref": "upstream/skills/companion/lq-apply/SKILL.md:33-35"
+            },
+            "NET": {
+              "text": "Fetch the form's current fields when reachable; when unreachable, say the draft is provisional - never claim a fixed field count or an exact form match.",
+              "ref": "upstream/skills/companion/lq-apply/SKILL.md:98-101"
+            },
+            "SKILLDIR": {
+              "text": "Sibling scripts ../legalquants/scripts/onboarding.py and ../lq-reflect/scripts/profile_store.py; failure path is 'any error -> straight to the task' plus the short-conversation source when nothing else exists.",
+              "ref": "upstream/skills/companion/lq-apply/SKILL.md:33-35,62"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "D",
+            "OUT": "R",
+            "FS": "D",
+            "PERSIST": "O",
+            "NET": "O",
+            "DOCX": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "Nothing kept, nothing attached: say so honestly and compile from what they give you in this session. A normal way to run this, not a degraded one.",
+              "ref": "dist/legalquants-companion-cowork/skills/lq-apply/SKILL.md:72-74"
+            },
+            "FS": {
+              "text": "If they say it is already in their Cowork folder, ask what it is called, look for it, and say in one line whether you found it; never carry on as though you had.",
+              "ref": "dist/legalquants-companion-cowork/skills/lq-apply/SKILL.md:49-51"
+            }
+          },
+          "notes": "Dropped the onboarding marker, ~/.lq store reads, the live assess.legalquants.com fetch and the whole application format; now drafts a CV or profile from attached files or conversation and writes the draft plus an evidence-notes file to the Output folder (Word doc via the host Word skill on request). OUT rated R because the card names an Output file as where the draft goes and gives no fallback if it cannot be written, though the draft is also shown verbatim in chat.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P2",
+              "P12"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "lq-ask",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "D",
+            "IN": "O",
+            "EXEC": "D",
+            "NET": "D",
+            "SKILLDIR": "D",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If lq-mcp is not available: say so in one plain line ('the live corpus isn't reachable from here') and work from the public surfaces in references/sources.md instead.",
+              "ref": "upstream/skills/companion/lq-ask/SKILL.md:61-66"
+            },
+            "MCP": {
+              "text": "If it is not available: say so in one plain line and work from the public surfaces instead. Never pretend a citation from that file is a live query result.",
+              "ref": "upstream/skills/companion/lq-ask/SKILL.md:61-66"
+            },
+            "EXEC": {
+              "text": "onboarding.py: any error -> straight to the task. evidence.py: no resolution -> cite the build's title and description only, with no invented profile link.",
+              "ref": "upstream/skills/companion/lq-ask/SKILL.md:37-39,77-80"
+            },
+            "NET": {
+              "text": "Name the source sets actually searched and any that were unavailable. Unavailable is said, not implied. Never claim a source you did not retrieve.",
+              "ref": "upstream/skills/companion/lq-ask/SKILL.md:82-85"
+            },
+            "SKILLDIR": {
+              "text": "Scripts/source_access.py plus ../legalquants/scripts/evidence.py and onboarding.py by relative path; same wording as EXEC (error -> straight to the task; no resolution -> title and description only).",
+              "ref": "upstream/skills/companion/lq-ask/SKILL.md:37-39,73-80"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "SEARCH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {},
+          "notes": "Replaced the live lq-mcp, GitHub and builds-directory lookups and all scripts with a dated static library in references/sources.md that the model only reads; asks nothing of the host beyond chat. Deep Research is mentioned only as something the user may ask for themselves. No disable-model-invocation in frontmatter, so no INVOKE.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P6"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "lq-connect",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "EXEC": "D",
+            "NET": "R",
+            "SKILLDIR": "D",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "EXEC": {
+              "text": "No hit anywhere -> the existing known-for/works line stands on its own, silently; this step never stalls the hand-over and is never surfaced as a gap.",
+              "ref": "upstream/skills/companion/lq-connect/SKILL.md:91-94"
+            },
+            "SKILLDIR": {
+              "text": "Calls ../legalquants/scripts/evidence.py and onboarding.py by relative path; failure paths are 'any error -> straight to the task' and the no-hit line above.",
+              "ref": "upstream/skills/companion/lq-connect/SKILL.md:33-35,82-94"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "IN": "O",
+            "SEARCH:org": "D"
+          },
+          "evidence": {
+            "SEARCH:org": [
+              "P14"
+            ]
+          },
+          "fallbacks": {
+            "TOOLS": {
+              "text": "Nobody fits well? Say so plainly, say what you searched and what you could not see, and suggest the search the lawyer could run themselves.",
+              "ref": "dist/legalquants-companion-cowork/skills/lq-connect/SKILL.md:94-97"
+            },
+            "SEARCH": {
+              "text": "Nobody fits well? Say so plainly, say what you searched and what you could not see. A document this session cannot open is not evidence: name it as unopened and move on. A brought list is a second pool.",
+              "ref": "dist/legalquants-companion-cowork/skills/lq-connect/SKILL.md:68-71,78-81,94-97"
+            },
+            "SEARCH:org": {
+              "text": "Nobody fits well? Say so plainly, say what you searched and what you could not see. A document this session cannot open is not evidence: name it as unopened and move on. A brought list is a second pool.",
+              "ref": "dist/legalquants-companion-cowork/skills/lq-connect/SKILL.md:68-71,78-81,94-97"
+            }
+          },
+          "notes": "Replaced the public legalquants.com directory fetch and evidence.py excerpts with a hand-off to the host Enterprise Search skill over the organisation's own material, plus an optional directory or attendee list the lawyer attaches. SEARCH rated D (not R) because the brought-list pool and the honest-miss answer remain when search is unavailable; the card gives no wording specific to a missing Enterprise Search skill.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P14"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "lq-mirror",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "O",
+            "OUT": "O",
+            "PERSIST": "O",
+            "EXEC": "O",
+            "SKILLDIR": "O",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {},
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "OUT": "O"
+          },
+          "evidence": {},
+          "fallbacks": {},
+          "notes": "Removed the onboarding marker, store save door and live catalog ending; the twelve-question conversation is pure chat and the summary is shown in the reply. OUT O only because, if asked, the summary is handed over as a note they can save to their own folder (SKILL.md:62-63), which the host may realise as an Output file. No INVOKE: built frontmatter lacks disable-model-invocation.",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "lq-reflect",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "O",
+            "FS": "R",
+            "PERSIST": "R",
+            "EXEC": "R",
+            "SUB": "D",
+            "SESSION": "R",
+            "SKILLDIR": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "SUB": {
+              "text": "Second read, where the host has parallel workers. Without workers, skip this and say so in one line; the debrief is complete without it.",
+              "ref": "upstream/skills/companion/lq-reflect/SKILL.md:199-205"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "IN": "O",
+            "OUT": "O",
+            "FS": "O",
+            "PERSIST": "O",
+            "SESSION": "O"
+          },
+          "evidence": {},
+          "fallbacks": {},
+          "notes": "Dropped the ~/.lq store, transcript scanners, manifests, window mode and the subagent second read; reviews only this conversation plus attached or Input-folder files, and on yes writes one dated Markdown note to the Output folder for the lawyer to bring back. Everything host-side is optional because the review runs on conversation text alone; no cross-session PERSIST or SESSION is asked of the host. No INVOKE (upstream is implicit too).",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P11",
+              "P2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "my-lq-moment",
+      "group": "companion",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "D",
+            "OUT": "R",
+            "FS": "D",
+            "PERSIST": "O",
+            "EXEC": "R",
+            "BIN": "D",
+            "SESSION": "R",
+            "SKILLDIR": "R",
+            "SKILLDIR:asset": "R",
+            "INVOKE": "R"
+          },
+          "evidence": {
+            "SKILLDIR:asset": [
+              "P7"
+            ]
+          },
+          "fallbacks": {
+            "IN": {
+              "text": "If the host cannot supply real evidence (some hosts expose little), say so plainly: an automatic insufficient evidence outcome, ending in refusal, not in a lower bar.",
+              "ref": "upstream/skills/companion/my-lq-moment/SKILL.md:69-71"
+            },
+            "FS": {
+              "text": "If the cover template file is missing, the skill cannot produce a cover: say so and give the approved text.",
+              "ref": "upstream/skills/companion/my-lq-moment/assets/README.md:6-7"
+            },
+            "BIN": {
+              "text": "If no PNG: ask to re-run with elevated execution; only if that also fails, say so, hand over the SVG and the approved text, and give the one-line conversion.",
+              "ref": "upstream/skills/companion/my-lq-moment/SKILL.md:187-195"
+            }
+          },
+          "needs": {
+            "python": "3.11",
+            "binaries_any": [
+              "rsvg-convert",
+              "magick",
+              "convert",
+              "inkscape",
+              "chromium",
+              "chromium-browser",
+              "google-chrome"
+            ]
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "D",
+            "OUT": "D",
+            "FS": "O",
+            "SESSION": "R",
+            "HTML": "D",
+            "SKILLDIR:asset": "D"
+          },
+          "evidence": {
+            "SKILLDIR:asset": [
+              "P7"
+            ]
+          },
+          "fallbacks": {
+            "IN": {
+              "text": "Say which of those you can actually see here, and name anything on that list you cannot see rather than assuming it: what you cannot see is not evidence.",
+              "ref": "dist/legalquants-companion-cowork/skills/my-lq-moment/SKILL.md:55-57"
+            },
+            "OUT": {
+              "text": "The cover is the page this skill builds on the template, or the announced plain card, or not at all: never a placeholder, never a PNG claimed rather than produced.",
+              "ref": "dist/legalquants-companion-cowork/skills/my-lq-moment/SKILL.md:290-292"
+            },
+            "HTML": {
+              "text": "Offer the third form, one square slide through the built-in PowerPoint skill, if they would rather have that; give the one-line conversion to a square image.",
+              "ref": "dist/legalquants-companion-cowork/skills/my-lq-moment/SKILL.md:202-207"
+            },
+            "SKILLDIR": {
+              "text": "If the packaged template does not come through into the page, build a plain styled card on a near-black ground and say in one line that the template image is not in it. If the file is missing, say so and give the approved text.",
+              "ref": "dist/legalquants-companion-cowork/skills/my-lq-moment/SKILL.md:199-203"
+            },
+            "SKILLDIR:asset": {
+              "text": "If the packaged template does not come through into the page, build a plain styled card on a near-black ground and say in one line that the template image is not in it. If the file is missing, say so and give the approved text.",
+              "ref": "dist/legalquants-companion-cowork/skills/my-lq-moment/SKILL.md:199-203"
+            }
+          },
+          "notes": "render_cover.py and the SVG-to-PNG rasteriser are gone; the cover is now an HTML page written to the Output folder on top of the bundled cover-template.png and shown in the preview pane, with a plain-card and a PowerPoint-slide fallback, and the one kept line is handed over in the reply instead of saved through the store. SESSION stays R: the card still refuses (insufficient evidence) if the host cannot show current-session evidence. No INVOKE: built frontmatter lacks disable-model-invocation.",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P7",
+              "P11"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "legaldesign",
+      "group": "core",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "O",
+            "NET": "O",
+            "VISION": "D",
+            "HTML": "R",
+            "SKILLDIR": "D",
+            "SKILLDIR:asset": "D"
+          },
+          "evidence": {
+            "SKILLDIR:asset": [
+              "P7"
+            ]
+          },
+          "fallbacks": {
+            "EXEC": {
+              "text": "Where script execution is unavailable, host-native tools must provide equivalent safe serialization, validation, and the finished shared runtime; do not claim unperformed checks.",
+              "ref": "upstream/skills/core/legaldesign/references/build.md:104"
+            },
+            "VISION": {
+              "text": "Correct failures and rerun affected/dependent checks; disclose anything unavailable. Do not claim a browser check from code inspection. (Multi-viewport and interaction QA is reported as not done.)",
+              "ref": "upstream/skills/core/legaldesign/references/qa.md:3"
+            },
+            "SKILLDIR": {
+              "text": "scaffold.py reads assets/, schemas/ and DESIGN.md relative to the skill folder and exhibit.py sits beside it; without them the same host-native-tools fallback as EXEC applies (equivalent serialization, validation and the shared runtime, no unperformed checks claimed).",
+              "ref": "upstream/skills/core/legaldesign/references/build.md:104"
+            },
+            "SKILLDIR:asset": {
+              "text": "Host-native tools must provide the finished shared runtime; do not claim unperformed checks.",
+              "ref": "upstream/skills/core/legaldesign/SKILL.md:18"
+            }
+          },
+          "needs": {
+            "python": "3.10"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "VISION": "D",
+            "HTML": "R",
+            "SKILLDIR:asset": "D"
+          },
+          "evidence": {
+            "SKILLDIR:asset": [
+              "P7"
+            ]
+          },
+          "fallbacks": {
+            "VISION": {
+              "text": "You do not have a real browser at several window sizes. Do every check you can by reading the file and looking at the preview, and list the rest in the handoff as outstanding, by name.",
+              "ref": "dist/legalquants-litigation-cowork/skills/legaldesign/references/qa.md:7"
+            },
+            "SKILLDIR:asset": {
+              "text": "Nothing checks that the finished page truly follows the structure of the packaged template or component the skill says it used, so a page that looks plausible but does not really follow that structure would read as correct.",
+              "ref": "skills/legaldesign/skill.yaml (KI-legaldesign-3: Whether a packaged template actually shaped the output is unverified)"
+            }
+          },
+          "notes": "Removed scaffold.py/exhibit.py, the JSON schemas, blank templates and the cite-check adapter: the model now writes the spec and the single self-contained HTML itself and the preview pane renders it, so EXEC, BIN, NET and the SKILLDIR/HASH needs are gone; authentic source clips exist only if the lawyer supplies one (the exhibit sha256 fields were dropped from the contract). Packaged assets/*.html are filled examples the model only reads. Optional licensed service kept as a one-line mention (SKILL.md:48).",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": [
+              "P7"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "lq-start",
+      "group": "core",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "FS": "R",
+            "EXEC": "R",
+            "SKILLDIR": "R",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {},
+          "needs": {
+            "python": "3.8"
+          }
+        },
+        "cowork": {
+          "levels": {},
+          "evidence": {},
+          "fallbacks": {},
+          "notes": "Replaced the live catalog.py scan (EXEC, FS over the host plugin tree, SKILLDIR sibling walk) with a static references/map.md that the model only reads, so no host capability beyond baseline chat and skill loading is needed. The built frontmatter has no disable-model-invocation, so INVOKE is dropped; the card says deliberate selection is the Sources picker.",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "regulatory",
+      "group": "core",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "O",
+            "FS": "D",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "NET": "D",
+            "SEARCH": "D",
+            "SUB": "O",
+            "SKILLDIR": "D"
+          },
+          "evidence": {
+            "NET": [
+              "P18"
+            ]
+          },
+          "fallbacks": {
+            "IN": {
+              "text": "For PDF source text, use this cascade: the host's built-in document extraction or a separately available open-source extractor, then a firm-approved OCR/document service; feed the resulting text to extract_provisions.py. User-supplied official downloads may be checked with host tools but must retain origin and version evidence.",
+              "ref": "upstream/skills/core/regulatory/SKILL.md:571"
+            },
+            "FS": {
+              "text": "Without Python, network or file retention, perform the same checks with available host tools, or use the provisional route.",
+              "ref": "upstream/skills/core/regulatory/SKILL.md:612"
+            },
+            "EXEC": {
+              "text": "Scripts are optional host capabilities. Without Python/network/file retention, perform the same checks using available host tools and record their coverage; if equivalent checks cannot be completed, use the provisional route. Never claim script verification when the scripts did not run.",
+              "ref": "upstream/skills/core/regulatory/SKILL.md:612"
+            },
+            "NET": {
+              "text": "If the official source cannot be fetched or verified, the answer begins 'provisional and unverified' for the affected points.",
+              "ref": "upstream/skills/core/regulatory/SKILL.md:593"
+            },
+            "SEARCH": {
+              "text": "Search is only for finding the instrument; the user may supply a link (used immediately), and for an unmapped jurisdiction local counsel may know the publisher off the top of their head, so one question saves the exercise.",
+              "ref": "upstream/skills/core/regulatory/SKILL.md:96"
+            },
+            "SKILLDIR": {
+              "text": "The eight scripts import sibling integrity.py and read references/jurisdictions/ and references/discovery.md by relative path; without the folder on disk the same fallback as EXEC applies (equivalent checks with host tools, else the provisional route).",
+              "ref": "upstream/skills/core/regulatory/SKILL.md:612"
+            }
+          },
+          "needs": {
+            "python": "3.8"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "D",
+            "OUT": "R",
+            "FS": "O",
+            "PERSIST": "O",
+            "SEARCH": "O",
+            "VISION": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "If they would rather not go and get it, say plainly what that costs: the answer comes back under the provisional heading of the delivery gate, because nothing will have been read from the publisher.",
+              "ref": "dist/legalquants-litigation-cowork/skills/regulatory/SKILL.md:164"
+            },
+            "VISION": {
+              "text": "Some publishers serve older instruments as scans with no text layer.",
+              "ref": "skills/regulatory/skill.yaml (KI-regulatory-2: A scanned or image-only publisher PDF stops the run)"
+            }
+          },
+          "notes": "Dropped all eight scripts and the fetch: the lawyer downloads the publisher's document into the Input folder and a provenance block (publisher, address, date, lawyer's attestation) replaces the fetch record and the SHA-256, so NET, EXEC, SKILLDIR and HASH are gone; version, provision extraction, quote re-finding and receipt audit are now self-performed by the model and stated as such. The note, provision list and verification record are always written to the Output folder (OUT); FS is only the optional offer to make a dated folder (SKILL.md:84); search or browsing tools may only help find the address and are never quoted (SKILL.md:148, :213).",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": [
+              "P4",
+              "P2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "timenarratives",
+      "group": "core",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "O",
+            "OUT": "D",
+            "FS": "O",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "DOCX": "O",
+            "SESSION": "D",
+            "SKILLDIR": "D",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "OUT": {
+              "text": "Return an in-memory, unposted draft; the machine-readable JSON/Markdown artifacts are published only after validation, and without the scripts none are published (the draft is shown in chat as an unvalidated preview).",
+              "ref": "upstream/skills/core/timenarratives/SKILL.md:48"
+            },
+            "EXEC": {
+              "text": "If the bundled scripts cannot run, label the result Unvalidated preview. Do not call it copy-ready or final, do not publish machine-readable artifacts, and state which checks could not run.",
+              "ref": "upstream/skills/core/timenarratives/SKILL.md:48"
+            },
+            "SESSION": {
+              "text": "Where retrieval is unavailable, use the current context and any explicitly selected export or brief account the lawyer supplies. Do not pretend memory or a summary is a complete transcript; state material coverage gaps.",
+              "ref": "upstream/skills/core/timenarratives/SKILL.md:18"
+            },
+            "SKILLDIR": {
+              "text": "About 40 scripts import each other and read ../schemas by relative path; if they cannot run from the skill folder the result is labelled Unvalidated preview and no machine-readable artifacts are published.",
+              "ref": "upstream/skills/core/timenarratives/SKILL.md:48"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "IN": "O",
+            "OUT": "O",
+            "FS": "O",
+            "DOCX": "O",
+            "SESSION:resume": "O"
+          },
+          "evidence": {
+            "SESSION:resume": [
+              "P5"
+            ]
+          },
+          "fallbacks": {},
+          "notes": "Removed the 40-script pipeline, schemas and related-chat retrieval (SESSION and EXEC gone; SKILLDIR and HASH no longer needed): every draft is shown in the reply as an Unvalidated preview with model-copied exact quotes. A Markdown or Word file is written only on request (Word through the built-in Word skill), so OUT, DOCX and hence TOOLS are optional. The built frontmatter has no disable-model-invocation, so INVOKE is dropped.",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P5"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "wiki",
+      "group": "core",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "O",
+            "FS": "R",
+            "PERSIST": "R",
+            "EXEC": "D",
+            "NET": "O",
+            "SUB": "D",
+            "SESSION": "O",
+            "SCHED": "O",
+            "HTML": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "EXEC": {
+              "text": "If local execution is unavailable, use the Markdown workflow. (Browse: when scripts are unavailable, read the eligible Markdown notes directly.)",
+              "ref": "upstream/skills/core/wiki/SKILL.md:29"
+            },
+            "SUB": {
+              "text": "Layer 3 is the adversarial reader panel run in a fresh context; all three layers fail closed, and a gate that cannot reach a verdict returns a failure, not a pass (the note is parked, never landed).",
+              "ref": "upstream/skills/core/wiki/references/gate_prompts.md:15"
+            },
+            "HTML": {
+              "text": "Use another native artifact capability if needed, or Markdown links/a table when visual rendering is unavailable.",
+              "ref": "upstream/skills/core/wiki/SKILL.md:105"
+            },
+            "SKILLDIR": {
+              "text": "Helper files are resolved relative to the directory holding the loaded SKILL.md (wiki.py plus wiki_retrieval.py and wiki_wording.py); if local execution is unavailable, use the Markdown workflow.",
+              "ref": "upstream/skills/core/wiki/SKILL.md:22"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "R",
+            "SUB": "D",
+            "HTML": "D",
+            "HASH": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "SUB": {
+              "text": "All three layers fail closed. A gate that cannot reach a verdict returns a failure, not a pass. (Layer 3, the adversarial reader panel, is still specified as run in a fresh context.)",
+              "ref": "dist/legalquants-litigation-cowork/skills/wiki/references/gate_prompts.md:19"
+            },
+            "HTML": {
+              "text": "Build it as one index file the preview pane renders: Markdown for a plain collection, or a single self-contained HTML page when search and filters would genuinely help.",
+              "ref": "dist/legalquants-litigation-cowork/skills/wiki/SKILL.md:118"
+            },
+            "HASH": {
+              "text": "Authorised non-matter local material: record a content hash when available (and the wording record's sha256 of the block); with no way to hash, the block is compared character by character and, if exactness cannot be verified, the card says so.",
+              "ref": "dist/legalquants-litigation-cowork/skills/wiki/references/source_policy.md:11"
+            }
+          },
+          "notes": "Dropped wiki.py and the .wiki sidecar (hash chain, lock, versions, automation): the wiki is a plain folder the lawyer names, log.md is the only record, notes are withdrawn not deleted, Browse builds a Markdown or single-file HTML index, and automation (SCHED) is stated as absent. Gaps: gate_prompts.md:15 and :11 still describe layer 1 as deterministic checks in code that no longer exist, and positions.md:41 still asks for a sha256 of each wording block with no way to compute it.",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": [
+              "P2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "cite-check",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "O",
+            "NET": "O",
+            "SEARCH": "D",
+            "SUB": "D",
+            "HTML": "O",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "EXEC": {
+              "text": "If the environment does not allow you to run the script or you encounter errors that cannot be quickly fixed, gracefully degrade to assigning units to native workers.",
+              "ref": "upstream/skills/litigation/cite-check/SKILL.md:54"
+            },
+            "SEARCH": {
+              "text": "Report one simple outcome: the environment could not search; the search did not find the case and it may be hallucinated; or the case was found but was not supplied.",
+              "ref": "upstream/skills/litigation/cite-check/SKILL.md:27"
+            },
+            "SUB": {
+              "text": "If the packaged script is unavailable on a host, keep the same one-unit assignments with host workers or process those assignments one at a time.",
+              "ref": "upstream/skills/litigation/cite-check/SKILL.md:38"
+            },
+            "SKILLDIR": {
+              "text": "If local scripts are unavailable, render the same validated report data with the supplied template using host-native capabilities (the scripts and template are in the skill folder).",
+              "ref": "upstream/skills/litigation/cite-check/SKILL.md:56"
+            }
+          },
+          "needs": {
+            "python": "3.9"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "SEARCH": "D",
+            "HTML": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "SEARCH": {
+              "text": "Report one simple outcome: no search capability was available; the search did not find the case and it may be hallucinated; or the case was found but was not supplied.",
+              "ref": "dist/legalquants-litigation-cowork/skills/cite-check/SKILL.md:31"
+            }
+          },
+          "notes": "The scripted per-unit fan-out, probe and aggregate_report.py are gone: the card reviews every unit itself in one conversation, applies the amber colour rule to its own results and fills the report template by hand (SUB and EXEC no longer asked). Case-existence search is routed to the host's Deep Research and Enterprise Search skills, and the report is saved as an HTML file for the preview pane.",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P6"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "client-update",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "O",
+            "PERSIST": "O",
+            "EXEC": "O",
+            "NET": "O",
+            "SEARCH": "O",
+            "SUB": "D",
+            "HASH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "The plain Markdown/table workflow is complete without external tools.",
+              "ref": "upstream/skills/litigation/client-update/SKILL.md:50"
+            },
+            "IN": {
+              "text": "If a source is missing, unreadable, conflicting, or outside coverage, say so.",
+              "ref": "upstream/skills/litigation/client-update/SKILL.md:38"
+            },
+            "SUB": {
+              "text": "When the host offers parallel workers, divide only independent sources or matters ... otherwise perform the same steps sequentially.",
+              "ref": "upstream/skills/litigation/client-update/SKILL.md:58"
+            }
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "O",
+            "PERSIST": "O",
+            "SEARCH": "O",
+            "DOCX": "O",
+            "HASH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "If a source is missing, unreadable, conflicting, or outside coverage, say so.",
+              "ref": "dist/legalquants-litigation-cowork/skills/client-update/SKILL.md:40"
+            }
+          },
+          "notes": "Parallel-worker (SUB) language and the temporary dataset deleted on completion were replaced by sequential work in the session and an Output-folder working table that is never described as removed; Word, Excel or PowerPoint versions are left to the built-in skills. Method is otherwise unchanged and still runs on plain chat.",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "correspondence",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "O",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "O",
+            "PERSIST": "O",
+            "NET": "O",
+            "SEARCH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "If the user supplies only a summary, distinguish the summary from the underlying record and limit the draft accordingly.",
+              "ref": "upstream/skills/litigation/correspondence/SKILL.md:48"
+            }
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "MCP": "O",
+            "IN": "D",
+            "SEARCH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "If the user supplies only a summary, distinguish the summary from the underlying record and limit the draft accordingly.",
+              "ref": "dist/legalquants-litigation-cowork/skills/correspondence/SKILL.md:50"
+            }
+          },
+          "notes": "The temporary JSON dataset deleted on completion became an in-session working table, the ABA, FRCP and FRE guardrails moved into references/professional-guardrails.md, and the no-send line now names the Email skill or the lawyer's mail client as the separate sending step. The draft stays in chat; nothing is sent.",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "depositions",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "O",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "O",
+            "PERSIST": "O",
+            "NET": "O",
+            "SEARCH": "O",
+            "HASH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "Start with host-native document reading and local, open-source extraction. If that is unavailable, ask the user for readable text or exports.",
+              "ref": "upstream/skills/litigation/depositions/SKILL.md:20"
+            }
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "O",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "O",
+            "PERSIST": "O",
+            "HASH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "If a source cannot be read, say so and ask for readable text or an export rather than working from its filename.",
+              "ref": "dist/legalquants-litigation-cowork/skills/depositions/SKILL.md:27"
+            }
+          },
+          "notes": "Tool cascade rewritten to read documents the lawyer supplies or places in the Input folder, with no mention of local extraction tools; the transcript-platform rung stays optional. Method, templates and the optional real-time transcript checkpoint are unchanged.",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "docreview",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "O",
+            "VISION": "D",
+            "SUB": "D",
+            "SCHED": "O",
+            "HTML": "R",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "EXEC": {
+              "text": "If local scripts cannot run, follow the portable fallback ... without stable file identity and complete count reconciliation, do not call the result coverage-certified.",
+              "ref": "upstream/skills/litigation/docreview/SKILL.md:61-65"
+            },
+            "VISION": {
+              "text": "Legacy, corrupt, unsupported, or incomplete formats remain Needs rendering; image transcriptions remain labeled Needs your eyes.",
+              "ref": "upstream/skills/litigation/docreview/SKILL.md:115-116 and references/comms-schemas.md:250"
+            },
+            "SUB": {
+              "text": "using isolated workers when available and the same jobs sequentially otherwise.",
+              "ref": "upstream/skills/litigation/docreview/SKILL.md:62"
+            },
+            "SKILLDIR": {
+              "text": "Continue inside the same skill. Use host-native file and document tools for the mechanical operation named by each workflow step (scripts, schemas and prompts live in the skill folder).",
+              "ref": "upstream/skills/litigation/docreview/references/shared/execution-modes.md:72-76"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:xlsx-roundtrip": "D",
+            "FS": "R",
+            "PERSIST": "D",
+            "VISION": "D",
+            "HTML": "R"
+          },
+          "evidence": {
+            "OUT:xlsx-roundtrip": [
+              "P9"
+            ]
+          },
+          "fallbacks": {
+            "OUT:xlsx-roundtrip": {
+              "text": "Upstream a program checked that every request had exactly one result for every reviewable unit.",
+              "ref": "skills/docreview/skill.yaml (KI-docreview-3: The coverage count is arithmetic this skill did itself)"
+            },
+            "PERSIST": {
+              "text": "The register is the only thing that carries the privilege state between sessions.",
+              "ref": "skills/docreview/skill.yaml (KI-docreview-7: Without the register attached, the skill produces nothing)"
+            },
+            "VISION": {
+              "text": "A page read as an image is labelled Needs your eyes, and the lawyer is asked to look at every page and at the proposed matches and non-matches.",
+              "ref": "dist/legalquants-litigation-cowork/skills/docreview/references/comms-schemas.md:154"
+            }
+          },
+          "notes": "All scripts, hashing, worker fan-out, run directory and JSON gate receipts are gone: one document at a time in the conversation, state held in an Excel master register the lawyer re-attaches each session (no register means no findings), per-document fingerprints instead of hashes, counts as workbook formulas, and the setup, privilege and findings pages hand-written as self-contained HTML for the preview pane. Rulings are recorded in the register or in chat, so HTML is a viewing surface only.",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P4",
+              "P9",
+              "P2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "document-discovery",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:docx-template": "R",
+            "FS": "D",
+            "PERSIST": "O",
+            "EXEC": "O",
+            "BIN": "O",
+            "NET": "D",
+            "SEARCH": "D",
+            "VISION": "O",
+            "DOCX": "O",
+            "HTML": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {
+            "OUT:docx-template": [
+              "P23"
+            ]
+          },
+          "fallbacks": {
+            "FS": {
+              "text": "If interactive HTML or local scripting is unavailable, use the available host tools to present the same exact request/wording decisions and record explicit review.",
+              "ref": "upstream/skills/litigation/document-discovery/references/objection-review.md:92"
+            },
+            "NET": {
+              "text": "If the applicable local order or current rule cannot be checked, label the output 'authority check incomplete,' identify what must be checked, and avoid a definitive deadline.",
+              "ref": "upstream/skills/litigation/document-discovery/SKILL.md:53"
+            },
+            "SEARCH": {
+              "text": "If the applicable local order or current rule cannot be checked, label the output 'authority check incomplete'; never claim a citator, local-rule, or docket search was performed when it was not.",
+              "ref": "upstream/skills/litigation/document-discovery/SKILL.md:38,53"
+            },
+            "HTML": {
+              "text": "present the same source-linked candidates as a readable catalog and capture explicit decisions in chat against exact resulting entries.",
+              "ref": "upstream/skills/litigation/document-discovery/references/objection-library-builder.md:38"
+            },
+            "SKILLDIR": {
+              "text": "Use a supplied DOCX example when available. Otherwise start with the bundled RFP shell (the scripts also read ../assets); adapt a copy with host document tools.",
+              "ref": "upstream/skills/litigation/document-discovery/references/response-shells.md:11,23"
+            }
+          },
+          "needs": {
+            "python": "3.8"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "NET": "D",
+            "SEARCH": "D",
+            "VISION": "D",
+            "DOCX": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "NET": {
+              "text": "If the applicable local order or current rule cannot be checked, label the output 'authority check incomplete,' identify what must be checked, and avoid a definitive deadline or procedural instruction.",
+              "ref": "dist/legalquants-litigation-cowork/skills/document-discovery/SKILL.md:59"
+            },
+            "SEARCH": {
+              "text": "If the applicable local order or current rule cannot be checked, label the output 'authority check incomplete,' identify what must be checked.",
+              "ref": "dist/legalquants-litigation-cowork/skills/document-discovery/SKILL.md:59"
+            },
+            "VISION": {
+              "text": "Describe an unavailable application check accurately.",
+              "ref": "dist/legalquants-litigation-cowork/skills/document-discovery/references/response-shells.md:49"
+            },
+            "DOCX": {
+              "text": "If an essential component cannot be inspected, cleaned or preserved with available tools, identify the specific obstacle. Do not call a degraded document ready.",
+              "ref": "dist/legalquants-litigation-cowork/skills/document-discovery/references/response-shells.md:43"
+            },
+            "SKILLDIR": {
+              "text": "Use a supplied DOCX example when available. Otherwise start with the bundled RFP shell packaged with this skill at assets/rfp-response-shell.docx.",
+              "ref": "dist/legalquants-litigation-cowork/skills/document-discovery/references/response-shells.md:11"
+            }
+          },
+          "notes": "The objection-library and objection-review HTML apps, their scripts and the Word assembly helpers were dropped; an approved bank of wording is now a document the lawyer supplies, and Word output goes through the host Word skill, starting from the one binary assets/rfp-response-shell.docx only when no example is supplied. Incoming-production review is out of scope rather than handed to docreview.",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "new-matter",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "O",
+            "OUT": "D",
+            "FS": "D",
+            "PERSIST": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If a capability is unavailable, continue with user-provided files and mark the missing source; never claim that a configured integration was checked.",
+              "ref": "upstream/skills/litigation/new-matter/SKILL.md:24"
+            },
+            "OUT": {
+              "text": "If the host cannot write to the user-designated location, return the complete record in the template format and say that it remains unsaved.",
+              "ref": "upstream/skills/litigation/new-matter/SKILL.md:184"
+            },
+            "FS": {
+              "text": "If the result is ambiguous or unavailable, show the candidates or access gap and ask the user; a failed, inaccessible, or unclear check is not not-found.",
+              "ref": "upstream/skills/litigation/new-matter/SKILL.md:40-42"
+            }
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "O",
+            "OUT": "D",
+            "FS": "D",
+            "PERSIST": "O",
+            "SEARCH": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If a capability is unavailable, continue with user-provided files and mark the missing source; never claim that a configured integration was checked merely because it is listed.",
+              "ref": "dist/legalquants-litigation-cowork/skills/new-matter/SKILL.md:25"
+            },
+            "OUT": {
+              "text": "If the host cannot write to the user-designated location, return the complete record in the template format and say that it remains unsaved.",
+              "ref": "dist/legalquants-litigation-cowork/skills/new-matter/SKILL.md:185"
+            },
+            "FS": {
+              "text": "If the result is ambiguous or unavailable, show the candidates or access gap and ask the user; do not guess (architecture check of a user-identified matter folder).",
+              "ref": "dist/legalquants-litigation-cowork/skills/new-matter/SKILL.md:41-43"
+            }
+          },
+          "notes": "Save destination is now whatever the lawyer names at approval (session Output folder or a OneDrive matter folder) instead of a known workspace, and non-federal forum rules are retrieved from the forum's own published sources because the regulatory skill is not carried. Preview-before-save gate and unsaved-record fallback are unchanged.",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "organize-case-docs",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "D",
+            "FS": "R",
+            "PERSIST": "R",
+            "EXEC": "D",
+            "BIN": "O",
+            "VISION": "O",
+            "HASH": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "OUT": {
+              "text": "Before writing anything, confirm the intended destination and whether the user wants only a proposed layout or an actual workspace.",
+              "ref": "upstream/skills/litigation/organize-case-docs/SKILL.md:77"
+            },
+            "EXEC": {
+              "text": "Start with host-native document reading and local, open-source inventory or extraction. If a source cannot be read, preserve it, mark it unreadable, and ask for a readable export.",
+              "ref": "upstream/skills/litigation/organize-case-docs/SKILL.md:20"
+            }
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "D",
+            "FS": "R",
+            "PERSIST": "R",
+            "HASH": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "OUT": {
+              "text": "Before writing anything, confirm the intended destination and whether the user wants only a proposed layout or an actual workspace.",
+              "ref": "dist/legalquants-litigation-cowork/skills/organize-case-docs/SKILL.md:84"
+            }
+          },
+          "notes": "Tool cascade now just reads supplied or Input-folder documents and marks unreadable ones; the docreview sibling link became a stand-alone handoff template. The sha256 manifest column, 'hashes reconcile' gate and exhibit hash fields were kept unchanged with no fallback, so a hash-capable host tool is still needed (no script ships).",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "pressuretest",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "IN": "R",
+            "OUT": "D",
+            "FS": "D",
+            "EXEC": "D",
+            "SUB": "O",
+            "HTML": "D",
+            "SKILLDIR": "D",
+            "INVOKE": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If no interpreter or usable filesystem exists, deliver the same complete reading structure directly in chat with an explicit statement that deterministic checks and/or the saved record were unavailable.",
+              "ref": "upstream/skills/litigation/pressuretest/SKILL.md:629-632"
+            },
+            "OUT": {
+              "text": "If artifacts cannot be created or delivered, use --format chat to deliver the complete checked reading view in chat, in consecutive parts if necessary.",
+              "ref": "upstream/skills/litigation/pressuretest/SKILL.md:566-568"
+            },
+            "FS": {
+              "text": "If no interpreter or usable filesystem exists, deliver the same complete reading structure directly in chat; do not simulate a pass.",
+              "ref": "upstream/skills/litigation/pressuretest/SKILL.md:629-632"
+            },
+            "EXEC": {
+              "text": "Calculator-dependent time findings stay unresolved if computation cannot be performed; if the helpers cannot run, deliver the full result in chat with the checks explicitly marked not run.",
+              "ref": "upstream/skills/litigation/pressuretest/SKILL.md:633,646-647"
+            },
+            "HTML": {
+              "text": "Deliver the full reading structure in chat (--format chat) when the report cannot be written.",
+              "ref": "upstream/skills/litigation/pressuretest/SKILL.md:19"
+            },
+            "SKILLDIR": {
+              "text": "Machinery never outranks delivery: if the helpers cannot run, deliver the full result in chat (scripts, schema and report-template.html are in the skill folder).",
+              "ref": "upstream/skills/litigation/pressuretest/SKILL.md:646-647"
+            }
+          },
+          "needs": {
+            "python": "3.12"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "IN": "R",
+            "OUT": "D",
+            "FS": "O",
+            "DOCX": "O",
+            "HTML": "O"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "OUT": {
+              "text": "If a file cannot be produced or delivered, give the complete checked reading view in chat instead, in consecutive parts if necessary, and disclose which outputs and checks were unavailable.",
+              "ref": "dist/legalquants-litigation-cowork/skills/pressuretest/SKILL.md:446-449"
+            }
+          },
+          "notes": "The calculator, renderer and validator scripts are gone: the card fills assets/report-template.html itself, self-checks quote occurrence, and shows the count behind every date instead of running compute_period. A Word copy is available on request through the Word skill. The built frontmatter no longer carries explicit-invocation-only, so INVOKE is not required in the Cowork build (upstream allow_implicit_invocation was false).",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "writing",
+      "group": "litigation",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "O",
+            "OUT": "O",
+            "PERSIST": "O",
+            "NET": "D",
+            "SEARCH": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If a source cannot be retrieved or processed, preserve the gap and continue only within the disclosed evidence boundary.",
+              "ref": "upstream/skills/litigation/writing/SKILL.md:60"
+            },
+            "NET": {
+              "text": "If a source cannot be retrieved or processed, preserve the gap and continue only within the disclosed evidence boundary.",
+              "ref": "upstream/skills/litigation/writing/SKILL.md:60"
+            },
+            "SEARCH": {
+              "text": "When the record or authority set is incomplete, say so in the draft or handoff.",
+              "ref": "upstream/skills/litigation/writing/SKILL.md:56"
+            }
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "O",
+            "NET": "D",
+            "SEARCH": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "TOOLS": {
+              "text": "If a source cannot be retrieved or processed, preserve the gap and continue only within the disclosed evidence boundary.",
+              "ref": "dist/legalquants-litigation-cowork/skills/writing/SKILL.md:63"
+            },
+            "NET": {
+              "text": "If a source cannot be retrieved or processed, preserve the gap and continue only within the disclosed evidence boundary.",
+              "ref": "dist/legalquants-litigation-cowork/skills/writing/SKILL.md:63"
+            },
+            "SEARCH": {
+              "text": "When the record or authority set is incomplete, say so in the draft or handoff.",
+              "ref": "dist/legalquants-litigation-cowork/skills/writing/SKILL.md:59"
+            }
+          },
+          "notes": "Essentially unchanged from upstream: only the playbook read (Input folder, read-only), and the cite-check and pressuretest handoffs now name sibling skills without a slash command. The draft stays in chat and no file output is asked.",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "closing-bible",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:pdf-assemble": "D",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "R",
+            "BIN": "D",
+            "VISION": "D",
+            "SUB": "O",
+            "SKILLDIR": "R"
+          },
+          "evidence": {
+            "OUT:pdf-assemble": [
+              "P8"
+            ]
+          },
+          "fallbacks": {
+            "OUT:pdf-assemble": {
+              "text": "Without pypdf everything else is still written, combined_pdf is null, and the lawyer is told in one line.",
+              "ref": "upstream/skills/transactional/closing-bible/SKILL.md:196"
+            },
+            "BIN": {
+              "text": "Poppler is probed at run time; without it the census records page counts as unknown and the skill continues. Without LibreOffice, Word files stay native and are left out of the combined PDF.",
+              "ref": "upstream/skills/transactional/closing-bible/SKILL.md:192"
+            },
+            "VISION": {
+              "text": "If neither Poppler nor the host's document tools can render a family's execution pages, say the visual check could not run, record not-inspected with the reason, and carry it as not ready.",
+              "ref": "upstream/skills/transactional/closing-bible/SKILL.md:194"
+            }
+          },
+          "needs": {
+            "python": "3.12",
+            "binaries": [
+              "soffice"
+            ]
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:pdf-assemble": "D",
+            "OUT:xlsx-roundtrip": "D",
+            "PERSIST": "D",
+            "VISION": "D",
+            "DOCX": "O"
+          },
+          "evidence": {
+            "OUT:xlsx-roundtrip": [
+              "P9"
+            ],
+            "OUT:pdf-assemble": [
+              "P8"
+            ]
+          },
+          "fallbacks": {
+            "OUT:pdf-assemble": {
+              "text": "Merging chosen documents into one bookmarked PDF, and splitting it into volumes, is nowhere documented in Cowork and is not attempted.",
+              "ref": "skills/closing-bible/skill.yaml (KI-closing-bible-5: No combined bible PDF)"
+            },
+            "OUT:xlsx-roundtrip": {
+              "text": "Every number in the index and the register comes from the model's own reading of the documents supplied.",
+              "ref": "skills/closing-bible/skill.yaml (KI-closing-bible-1: The count is a reading, and the register is what makes it checkable)"
+            },
+            "PERSIST": {
+              "text": "Without the register there is no history: say so in the first reply, name what you looked for, and treat the run as a fresh reading of what is in front of you.",
+              "ref": "dist/legalquants-transactional-cowork/skills/closing-bible/SKILL.md:150"
+            },
+            "VISION": {
+              "text": "Where the execution pages are a scan or an image, record not-inspected with the reason, propose unsigned, and let the reconciliation carry it as not ready. Never describe a page you did not read.",
+              "ref": "dist/legalquants-transactional-cowork/skills/closing-bible/SKILL.md:107"
+            }
+          },
+          "notes": "Scripts, census hashing, combined PDF build and build/update modes were removed; the card reads attached documents, shows an index, exceptions list and an Excel status register (host Excel skill), with Word only on request. No hashing is asked of the host (fingerprints are explicitly disclaimed), so HASH and SKILLDIR are blank.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P9",
+              "P4",
+              "P8"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "closing-checklist",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "O",
+            "NET": "O",
+            "SEARCH": "O",
+            "VISION": "D",
+            "DOCX": "D",
+            "DOCX:table-edit": "D",
+            "SUB": "O",
+            "SKILLDIR": "O"
+          },
+          "evidence": {
+            "DOCX:table-edit": [
+              "P23"
+            ]
+          },
+          "fallbacks": {
+            "EXEC": {
+              "text": "Scripts, connectors and parallel workers are optional. Without code execution, use host reading/editing capabilities and the same review gates.",
+              "ref": "upstream/skills/transactional/closing-checklist/SKILL.md:33-35"
+            },
+            "VISION": {
+              "text": "Render and inspect every page ... If rendering is unavailable, say visual QA remains outstanding; structural checks alone are not visual approval.",
+              "ref": "upstream/skills/transactional/closing-checklist/SKILL.md:229-231"
+            },
+            "DOCX": {
+              "text": "The helper refuses nested item tables and vertical merges. Use a capable host Word editor, preserving the same approval and verification contract, or report the specific unmet requirement.",
+              "ref": "upstream/skills/transactional/closing-checklist/references/word-workflow.md:119-124"
+            },
+            "DOCX:table-edit": {
+              "text": "Without a way to edit the Word table, give an explicitly labelled interim table and disclose the unmet deliverable.",
+              "ref": "upstream/skills/transactional/closing-checklist/SKILL.md:233"
+            }
+          },
+          "needs": {
+            "python": "3.8"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "NET": "O",
+            "SEARCH": "O",
+            "VISION": "D",
+            "DOCX": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "VISION": {
+              "text": "Render and inspect every page ... If rendering is unavailable, say visual QA remains outstanding; structural checks alone are not visual approval.",
+              "ref": "dist/legalquants-transactional-cowork/skills/closing-checklist/SKILL.md:248-250"
+            }
+          },
+          "notes": "Both helper scripts and word-workflow.md were removed; the Word checklist is now produced and revised through the host's built-in Word skill (DOCX and OUT rated R because the only fallback, an interim chat table at SKILL.md:49-52, is labelled an unmet deliverable). The external copy is built fresh instead of through the helper's sanitiser.",
+          "card": {
+            "tier": 0,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "conform",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "MCP": "O",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "EXEC": "R",
+            "NET": "O",
+            "SUB": "D",
+            "HTML": "D",
+            "SKILLDIR": "R"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "SUB": {
+              "text": "If subagents are unavailable, one model may perform the same roles sequentially; record that execution shape and do not claim independent review.",
+              "ref": "upstream/skills/transactional/conform/SKILL.md:98"
+            },
+            "HTML": {
+              "text": "The clean text is always given in the reply alongside the redline.",
+              "ref": "upstream/skills/transactional/conform/SKILL.md:118"
+            }
+          },
+          "needs": {
+            "python": "3.12"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "IN": "R",
+            "OUT": "D",
+            "DOCX": "D",
+            "DOCX:tracked-write": "D"
+          },
+          "evidence": {
+            "DOCX:tracked-write": [
+              "P10"
+            ]
+          },
+          "fallbacks": {
+            "OUT": {
+              "text": "The mapping table in the reply and saved as conform-mapping.md; the clean text of the conformed clause in the reply, written out rather than recovered from the document.",
+              "ref": "dist/legalquants-transactional-cowork/skills/conform/SKILL.md:104-106"
+            },
+            "DOCX": {
+              "text": "Ask for the changes as real tracked changes and tell the lawyer which they have: marks Word shows in its review pane, or the old wording set beside the new.",
+              "ref": "dist/legalquants-transactional-cowork/skills/conform/SKILL.md:105"
+            },
+            "DOCX:tracked-write": {
+              "text": "Ask for the changes as real tracked changes and tell the lawyer which they have: marks Word shows in its review pane, or the old wording set beside the new.",
+              "ref": "dist/legalquants-transactional-cowork/skills/conform/SKILL.md:105"
+            }
+          },
+          "notes": "The two-ledger preflight, content-hash check, normalisation script in the sibling definition-check folder, packet workers and conform.html were all removed; both vocabularies are now read in-session and the redline goes out as a Word document through the host Word skill, with the full mapping table and clean text always in the reply. No hashing, sibling-skill path or worker is asked of the host.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P10"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "definition-check",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "D",
+            "MCP": "O",
+            "IN": "D",
+            "OUT": "D",
+            "FS": "D",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "O",
+            "DOCX": "D",
+            "SUB": "D",
+            "HTML": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "IN": {
+              "text": "Request pasted or exported text if the DOCX body is inaccessible.",
+              "ref": "upstream/skills/transactional/definition-check/references/capability-routing.md:13"
+            },
+            "OUT": {
+              "text": "In-conversation report when writing is unavailable.",
+              "ref": "upstream/skills/transactional/definition-check/SKILL.md:223"
+            },
+            "FS": {
+              "text": "C0/C1: analyse only the content the host exposes, as a reduced-assurance review; never claim deterministic parity.",
+              "ref": "upstream/skills/transactional/definition-check/references/capability-routing.md:13"
+            },
+            "EXEC": {
+              "text": "C1_HOST_TEXT: complete host-extracted text, no executable runtime; perform reduced-assurance model review and never translate a missing parser or skipped method into 'no issues found'.",
+              "ref": "upstream/skills/transactional/definition-check/references/capability-routing.md:14"
+            },
+            "DOCX": {
+              "text": "Reduced-assurance review of host text must state structural, exact-location, tracked-change, and non-body omissions.",
+              "ref": "upstream/skills/transactional/definition-check/references/capability-routing.md:14"
+            },
+            "SUB": {
+              "text": "If subagents, search, retrieval, or artifact writes are unavailable, run the strongest lower profile and list the omitted agentic methods.",
+              "ref": "upstream/skills/transactional/definition-check/SKILL.md:126"
+            },
+            "HTML": {
+              "text": "When writing is unavailable the report is given in the conversation.",
+              "ref": "upstream/skills/transactional/definition-check/SKILL.md:223"
+            },
+            "SKILLDIR": {
+              "text": "Read capability-routing.md when the original DOCX cannot be processed with the packaged deterministic checker or when any required runtime is absent or restricted.",
+              "ref": "upstream/skills/transactional/definition-check/SKILL.md:35"
+            }
+          },
+          "needs": {
+            "python": "3.12"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "D",
+            "OUT": "R",
+            "OUT:xlsx-roundtrip": "D",
+            "PERSIST": "O",
+            "HTML": "R"
+          },
+          "evidence": {
+            "OUT:xlsx-roundtrip": [
+              "P9"
+            ]
+          },
+          "fallbacks": {
+            "IN": {
+              "text": "If the body cannot be read, ask for the text to be pasted or exported rather than guessing at it.",
+              "ref": "dist/legalquants-transactional-cowork/skills/definition-check/SKILL.md:50"
+            },
+            "OUT:xlsx-roundtrip": {
+              "text": "The counts in the Excel register are counts the skill made and wrote down.",
+              "ref": "skills/definition-check/skill.yaml (KI-definition-check-2: The register's arithmetic is written, not computed)"
+            }
+          },
+          "notes": "The deterministic checker, worker fan-out, ledger/matter machinery and normalisation script were removed; the card is the upstream instruction-only mode, adding a unit list, an Excel definitions register (host Excel skill) and a self-contained definition-check.html written to the Output folder with no fallback if it cannot be written. No hash, script or worker is asked of the host.",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P9"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "diligence",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "O",
+            "VISION": "D",
+            "SUB": "D",
+            "SCHED": "O",
+            "HTML": "R",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "EXEC": {
+              "text": "The fallback is method-compatible, not assurance-equivalent; without script checks the run may deliver a labelled review and unresolved queue but may not call the result coverage-certified.",
+              "ref": "upstream/skills/transactional/diligence/references/shared/execution-modes.md:93-101"
+            },
+            "VISION": {
+              "text": "A missing or stale render becomes Needs rendering and stops approval for dependent results; it never changes a model proposal or evidence receipt.",
+              "ref": "upstream/skills/transactional/diligence/SKILL.md:125-126"
+            },
+            "SUB": {
+              "text": "Use native workers when the host provides them; otherwise run the jobs sequentially. Worker selection never changes the plans, prompts, schemas, gates, or coverage equation.",
+              "ref": "upstream/skills/transactional/diligence/references/shared/execution-modes.md:78-80"
+            },
+            "SKILLDIR": {
+              "text": "If a host cannot execute local scripts, preserve the same artifact shapes, assignments, validations, and gate conditions with host-native document and data capabilities.",
+              "ref": "upstream/skills/transactional/diligence/SKILL.md:42"
+            }
+          },
+          "needs": {
+            "python": "3.11"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:xlsx-roundtrip": "D",
+            "PERSIST": "D",
+            "VISION": "D",
+            "SCHED": "O",
+            "HTML": "R"
+          },
+          "evidence": {
+            "OUT:xlsx-roundtrip": [
+              "P9"
+            ]
+          },
+          "fallbacks": {
+            "OUT:xlsx-roundtrip": {
+              "text": "Upstream a program checked that every issue had exactly one result for every reviewable agreement.",
+              "ref": "skills/diligence/skill.yaml (KI-diligence-2: The coverage count is arithmetic this skill did itself)"
+            },
+            "PERSIST": {
+              "text": "When the register is not attached, say so before anything else, name the file that was expected, and say which tranches are on the record; then continue on the reduced scope you can see.",
+              "ref": "dist/legalquants-transactional-cowork/skills/diligence/SKILL.md:75-78"
+            },
+            "VISION": {
+              "text": "Where a page cannot be read (a scan, an image, a format that did not open) it goes to a visible Needs your eyes queue with the reason, and every dependent finding is held.",
+              "ref": "dist/legalquants-transactional-cowork/skills/diligence/SKILL.md:224-228"
+            }
+          },
+          "notes": "Scripts, schemas, hashing and fan-out were removed; the upstream portable fallback became the only path (sequential, tranche at a time, fingerprint of four fields instead of a hash, same-reader second pass). State lives in an Excel master register the lawyer re-attaches, and HTML setup, test and crosswalk pages are built by the model for the preview pane. SCHED is only offered as an optional lawyer-set routine (references/shared/execution-modes.md:72-76).",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P4",
+              "P9",
+              "P2"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "playbook-builder",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "R",
+            "EXEC": "D",
+            "VISION": "D",
+            "DOCX": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "EXEC": {
+              "text": "If the script cannot run, use host-native hashing, document reading, and file writing where available, preserving the same manifest, approval, provenance, and receipt contract.",
+              "ref": "upstream/skills/transactional/playbook-builder/SKILL.md:281-287"
+            },
+            "VISION": {
+              "text": "If that capability is not available, keep the document pending and do not claim complete coverage.",
+              "ref": "upstream/skills/transactional/playbook-builder/references/pdf-intake.md:22"
+            },
+            "DOCX": {
+              "text": "A Word file with unresolved tracked changes, an encrypted source, or a materially unreadable page cannot be treated as settled evidence; keep it visible and resolve or exclude it at the gate.",
+              "ref": "upstream/skills/transactional/playbook-builder/SKILL.md:98-100"
+            },
+            "SKILLDIR": {
+              "text": "If the script cannot run, use host-native hashing, document reading, and file writing where available, while preserving the same manifest, approval, provenance, and receipt contract.",
+              "ref": "upstream/skills/transactional/playbook-builder/SKILL.md:283-286"
+            }
+          },
+          "needs": {
+            "python": "3.8"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "PERSIST": "R",
+            "VISION": "D",
+            "DOCX": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "VISION": {
+              "text": "Where a page cannot be read at all, keep it pending and do not claim complete coverage.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-builder/references/pdf-intake.md:24"
+            },
+            "DOCX": {
+              "text": "A Word file with unresolved tracked changes, an encrypted source, or a materially unreadable page cannot be treated as settled evidence. Keep it visible and resolve or exclude it at the gate.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-builder/SKILL.md:104-107"
+            }
+          },
+          "notes": "Script, schema, hashes, receipt and registry were removed; the playbook is one Markdown file (plus curation and coherence reports) found again by file name in a folder the lawyer chose, and the seal becomes a read-through check. Leftover upstream wording still mentions a document hash (SKILL.md:123) and a canonical playbook.json (SKILL.md:191), which the card no longer produces.",
+          "card": {
+            "tier": 1,
+            "status": "shipped",
+            "probes": []
+          }
+        }
+      }
+    },
+    {
+      "name": "playbook-review",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "FS": "R",
+            "PERSIST": "D",
+            "EXEC": "D",
+            "VISION": "D",
+            "DOCX": "D",
+            "SUB": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {},
+          "fallbacks": {
+            "PERSIST": {
+              "text": "A playbook can be supplied by explicit path instead of the registry; the skill halts only when neither exists.",
+              "ref": "upstream/skills/transactional/playbook-review/SKILL.md:29"
+            },
+            "EXEC": {
+              "text": "If it cannot run, use host-native hashing, reading, diffing, and rendering where available while preserving the same source-bound artifact contract.",
+              "ref": "upstream/skills/transactional/playbook-review/SKILL.md:415-419"
+            },
+            "VISION": {
+              "text": "If that capability is not available, keep the document pending and do not claim complete coverage.",
+              "ref": "upstream/skills/transactional/playbook-review/references/pdf-intake.md:22"
+            },
+            "DOCX": {
+              "text": "If exact hashes, visual page reconciliation, markup reconstruction, or coverage validation cannot be produced, state which receipt is unavailable and do not claim completeness.",
+              "ref": "upstream/skills/transactional/playbook-review/SKILL.md:419-421"
+            },
+            "SUB": {
+              "text": "The host may use isolated parallel workers for thematic batches when available; otherwise run the same batches sequentially.",
+              "ref": "upstream/skills/transactional/playbook-review/SKILL.md:219-220"
+            },
+            "SKILLDIR": {
+              "text": "If it cannot run, use host-native hashing, reading, diffing, and rendering where available while preserving the same source-bound artifact contract.",
+              "ref": "upstream/skills/transactional/playbook-review/SKILL.md:415-419"
+            }
+          },
+          "needs": {
+            "python": "3.8"
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "D",
+            "IN": "R",
+            "OUT": "D",
+            "PERSIST": "D",
+            "VISION": "D",
+            "DOCX": "D",
+            "DOCX:tracked-write": "O"
+          },
+          "evidence": {
+            "DOCX:tracked-write": [
+              "P10"
+            ]
+          },
+          "fallbacks": {
+            "OUT": {
+              "text": "Write the deliverables as a table in the reply, a Markdown file, and, when the lawyer asks for it, a Word document through the built-in Word skill.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-review/SKILL.md:31-34"
+            },
+            "PERSIST": {
+              "text": "Ask for the file by name if the request does not identify it. There is no library to search and no registry; if the lawyer does not know where theirs is, ask them to point at the folder.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-review/SKILL.md:49-53"
+            },
+            "VISION": {
+              "text": "Where a page cannot be read at all, keep it pending and do not claim complete coverage.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-review/references/pdf-intake.md:24"
+            },
+            "DOCX": {
+              "text": "A document with unresolved tracked changes, an encrypted file, or a page you cannot read is not settled evidence: keep it visible and resolve or exclude it at the gate.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-review/references/playbook-format.md:99-101"
+            }
+          },
+          "notes": "Seventeen script steps, JSON artifacts, registry discovery and script-made Word exports were removed; the issues list is a triage table in the reply plus issues-list.md, with internal and external Word cuts through the host Word skill only on request, and the playbook is found by file name. Nothing asks the host to hash, run scripts or dispatch workers.",
+          "card": {
+            "tier": 2,
+            "status": "shipped",
+            "probes": [
+              "P10"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "read-redline",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:pdf-annotate": "D",
+            "FS": "R",
+            "PERSIST": "O",
+            "EXEC": "D",
+            "BIN": "D",
+            "VISION": "D",
+            "DOCX": "R",
+            "SKILLDIR": "D"
+          },
+          "evidence": {
+            "OUT:pdf-annotate": [
+              "P22"
+            ]
+          },
+          "fallbacks": {
+            "OUT:pdf-annotate": {
+              "text": "If the host cannot annotate, deliver the issues list only and say the annotated PDF could not be produced.",
+              "ref": "upstream/skills/transactional/read-redline/SKILL.md:124"
+            },
+            "EXEC": {
+              "text": "If the scripts cannot run, use host-native PDF reading, rendering, and annotation capabilities to preserve the same calibration, extraction, reconciliation, rating, and coverage rules.",
+              "ref": "upstream/skills/transactional/read-redline/SKILL.md:124"
+            },
+            "BIN": {
+              "text": "If the host cannot render pages, say plainly that visual reconciliation did not run and the completeness receipt is unavailable.",
+              "ref": "upstream/skills/transactional/read-redline/SKILL.md:124"
+            },
+            "VISION": {
+              "text": "If the host cannot render pages, say plainly that visual reconciliation did not run and the completeness receipt is unavailable.",
+              "ref": "upstream/skills/transactional/read-redline/SKILL.md:124"
+            },
+            "SKILLDIR": {
+              "text": "If the scripts cannot run, use host-native PDF reading, rendering, and annotation capabilities to preserve the same rules; if it cannot annotate a PDF, deliver the grounded issues list.",
+              "ref": "upstream/skills/transactional/read-redline/SKILL.md:124"
+            }
+          },
+          "needs": {
+            "python": "3.11",
+            "packages": [
+              "pdfplumber",
+              "pypdf",
+              "docx"
+            ],
+            "binaries": [
+              "pdftoppm",
+              "pdfinfo"
+            ]
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "VISION": "D",
+            "DOCX": "R",
+            "DOCX:tracked-write": "D",
+            "HTML": "R"
+          },
+          "evidence": {
+            "DOCX:tracked-write": [
+              "P10"
+            ]
+          },
+          "fallbacks": {
+            "VISION": {
+              "text": "If you cannot tell what is on a page (a scan, an image, an unresolved layout), name the page and say the page-by-page reconciliation did not run for it. Do not describe a page you could not read.",
+              "ref": "dist/legalquants-transactional-cowork/skills/read-redline/SKILL.md:54"
+            },
+            "DOCX:tracked-write": {
+              "text": "When you ask for the review inside a document, the skill produces a new Word document and asks for the changes to be recorded as real tracked changes.",
+              "ref": "skills/read-redline/skill.yaml (KI-read-redline-4: A marked-up Word copy may come back as plain text)"
+            }
+          },
+          "notes": "The seven scripts (parsers, calibration gate, annotators, issues-list builder) were removed; the document is read directly, the calibration gate is a self-applied rule recorded in redline-calibration.md, and the annotated PDF is replaced by a self-contained Marked Passages HTML page plus a Word issues list through the host Word skill. DOCX is rated R because the Word path depends on seeing tracked-change tags and the only documented outcome when they cannot be seen is to report 'could not tell' (SKILL.md:84-87).",
+          "card": {
+            "tier": 2,
+            "status": "probe-gated",
+            "probes": [
+              "P3",
+              "P4",
+              "P10"
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "sigpack",
+      "group": "transactional",
+      "profiles": {
+        "upstream": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:pdf-assemble": "R",
+            "FS": "R",
+            "PERSIST": "R",
+            "EXEC": "D",
+            "BIN": "D",
+            "VISION": "R",
+            "DOCX": "O",
+            "SUB": "D",
+            "SKILLDIR": "D"
+          },
+          "evidence": {
+            "OUT:pdf-assemble": [
+              "P8"
+            ]
+          },
+          "fallbacks": {
+            "EXEC": {
+              "text": "If the script cannot run, use host-native PDF and document capabilities while preserving the same ledger, classification, page-by-page visual review, matching, and receipt rules.",
+              "ref": "upstream/skills/transactional/sigpack/SKILL.md:135"
+            },
+            "BIN": {
+              "text": "If Word conversion is unavailable, ask for PDFs rather than treating the documents as converted. If soffice is missing the command stops and says so.",
+              "ref": "upstream/skills/transactional/sigpack/SKILL.md:64"
+            },
+            "SUB": {
+              "text": "If the host has no parallel workers, work through the candidates yourself: render each and look at it beside its text.",
+              "ref": "upstream/skills/transactional/sigpack/SKILL.md:72"
+            },
+            "SKILLDIR": {
+              "text": "If the script cannot run, use host-native PDF and document capabilities while preserving the same ledger, classification, page-by-page visual review, matching, and receipt rules.",
+              "ref": "upstream/skills/transactional/sigpack/SKILL.md:135"
+            }
+          },
+          "needs": {
+            "python": "3.8",
+            "packages": [
+              "pypdf"
+            ],
+            "binaries": [
+              "pdftoppm",
+              "soffice"
+            ]
+          }
+        },
+        "cowork": {
+          "levels": {
+            "TOOLS": "R",
+            "IN": "R",
+            "OUT": "R",
+            "OUT:xlsx-roundtrip": "D",
+            "PERSIST": "D",
+            "DOCX": "R"
+          },
+          "evidence": {
+            "OUT:xlsx-roundtrip": [
+              "P9"
+            ]
+          },
+          "fallbacks": {
+            "OUT:xlsx-roundtrip": {
+              "text": "The ledger is handed to Excel and handed back.",
+              "ref": "skills/sigpack/skill.yaml (KI-sigpack-2: A ledger workbook can come back from a round trip short a row or a formula)"
+            },
+            "PERSIST": {
+              "text": "If no ledger was attached, say so in the first reply, state that you are working from what is in front of you and nothing carries over from an earlier session, and carry on.",
+              "ref": "dist/legalquants-transactional-cowork/skills/sigpack/SKILL.md:56"
+            }
+          },
+          "notes": "The 90 KB script, folder scan, render-and-look review of returned pages, compile and balanced receipt were removed and explicitly disclaimed (no VISION asked: returned pages are never inspected). What remains is the signing matrix, pages drafted on the lawyer's Word template through the host Word skill, instruction table, cover note and chasers, with the ledger carried as an attached Excel or Markdown file.",
+          "card": {
+            "tier": 3,
+            "status": "shipped",
+            "probes": [
+              "P2",
+              "P9"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}
