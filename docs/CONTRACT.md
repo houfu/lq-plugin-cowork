@@ -547,7 +547,8 @@ RELEASING.md).
 `dist/harness/harness-probe-invoke.skill`: the skill folder at the archive
 root plus `LICENSE`, no `__pycache__` and no dotfiles, through the same
 reproducible zip writer as section 5b. They are release assets, covered by
-`SHA256SUMS` and the reproducibility check.
+`SHA256SUMS` and the reproducibility check, and listed under **Probe a
+harness** on the site's downloads page and in the release notes.
 
 ## 6. Validation rules
 
@@ -908,6 +909,7 @@ supported way to get one.
 | `upstream/skills/<group>/<name>/SKILL.md` | the original description, quoted on the skill page |
 | `<out>/<bundle>/skills/<name>/` | the files each skill actually ships; a skill in two bundles is read once |
 | `<out>/skills/<name>.skill` | the size and file count shown beside a skill's upload archive; absent is not an error, and the link is written either way |
+| `<out>/harness/<name>.skill` | the same, for the two harness-probe archives of section 5c on the downloads page |
 | `<out>/build-report.md` | the warnings table, shown per skill under a disclosure |
 | `docs/INSTALL.md`, `docs/TESTING.md`, `CHANGELOG.md` | rendered through markdown-it-py (CommonMark plus tables, raw HTML escaped) |
 
@@ -927,7 +929,7 @@ says which file it would have rendered and where to read it instead.
 | `probes.html` | every probe in `probes.yaml`, the capability codes it tests and its cost, its prompt verbatim, what a pass and a fail look like, the worst outcome, what it unlocks (derived), and the harness-probe skill's steps for it |
 | `verdicts.html` | the harness verdicts: one block per `probe-results/` file plus an empty baseline per profile, each with its four verdict lists (blocking capability and probe, or the fallback wording lost), what to probe next, cards that disagree with the verdict, and the probe coverage table |
 | `differences.html` | the capability picture from section 8 in one screen; the mechanical transforms of section 5 in plain words; the claim-words rule with the list from `cowork.yaml`; the bundle structure against upstream's; the tier rubric with a count per tier; a table of every skill with its tier and a one-line `differs` excerpt |
-| `downloads.html` | every published file in two tables: the bundle packages (name, skill count, `<id>.zip`, `<id>-trigger-tests.md`) and all the skill archives (skill, bundles, `<name>.skill`, and its size where one was built); then `SHA256SUMS`, `build-report.md`, the releases page, and the sentence about what "latest" resolves to |
+| `downloads.html` | every published file: two tables, the bundle packages (name, skill count, `<id>.zip`, `<id>-trigger-tests.md`) and all the skill archives (skill, bundles, `<name>.skill`, and its size where one was built); then **Probe a harness**, the two harness-probe archives of section 5c, each with what it is and its size and file count where one was built, linking the testing guide's Part E and the verdicts page; then `SHA256SUMS`, `build-report.md`, the releases page, and the sentence about what "latest" resolves to |
 | `install.html`, `testing.html`, `changelog.html` | the Markdown sources, rendered |
 
 ### Rules the pages keep
@@ -944,12 +946,15 @@ says which file it would have rendered and where to read it instead.
   which GitHub resolves to that asset on the most recent release that is not a
   pre-release. The assets are `<bundle.id>.zip` and
   `<bundle.id>-trigger-tests.md` per bundle, `<name>.skill` per skill,
-  `build-report.md` and `SHA256SUMS`. No page names a version in a URL, so a
-  release publishes without rebuilding the site; every download block says in
-  as many words that those links resolve only once the current version is
-  published. A size beside a `.skill` link is read from the built archive in
-  `<out>/skills/`, so it is reproducible and absent rather than guessed when
-  the archive is not there.
+  `harness-probe.skill` and `harness-probe-invoke.skill`, `build-report.md`
+  and `SHA256SUMS`. A release asset is uploaded under its base name, so no
+  URL carries the `skills/` or `harness/` folder of the build, and the two
+  folders share one namespace of asset names. No page names a version in a
+  URL, so a release publishes without rebuilding the site; every download
+  block says in as many words that those links resolve only once the current
+  version is published. A size beside a `.skill` link is read from the built
+  archive in `<out>/skills/` or `<out>/harness/`, so it is reproducible and
+  absent rather than guessed when the archive is not there.
 - **No external assets.** One stylesheet at `site/assets/site.css`, and
   nothing else fetched: no font service, no CDN, no image host. Links a reader
   clicks may of course leave the site.

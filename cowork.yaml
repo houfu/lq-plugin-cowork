@@ -22,7 +22,7 @@ developer:
   termsOfUseUrl: https://www.legalquants.com/terms
 
 package:
-  version: 0.2.0
+  version: 0.3.0
   accentColor: "#2D2D2D"
   icons:
     color: branding/color.png

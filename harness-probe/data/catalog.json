@@ -2,7 +2,7 @@
   "schema": "lq-harness-probe-catalog/1",
   "source": {
     "upstream": "LegalQuants/lq-plugin-oss@fa5a668",
-    "package": "0.2.0"
+    "package": "0.3.0"
   },
   "codes": [
     {

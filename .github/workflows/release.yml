@@ -152,6 +152,16 @@ jobs:
                   f"| `{archive.name}` | {files} | {archive.stat().st_size:,} bytes |"
               )
 
+          # The repository's own probe skill and its companion, which are not in
+          # any bundle: without this section nothing in the notes names them.
+          harness_rows = []
+          for archive in sorted((dist / "harness").glob("*.skill")):
+              with zipfile.ZipFile(archive) as opened:
+                  files = len(opened.infolist())
+              harness_rows.append(
+                  f"| `{archive.name}` | {files} | {archive.stat().st_size:,} bytes |"
+              )
+
           sums = (dist / "SHA256SUMS").read_text().strip()
           notes = f"""{body}
 
@@ -170,6 +180,20 @@ jobs:
           | Skill archive | Files | Size |
           | --- | ---: | ---: |
           {chr(10).join(skill_rows)}
+
+          ## Probe a harness
+
+          `harness-probe.skill` is this repository's own skill, not an adaptation.
+          Loaded on any harness with Agent Skills support, it runs the capability
+          probes against synthetic files, checks each answer rather than trusting
+          it, and reports which of the {len(skill_rows)} skills run as intended, run on a
+          fallback, cannot run, or are still untested. Upload
+          `harness-probe-invoke.skill` beside it for probe P24 —
+          [Part E of docs/TESTING.md]({blob}/docs/TESTING.md#the-quick-way-run-the-harness-probe-skill).
+
+          | Harness archive | Files | Size |
+          | --- | ---: | ---: |
+          {chr(10).join(harness_rows)}
 
           Adapted from the LegalQuants open skills pinned at
           [`{config.sha7}`]({config.repo}/commit/{config.sha}).

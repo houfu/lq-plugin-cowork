@@ -16,8 +16,10 @@ import pytest
 
 from lqcowork.cli import main
 from lqcowork.config import load_config
+from lqcowork.package import HARNESS_SKILLS
 from lqcowork.site import SiteError, build_site
 from lqcowork.site.generate import (
+    HARNESS_PURPOSE,
     LATEST_DOWNLOAD_URL,
     PROJECT_REPO,
     ReportWarning,
@@ -83,14 +85,15 @@ def _pages(site: Path) -> list[str]:
     return sorted(p.relative_to(site).as_posix() for p in site.rglob("*.html"))
 
 
-def _write_archives(out: Path, *names: str) -> None:
+def _write_archives(out: Path, *names: str, folder: str = "skills") -> None:
     """Stand in for what ``package`` writes into ``<out>/skills/``.
 
     The sizes on the site come from these files, so the tests make their own
-    rather than depend on whether the build wrote any.
+    rather than depend on whether the build wrote any. ``folder="harness"``
+    stands in for the repository's own two skills, which the fixture lacks.
     """
     for name in names:
-        path = out / "skills" / f"{name}.skill"
+        path = out / folder / f"{name}.skill"
         path.parent.mkdir(parents=True, exist_ok=True)
         with zipfile.ZipFile(path, "w") as archive:
             archive.writestr("SKILL.md", f"---\nname: {name}\n---\n\n# {name}\n")
@@ -157,6 +160,21 @@ class TestPages:
         assert f'href="{PROJECT_REPO}/releases"' in text
         assert "Customize" in text  # where a .skill archive is uploaded
         assert "not a pre-release" in text
+
+    def test_the_downloads_page_lists_the_harness_probe_archives(self, site):
+        text = (site / "downloads.html").read_text(encoding="utf-8")
+        assert 'id="probe-a-harness"' in text
+        for name in HARNESS_SKILLS:
+            # a release asset is uploaded under its base name: no harness/ prefix
+            assert f'href="{LATEST_DOWNLOAD_URL}/{name}.skill"' in text, name
+        assert f"{LATEST_DOWNLOAD_URL}/harness/" not in text
+        assert "P24" in text  # what the companion is for
+        assert 'href="verdicts.html"' in text
+        assert 'href="testing.html#the-quick-way-run-the-harness-probe-skill"' in text
+
+    def test_the_verdicts_page_links_the_probe_download(self, site):
+        text = (site / "verdicts.html").read_text(encoding="utf-8")
+        assert 'href="downloads.html#probe-a-harness"' in text
 
     def test_every_page_offers_the_downloads_page(self, site):
         for page in sorted(site.rglob("*.html")):
@@ -355,6 +373,26 @@ class TestSkillArchives:
         # only gamma's size cell is empty
         assert downloads.count('<td class="num">\u2014</td>') == 1
 
+    def test_a_built_harness_archive_puts_its_size_on_the_downloads_page(
+        self, mirror_repo, monkeypatch
+    ):
+        """The fixture has no harness-probe folder, so `package` wrote none."""
+        _write_docs(mirror_repo)
+        monkeypatch.chdir(mirror_repo)
+        assert main(["package"]) == 0
+        site = self._render(mirror_repo)
+        before = (site / "downloads.html").read_text(encoding="utf-8")
+        assert f'href="{LATEST_DOWNLOAD_URL}/harness-probe.skill"' in before
+        assert " files)" not in before
+
+        _write_archives(mirror_repo / "dist", *HARNESS_SKILLS, folder="harness")
+        site = self._render(mirror_repo)
+
+        after = (site / "downloads.html").read_text(encoding="utf-8")
+        for name in HARNESS_SKILLS:
+            size = (mirror_repo / f"dist/harness/{name}.skill").stat().st_size
+            assert f"({size} bytes, 2 files)" in after, name
+
     def test_an_unreadable_archive_costs_the_size_not_the_page(
         self, mirror_repo, monkeypatch
     ):
@@ -417,6 +455,7 @@ class TestReproducible:
             assert main(["package", "--out", str(out)]) == 0
             # the sizes on the pages come from these, so they are in the check
             _write_archives(out, "alpha", "beta", "gamma")
+            _write_archives(out, *HARNESS_SKILLS, folder="harness")
             build_site(config, out)
             root = out / "site"
             digests.append(
@@ -479,6 +518,9 @@ class TestHelpers:
     def test_ticks_escapes_before_it_marks_up(self):
         assert str(ticks("expect `a`")) == "expect <code>a</code>"
         assert "&lt;b&gt;" in str(ticks("<b> `x`"))
+
+    def test_every_harness_skill_has_its_line_for_the_downloads_page(self):
+        assert set(HARNESS_PURPOSE) == set(HARNESS_SKILLS)
 
     def test_a_download_url_names_no_version(self):
         assert download_url("alpha.skill") == (

@@ -87,7 +87,7 @@ body:
     attributes:
       label: Package version
       description: From the release name, from `build-report.md`, or from `version` in the zip's `manifest.json` (or `metadata.version` in a single skill's `SKILL.md`).
-      placeholder: 0.2.0
+      placeholder: 0.3.0
     validations:
       required: true
   - type: input
