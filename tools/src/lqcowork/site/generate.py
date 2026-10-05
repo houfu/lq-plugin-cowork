@@ -36,7 +36,7 @@ from ..config import (
     load_available_cards,
     split_negative,
 )
-from ..package import expected_handoff, report_path
+from ..package import HARNESS_SKILLS, expected_handoff, report_path
 from ..transforms import TransformError, parse_document
 
 # This repository, which is not in cowork.yaml: cowork.yaml pins the upstream
@@ -59,6 +59,20 @@ HELP_WANTED_URL = (
 # `release.yml` checksums every other asset into the first.
 CHECKSUMS_ASSET = "SHA256SUMS"
 REPORT_ASSET = "build-report.md"
+
+# The repository's own two skills (contract section 5c), each with the one
+# line the downloads page gives it. The names are `package`'s: a skill added
+# there with no line here fails the render rather than shipping unexplained.
+HARNESS_PURPOSE: dict[str, str] = {
+    "harness-probe": (
+        "the probe skill: its scripts, its fixtures and the steps for every "
+        "probe. It writes the report."
+    ),
+    "harness-probe-invoke": (
+        "its companion for probe P24, a skill that answers only when it is "
+        "called by name. Upload it beside the first."
+    ),
+}
 
 SITE_TITLE = "LegalQuants skills for Copilot Cowork"
 
@@ -277,6 +291,11 @@ def skill_archive(out: Path, name: str) -> Path:
     return out / "skills" / f"{name}.skill"
 
 
+def harness_archive(out: Path, name: str) -> Path:
+    """Where ``package`` writes one of the repository's own skills, likewise."""
+    return out / "harness" / f"{name}.skill"
+
+
 def read_archive(path: Path) -> tuple[int, int] | None:
     """One built ``.skill`` archive's size in bytes and its count of files.
 
@@ -394,16 +413,29 @@ class ArchiveView:
         return f"{human_size(self.size)}, {self.files} file{plural}"
 
 
-def _archive_view(out: Path, name: str) -> ArchiveView:
-    """One skill's archive as a page sees it, measured where one was built."""
-    asset = f"{name}.skill"
-    measured = read_archive(skill_archive(out, name))
+def _archive_view(path: Path) -> ArchiveView:
+    """One ``.skill`` archive as a page sees it, measured where one was built.
+
+    The release uploads an asset under its base name, so that is the asset
+    whichever folder of the build the archive sits in.
+    """
+    asset = path.name
+    measured = read_archive(path)
     return ArchiveView(
         asset=asset,
         url=download_url(asset),
         size=None if measured is None else measured[0],
         files=None if measured is None else measured[1],
     )
+
+
+@dataclass(frozen=True)
+class HarnessView:
+    """One of the repository's own skills, as the downloads page lists it."""
+
+    name: str
+    purpose: str
+    archive: ArchiveView
 
 
 @dataclass(frozen=True)
@@ -763,7 +795,7 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
             issue_search_url=_issue_search_url(name),
             files=files,
             warnings=tuple(warnings_by_skill.get(name, ())),
-            archive=_archive_view(out, name),
+            archive=_archive_view(skill_archive(out, name)),
             bundles=tuple(bundle_views[b.id] for b in in_bundles),
         )
 
@@ -824,6 +856,15 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
         for probe in config.probes
     )
 
+    harness_views = tuple(
+        HarnessView(
+            name=name,
+            purpose=HARNESS_PURPOSE[name],
+            archive=_archive_view(harness_archive(out, name)),
+        )
+        for name in HARNESS_SKILLS
+    )
+
     from ..harness import harness_reports, load_capabilities
 
     verdict_reports = [
@@ -881,6 +922,7 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
         "tiers": tier_rows,
         "transforms": config.transforms,
         "archives_built": any(skill.archive.built for skill in ordered_skills),
+        "harness_archives": harness_views,
     }
 
 

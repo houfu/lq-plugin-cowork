@@ -1120,7 +1120,7 @@ exact prompt attached.
 The package version is in the release name, in `build-report.md`, and in the
 `version` field of `manifest.json` inside a bundle zip. If you only uploaded a
 single-skill archive, the same value is in its `SKILL.md` frontmatter, under
-`metadata.version`. For v0.2.0 it is `0.2.0`.
+`metadata.version`. For v0.3.0 it is `0.3.0`.
 
 ## Part D — what happens to your report
 
@@ -1171,16 +1171,17 @@ form.
 
 ### The quick way: run the harness-probe skill
 
-`harness-probe` (released as `harness-probe.skill`, source in `harness-probe/`)
-runs every probe on whatever harness loads it — Cowork, Claude Code, Codex or
+`harness-probe` (released as
+[`harness-probe.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe.skill),
+source in `harness-probe/`) runs every probe on whatever harness loads it — Cowork, Claude Code, Codex or
 anything else with Agent Skills support — and says which of the thirty-one
 skills **run as intended**, which **run on a fallback**, which **cannot run**,
 and which are still **untested**. It generates fresh synthetic fixtures, has
 the agent do each task with its own tools, checks every answer against a
 hashed key rather than trusting it, and writes `report.md`, `report.html` and
 `report.json`. Install it (Route 0 works: upload the `.skill`), install
-`harness-probe-invoke.skill` beside it for P24, start a new conversation and
-type:
+[`harness-probe-invoke.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe-invoke.skill)
+beside it for P24, start a new conversation and type:
 
 > Probe this harness with the harness-probe skill and give me the report.
 

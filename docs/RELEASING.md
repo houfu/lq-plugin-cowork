@@ -3,9 +3,9 @@
 A release is a tag. `make release TAG=vX.Y.Z` checks the tag against the tree
 and pushes it; [.github/workflows/release.yml](../.github/workflows/release.yml)
 does the rest — tests, packaging, a reproducibility check, and a GitHub release
-carrying the bundle packages and the per-skill archives. Nothing is built on
-your machine and uploaded by hand, so what people download is what CI built
-from the tagged commit.
+carrying the bundle packages, the per-skill archives and the harness-probe
+skill. Nothing is built on your machine and uploaded by hand, so what people
+download is what CI built from the tagged commit.
 
 This is the maintainer's procedure. It needs no secrets: the workflow runs with
 the repository's own `GITHUB_TOKEN` and `contents: write`.
@@ -90,15 +90,19 @@ The `release` workflow runs on any pushed tag matching `v*`:
 3. `make release-check TAG=<tag>` — the same check again, on a clean checkout,
    so a tag that was pushed some other way cannot skip it;
 4. packages a **second** time into another directory and fails unless every
-   bundle zip *and* every single-skill archive under `dist/skills/*.skill` has
-   the same SHA-256 as the first. The zips and the archives are
-   byte-reproducible by construction; this is what keeps that true;
-5. writes `dist/SHA256SUMS` over the zips, the single-skill archives and the
-   Markdown assets, from `dist/`, so the paths in it are relative to `dist/`;
+   bundle zip, every single-skill archive under `dist/skills/*.skill` *and*
+   both harness-probe archives under `dist/harness/*.skill` have the same
+   SHA-256 as the first. The zips and the archives are byte-reproducible by
+   construction; this is what keeps that true;
+5. writes `dist/SHA256SUMS` over the zips, the single-skill archives, the
+   harness-probe archives and the Markdown assets, from `dist/`, so the paths
+   in it are relative to `dist/`;
 6. composes the notes: this version's `CHANGELOG.md` section, a table of the
    bundles with their skills and zip sizes, an "Upload one skill" table listing
    every `<name>.skill` archive with its size and a pointer to Route 0 in
-   `docs/INSTALL.md`, the upstream pin as a link to the exact commit, pointers
+   `docs/INSTALL.md`, a "Probe a harness" section saying what the harness-probe
+   skill does, with a table of its two archives and a pointer to Part E of
+   `docs/TESTING.md`, the upstream pin as a link to the exact commit, pointers
    to `docs/INSTALL.md` and `docs/TESTING.md`, the sentence that these bundles
    are an independent adaptation under Apache-2.0 and not an official
    LegalQuants release, and the checksums;
@@ -110,6 +114,8 @@ The `release` workflow runs on any pushed tag matching `v*`:
    | `legalquants-transactional-cowork.zip` | the transactional package |
    | `legalquants-companion-cowork.zip` | the companion package |
    | `<name>.skill` (31 files) | one skill's `SKILL.md`, companions, `LICENSE` and `NOTICE.md` — upload-ready via Cowork's Upload skill control (contract section 5b) |
+   | `harness-probe.skill` | this repository's own probe skill: `SKILL.md`, its scripts, fixtures and references, and `LICENSE` (contract section 5c) |
+   | `harness-probe-invoke.skill` | its explicit-invocation companion, which probe P24 calls by name |
    | `<bundle>-trigger-tests.md` | one per bundle: its routing checklist |
    | `build-report.md` | what went into the build: skills, buckets, files, bytes, warnings, suppressed warnings |
    | `SHA256SUMS` | checksums for all of the above |
@@ -130,12 +136,16 @@ Contract section 5b says what is in one and which limits it is checked
 against.
 
 Because a plain `vX.Y.Z` is now a full release, GitHub's `latest` resolves to
-it, and both kinds of asset have a permanent URL that never names a version:
+it, and every asset has a permanent URL that never names a version:
 
 ```
 https://github.com/houfu/lq-plugin-cowork/releases/latest/download/legalquants-litigation-cowork.zip
 https://github.com/houfu/lq-plugin-cowork/releases/latest/download/regulatory.skill
+https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe.skill
 ```
+
+An asset is uploaded under its base name, so the `skills/` and `harness/`
+folders of `dist/` appear in `SHA256SUMS` and in no URL.
 
 Those are the links to put in documentation and in a message to a tester: they
 follow the newest release, so nothing has to be rewritten at the next version.

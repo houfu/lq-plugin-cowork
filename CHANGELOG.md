@@ -11,6 +11,16 @@ undocumented, so every published change gets its own version.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-05
+
+This release adds `harness-probe`, a skill that tests what a harness can
+actually do and reports which of the thirty-one skills it can run, with
+thirteen new probes (P15 to P27) behind it. The three bundles and the
+thirty-one skill archives carry the same skills as 0.2.0: the only thing that
+changed inside them is the version number, in each `manifest.json` and in every
+`SKILL.md`'s `metadata.version`. If the skills are all you want, 0.2.0 already
+has them; take this one to probe a harness and report what it can do.
+
 ### Added
 
 - **`harness-probe`**, an Agent Skill that runs the capability probes on any
@@ -40,13 +50,17 @@ undocumented, so every published change gets its own version.
   every code, derived `TOOLS`, fallback wording for every degradable level,
   each card's cited probe touching its profile, results files, and generated
   files kept current.
-
 - Every harness-probe report now has **What to build next on this harness**:
   each failed capability ranked by the skills it would unblock outright, help
   unblock, and upgrade from a fallback. Capabilities carry plain-language
   labels (`label` in `capabilities.yaml`), used by the report and by
   `tools/scripts/capability_matrix.py`, which renders the one-page capability
   matrix image `docs/research/capability-matrix-upstream.png`.
+- **Where to get the probe skill.** The site's
+  [downloads page](https://houfu.github.io/lq-plugin-cowork/downloads.html)
+  has a *Probe a harness* section linking `harness-probe.skill` and
+  `harness-probe-invoke.skill` with their sizes, and the release notes carry a
+  section of the same name listing both archives.
 
 ### Changed
 
@@ -252,6 +266,7 @@ the open LegalQuants skills, seventeen distinct skills between them.
   thirty-one as Cowork-native adaptations; the sentence as first published
   overstated what Cowork lacks.)*
 
-[Unreleased]: https://github.com/houfu/lq-plugin-cowork/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/houfu/lq-plugin-cowork/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/houfu/lq-plugin-cowork/releases/tag/v0.3.0
 [0.2.0]: https://github.com/houfu/lq-plugin-cowork/releases/tag/v0.2.0
 [0.1.0]: https://github.com/houfu/lq-plugin-cowork/releases/tag/v0.1.0

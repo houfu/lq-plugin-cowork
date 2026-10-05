@@ -5,10 +5,10 @@
 
 <p class="lede">
   Everything this project publishes: {{ bundles | length }} bundle
-  package{{ "" if bundles | length == 1 else "s" }} to sideload whole, and
-  {{ skills | length }} single-skill archives to upload one at a time. Every
-  link on this page points at the latest release rather than at a version, so
-  it keeps working after the next one.
+  package{{ "" if bundles | length == 1 else "s" }} to sideload whole,
+  {{ skills | length }} single-skill archives to upload one at a time, and the
+  skill that probes a harness. Every link on this page points at the latest
+  release rather than at a version, so it keeps working after the next one.
 </p>
 
 <h2 id="bundles">The bundle packages</h2>
@@ -86,6 +86,35 @@
       {%- endfor %}
     </tbody>
   </table>
+</div>
+
+<h2 id="probe-a-harness">Probe a harness</h2>
+
+<p>
+  <code>harness-probe</code> is this repository's own skill, not an adaptation
+  of an upstream one. Loaded on any harness with Agent Skills support, it runs
+  the capability probes against synthetic files, checks each answer rather
+  than trusting it, and reports which of the {{ skills | length }} skills run
+  as intended, run on a fallback, cannot run, or are still untested.
+  <a href="testing.html#the-quick-way-run-the-harness-probe-skill">Part E of
+  the testing guide</a> says how to run it, and
+  <a href="verdicts.html">the Verdicts page</a> judges the runs on record.
+</p>
+
+<div class="download">
+  <ul class="downloads">
+    {%- for item in harness_archives %}
+    <li>
+      <a href="{{ item.archive.url }}"><code>{{ item.archive.asset }}</code></a>
+      {%- if item.archive.detail %} ({{ item.archive.detail }}){% endif %} —
+      {{ item.purpose }}
+    </li>
+    {%- endfor %}
+  </ul>
+  <p class="subtle">
+    Each is a zip with <code>SKILL.md</code> at the root; in Cowork, upload it
+    the same way as a single skill. {{ latest_note }}
+  </p>
 </div>
 
 <h2 id="checksums">Checksums, and the rest of the release</h2>

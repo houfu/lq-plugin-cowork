@@ -13,8 +13,8 @@ guessed at.
 
 This page is also on the site, beside what each bundle contains and what
 changed in each skill: <https://houfu.github.io/lq-plugin-cowork/>. Every
-release asset — the three bundles, the per-skill archives and `SHA256SUMS` —
-is linked from the site's downloads page:
+release asset — the three bundles, the per-skill archives, the harness-probe
+skill and `SHA256SUMS` — is linked from the site's downloads page:
 <https://houfu.github.io/lq-plugin-cowork/downloads.html>.
 
 Nothing in this file has been walked through in a live tenant. If a step is
@@ -104,6 +104,13 @@ assemble yourself.
 
 **What you get:** a custom skill of your own, not a plugin. It needs no admin
 and carries no manifest, and it shows in the **Sources & Skills** panel.
+
+The same route installs this repository's own probe skill,
+[`harness-probe.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe.skill),
+and its companion
+[`harness-probe-invoke.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe-invoke.skill):
+upload each as above, then follow [docs/TESTING.md](TESTING.md) Part E. They
+are release assets from 0.3.0 onward.
 
 Re-uploading a skill with the same name does **not** replace the old copy:
 Cowork keeps both, with a number appended to the new one's name. If you are
