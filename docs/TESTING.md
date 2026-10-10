@@ -1,11 +1,13 @@
 # Acceptance testing: the tester programme
 
-Nothing in this repository has been run in a live Microsoft 365 Copilot Cowork
-tenant. The packages build, validate and ship reproducibly; the skill content has
-been read line by line against what Cowork can do. Whether any of it *works* —
-whether the right skill activates from an ordinary sentence, and whether it then
-does what its description promises — is unknown, and the maintainer has no
-Copilot capacity to find out.
+The skills in this repository have not been through acceptance testing in a live
+Microsoft 365 Copilot Cowork tenant. One thing has been run there: the harness
+probe, once, in October 2026 (`probe-results/copilot-cowork.json`), which
+measures what the harness can do rather than whether a skill behaves. The
+packages build, validate and ship reproducibly; the skill content has been read
+line by line against what Cowork can do. Whether any of it *works* — whether the
+right skill activates from an ordinary sentence, and whether it then does what
+its description promises — is still unknown.
 
 That is what this programme is for. It has three halves, which is one more than
 a half allows, and they are worth running in this order:
@@ -167,9 +169,9 @@ capabilities and fails where you can see it; **2** waits on one named probe, or
 ships now with a degrade it announces in the reply; **3** is re-scoped, so the
 promise itself changed and the description says so. Tiers 2 and 3 are where a
 tester's attention is worth most, and every tier 2 and 3 entry below says what
-its characteristic failure looks like. One skill, `read-redline`, ships
-**probe-gated**: it works now, with a degrade announced in the reply, until
-probe P3 comes back.
+its characteristic failure looks like. No skill ships **probe-gated** in this
+release; `read-redline` did until its probes (P3, P4 and P10) passed on one
+Cowork tenant in October 2026.
 
 Start a fresh conversation for each test. Put prepared files in the session's
 Input folder or attach them; either is fine, but say which you did.
@@ -683,7 +685,7 @@ reporting.
 
 ### read-redline
 
-*red · tier 2 · transactional · probe-gated on P3*
+*red · tier 2 · transactional*
 
 **Prepare:** a two-page synthetic agreement in Word carrying tracked insertions
 and deletions by two named authors and one comment; plus a clean copy of the
@@ -706,13 +708,13 @@ same file with the changes accepted.
 - The calibration line and your confirmation appear at the head of the
   deliverable.
 
-**Watch for:** this is the one skill shipping probe-gated, and the reply should
-say so — until probe **P3** comes back, it cannot confirm it can see tracked
-changes at all, and a nil result has to be checked in Word. That failure is
-silent and is the worst in the transactional set: a file whose changes Cowork
-cannot see reads exactly like a clean draft. You do not get your own PDF handed
-back with marks on it; a claim to have annotated a PDF, rendered pages at a
-resolution, or quarantined a mark is a defect.
+**Watch for:** tracked changes were visible to the skill when probe **P3** was
+run on one Cowork tenant in October 2026, so it no longer ships probe-gated, but
+a nil result still has to be earned and, if in doubt, checked in Word. That
+failure is silent and is the worst in the transactional set: a file whose
+changes Cowork cannot see reads exactly like a clean draft. You do not get your
+own PDF handed back with marks on it; a claim to have annotated a PDF, rendered
+pages at a resolution, or quarantined a mark is a defect.
 
 ### sigpack
 

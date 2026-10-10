@@ -22,6 +22,19 @@ undocumented, so every published change gets its own version.
   memory across sessions as degradable instead of required, quoting each
   card's own wording for naming the folder as the fallback. On a harness where
   probe P2 fails they compute "runs on a fallback" rather than "cannot run".
+- `organize-case-docs`: the workspace step now says what to do when a later
+  session is not pointed at the earlier workspace (say so first, ask for the
+  folder, and never lay out a fresh one as though it were the first). The card
+  gains a known issue for it, and memory across sessions is rated degradable,
+  so the card no longer computes "cannot run" where probe P2 fails.
+- `read-redline` no longer ships probe-gated. Its three probes (P3 tracked
+  changes read, P4 page images, P10 tracked changes written) passed on one
+  Copilot Cowork tenant in October 2026. Its known issues say so and keep
+  every safeguard; the skill's instructions are unchanged.
+- `wiki`: the known issue about finding the wiki again next session no longer
+  says "unproven". A new session does not find the folder unless it is named.
+- `docs/TESTING.md` no longer says nothing has been run in a live tenant, and
+  its `read-redline` entry follows the lifted gate.
 
 ### Fixed
 

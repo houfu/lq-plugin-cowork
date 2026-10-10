@@ -456,7 +456,7 @@ that cites a probe testing nothing its profile rates.
 | docreview | ● |  | ● | ● | ● | ◐ |  |  |  |  | ◐ |  |  |  |  | ● |
 | document-discovery | ● | ○ | ● | ● |  |  |  |  | ◐ | ◐ | ◐ | ◐ |  |  |  |  |
 | new-matter | ◐ | ○ | ○ | ◐ | ◐ | ○ |  |  |  | ○ |  |  |  |  |  |  |
-| organize-case-docs | ● | ○ | ● | ◐ | ● | ● |  |  |  |  |  |  |  |  |  |  |
+| organize-case-docs | ● | ○ | ● | ◐ | ● | ◐ |  |  |  |  |  |  |  |  |  |  |
 | pressuretest | ◐ |  | ● | ◐ | ○ |  |  |  |  |  |  | ○ |  |  |  | ○ |
 | writing | ◐ | ○ | ○ |  |  |  |  |  | ◐ | ◐ |  |  |  |  |  |  |
 | **transactional** | | | | | | | | | | | | | | | | |

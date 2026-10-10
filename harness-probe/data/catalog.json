@@ -2082,7 +2082,7 @@
             "IN": "R",
             "OUT": "D",
             "FS": "R",
-            "PERSIST": "R",
+            "PERSIST": "D",
             "HASH": "R"
           },
           "evidence": {},
@@ -2090,13 +2090,19 @@
             "OUT": {
               "text": "Before writing anything, confirm the intended destination and whether the user wants only a proposed layout or an actual workspace.",
               "ref": "dist/legalquants-litigation-cowork/skills/organize-case-docs/SKILL.md:84"
+            },
+            "PERSIST": {
+              "text": "A later session does not find an earlier workspace on its own: if the lawyer has not named the workspace folder or attached its source manifest, say so before anything else, name what you expected to find, and ask for the folder.",
+              "ref": "dist/legalquants-litigation-cowork/skills/organize-case-docs/SKILL.md:84"
             }
           },
-          "notes": "Tool cascade now just reads supplied or Input-folder documents and marks unreadable ones; the docreview sibling link became a stand-alone handoff template. The sha256 manifest column, 'hashes reconcile' gate and exhibit hash fields were kept unchanged with no fallback, so a hash-capable host tool is still needed (no script ships).",
+          "notes": "Tool cascade now just reads supplied or Input-folder documents and marks unreadable ones; the docreview sibling link became a stand-alone handoff template. The sha256 manifest column, 'hashes reconcile' gate and exhibit hash fields were kept unchanged with no fallback, so a hash-capable host tool is still needed (no script ships). A sentence was added to the workspace step for a later session that is not pointed at the earlier workspace, which is the PERSIST fallback.",
           "card": {
             "tier": 0,
             "status": "shipped",
-            "probes": []
+            "probes": [
+              "P2"
+            ]
           }
         }
       }
@@ -2903,7 +2909,7 @@
           "notes": "The seven scripts (parsers, calibration gate, annotators, issues-list builder) were removed; the document is read directly, the calibration gate is a self-applied rule recorded in redline-calibration.md, and the annotated PDF is replaced by a self-contained Marked Passages HTML page plus a Word issues list through the host Word skill. DOCX is rated R because the Word path depends on seeing tracked-change tags and the only documented outcome when they cannot be seen is to report 'could not tell' (SKILL.md:84-87).",
           "card": {
             "tier": 2,
-            "status": "probe-gated",
+            "status": "shipped",
             "probes": [
               "P3",
               "P4",

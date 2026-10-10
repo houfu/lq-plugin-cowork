@@ -25,8 +25,21 @@ cowork:
     performs that review later, without ever making or implying a privilege
     call itself. A preferences file is read only if the lawyer has attached
     it or placed it in the session's input folder, and the skill never
-    writes to it.
-  known_issues: []
+    writes to it. A later session does not find the workspace by itself, so
+    the skill asks you to name its folder before it carries on.
+  known_issues:
+    - id: KI-organize-case-docs-1
+      title: "A new session starts a fresh workspace unless you name the earlier one"
+      detail: >-
+        The case workspace lives in a folder you choose. A later session does
+        not find that folder by itself, and if it is not pointed at it the
+        skill could lay out a new workspace whose manifest and change log
+        start again from nothing, which looks like a normal first run rather
+        than a failure. Name the workspace folder, or attach its source
+        manifest, at the start of every session. The skill is instructed to
+        say so first when it has not been pointed at one.
+      failure: silent
+      probe: P2
   workarounds: []
 
 exclude:
@@ -41,6 +54,10 @@ replace:
     expect: 1
   - from: "Start with host-native document reading and local, open-source inventory or extraction. If a source cannot be read, preserve it, mark it unreadable, and ask for a readable export or user-selected tool. Legal-grade e-discovery, records, or document-management systems are optional user-selected rungs; disclose scope, retention, access, and transformations. Never require a connector, package, network service, hook, or particular model."
     to: "Read the documents the lawyer supplies or places in the session's Input folder directly, and build the inventory from what you can actually read. If a source cannot be read, preserve it, mark it unreadable, and ask for a readable export. Legal-grade e-discovery, records, or document-management systems are optional user-selected rungs; disclose scope, retention, access, and transformations."
+    files: ["SKILL.md"]
+    expect: 1
+  - from: "only when the user authorizes that operation and the provenance record preserves the source and transformation."
+    to: "only when the user authorizes that operation and the provenance record preserves the source and transformation. A later session does not find an earlier workspace on its own: if the lawyer has not named the workspace folder or attached its source manifest, say so before anything else, name what you expected to find, and ask for the folder. If they cannot point to it, say plainly that nothing carries over and that this run starts a new record, rather than laying out a fresh workspace as though it were the first."
     files: ["SKILL.md"]
     expect: 1
   - from: "Use `client-update` for an audience-filtered report and an available legal-design or visualization capability for a polished visual companion"

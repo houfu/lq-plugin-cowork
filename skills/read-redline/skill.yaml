@@ -84,7 +84,7 @@ notes: |
 
 cowork:
   tier: 2
-  status: probe-gated
+  status: shipped
   differs: |
     The original drove this work with bundled programs: one took the compare
     PDF apart and worked out from the colours and underlining which text had
@@ -108,28 +108,29 @@ cowork:
     - id: KI-read-redline-1
       title: "Unseen tracked changes read as no changes"
       detail: >-
-        Whether a Word document's tracked changes are visible to the skill at
-        all is not established. If they are not, the file reads as though every
-        change had already been accepted, and "there is nothing to review" is
-        exactly what a genuinely clean draft produces — the same sentence for
-        two opposite situations. The skill is therefore forbidden to report a
-        nil result unless it can quote one inserted and one deleted passage
-        with its author; otherwise it must say it could not tell, and ask you
-        to open the file in Word, switch the Review tab to All Markup and say
-        what you see. Treat any nil result on a file you believe carries a
-        markup as the second case until you have looked.
+        Tracked changes in a Word document were visible to the skill when this
+        was tested on one Copilot Cowork tenant in October 2026. That is one
+        tenant and one test file; if yours does not show them, the file reads as
+        though every change had already been accepted, and "there is nothing to
+        review" is exactly what a genuinely clean draft produces — the same
+        sentence for two opposite situations. The skill is therefore forbidden
+        to report a nil result unless it can quote one inserted and one deleted
+        passage with its author; otherwise it must say it could not tell, and
+        ask you to open the file in Word, switch the Review tab to All Markup
+        and say what you see. Treat any nil result on a file you believe carries
+        a markup as the second case until you have looked.
       failure: silent
       probe: P3
     - id: KI-read-redline-2
       title: "A page the skill cannot read is a page it must name"
       detail: >-
         On the PDF path the check that nothing was missed is a page-by-page
-        reading. Whether a scanned page, a photographed signature block or an
-        unusual layout can be read at all is not established, so the skill is
-        required to name any page it could not read and to say that the
-        reconciliation did not run for it. If your compare PDF contains scanned
-        inserts, expect those pages to be named rather than reviewed, and read
-        them yourself.
+        reading. Page images were readable when this was tested on one Copilot
+        Cowork tenant in October 2026, but a poor scan, a photographed signature
+        block or an unusual layout may still defeat it, so the skill is required
+        to name any page it could not read and to say that the reconciliation
+        did not run for it. If your compare PDF contains scanned inserts, expect
+        those pages to be named rather than reviewed, and read them yourself.
       failure: loud
       probe: P4
     - id: KI-read-redline-3
@@ -148,10 +149,11 @@ cowork:
       detail: >-
         When you ask for the review inside a document, the skill produces a new
         Word document and asks for the changes to be recorded as real tracked
-        changes. Whether that is possible is not established. If it is not, the
-        same content comes back as old text beside new text. You will see which
-        you got the moment you open the file, and the skill is required to tell
-        you first. Your own file is never written to either way.
+        changes. That was possible when tested on one Copilot Cowork tenant in
+        October 2026. If it is not possible in yours, the same content comes
+        back as old text beside new text. You will see which you got the moment
+        you open the file, and the skill is required to tell you first. Your own
+        file is never written to either way.
       failure: loud
       probe: P10
   workarounds:
