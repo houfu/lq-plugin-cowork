@@ -439,7 +439,7 @@ that cites a probe testing nothing its profile rates.
 | lq-start |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
 | regulatory | ● |  | ◐ | ● | ○ | ○ |  |  |  | ○ | ◐ |  |  |  |  |  |
 | timenarratives | ○ |  | ○ | ○ | ○ |  |  |  |  |  |  | ○ |  | ○ |  |  |
-| wiki | ● |  | ● | ● | ● | ● |  |  |  |  |  |  | ◐ |  |  | ◐ |
+| wiki | ● |  | ● | ● | ● | ◐ |  |  |  |  |  |  | ◐ |  |  | ◐ |
 | **companion** | | | | | | | | | | | | | | | | |
 | legalquants | ◐ |  | ◐ |  | ◐ | ○ |  |  |  |  |  |  |  |  |  |  |
 | lq-apply | ● |  | ◐ | ● | ◐ | ○ |  |  | ○ |  |  | ○ |  |  |  |  |
@@ -465,7 +465,7 @@ that cites a probe testing nothing its profile rates.
 | conform | ◐ |  | ● | ◐ |  |  |  |  |  |  |  | ◐ |  |  |  |  |
 | definition-check | ● |  | ◐ | ● |  | ○ |  |  |  |  |  |  |  |  |  | ● |
 | diligence | ● |  | ● | ● |  | ◐ |  |  |  |  | ◐ |  |  |  | ○ | ● |
-| playbook-builder | ● |  | ● | ● |  | ● |  |  |  |  | ◐ | ◐ |  |  |  |  |
+| playbook-builder | ● |  | ● | ● |  | ◐ |  |  |  |  | ◐ | ◐ |  |  |  |  |
 | playbook-review | ◐ |  | ● | ◐ |  | ◐ |  |  |  |  | ◐ | ◐ |  |  |  |  |
 | read-redline | ● |  | ● | ● |  |  |  |  |  |  | ◐ | ● |  |  |  | ● |
 | sigpack | ● |  | ● | ● |  | ◐ |  |  |  |  |  | ● |  |  |  |  |

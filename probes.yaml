@@ -104,12 +104,21 @@ probes:
       steps: >-
         Session one: run `hprobe.py check P2 --run <run> --phase write`, then
         use your own file tool to write the printed token into
-        `lq-probe-persist.txt` in the user's workspace root (not the run
-        folder). Tell the user to come back in a new session on a later day.
-        Session two, with nothing attached: find `lq-probe-persist.txt`
-        yourself, then run `hprobe.py check P2 --run <run> --phase read
-        --answer <token you found>`. If the run folder itself is gone, record
-        P2 as fail.
+        `lq-probe-persist.txt` where this harness keeps the user's files
+        between sessions: on Copilot Cowork the Cowork Output folder in
+        OneDrive, on other harnesses the user's workspace root. Never the run
+        folder, and never a temporary or per-task directory. Tell the user
+        where you put it, and to come back in a new session on a later day.
+        Session two, a brand-new session with nothing attached: find
+        `lq-probe-persist.txt` yourself, then run `hprobe.py check P2 --run
+        <run> --phase read --answer <token you found>`. If the run folder
+        cannot be reached from the new session, that is not a fail: have the
+        user resume the first session and give you the token the new session
+        read out, then run the check there with it. In the resumed session
+        never read `lq-probe-persist.txt` yourself: a token you already hold
+        proves nothing. Record P2 as fail, by running the read check with no
+        `--answer`, when the new session cannot find the file or asks for it
+        to be attached.
 
   - id: P3
     title: Does Cowork report tracked changes in a Word document?

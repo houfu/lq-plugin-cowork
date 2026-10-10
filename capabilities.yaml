@@ -737,11 +737,16 @@ skills:
         IN: R
         OUT: R
         FS: R
-        PERSIST: R
+        PERSIST: D
         SUB: D
         HTML: D
         HASH: D
       fallbacks:
+        PERSIST:
+          text: Otherwise ask, and suggest `Documents/Cowork/wiki` as the default. If a named folder is not
+            there, say so and ask; never create a replacement silently, and never scan for a folder that
+            looks like a wiki.
+          ref: dist/legalquants-litigation-cowork/skills/wiki/SKILL.md:50-52
         SUB:
           text: All three layers fail closed. A gate that cannot reach a verdict returns a failure, not
             a pass. (Layer 3, the adversarial reader panel, is still specified as run in a fresh context.)
@@ -1626,10 +1631,15 @@ skills:
         TOOLS: R
         IN: R
         OUT: R
-        PERSIST: R
+        PERSIST: D
         VISION: D
         DOCX: D
       fallbacks:
+        PERSIST:
+          text: 'Do not claim a hash or a registry entry: there is none, and the playbook is found by its
+            file name in the folder the lawyer chose. Tell the lawyer that name and that folder when you
+            finish, and tell them it is what to point a review at.'
+          ref: dist/legalquants-transactional-cowork/skills/playbook-builder/SKILL.md:268-271
         VISION:
           text: Where a page cannot be read at all, keep it pending and do not claim complete coverage.
           ref: dist/legalquants-transactional-cowork/skills/playbook-builder/references/pdf-intake.md:24

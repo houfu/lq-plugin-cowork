@@ -11,6 +11,27 @@ undocumented, so every published change gets its own version.
 
 ## [Unreleased]
 
+### Added
+
+- `probe-results/copilot-cowork.json`: the first harness-probe run from a real
+  Microsoft 365 Copilot Cowork tenant (5 to 6 October 2026).
+
+### Changed
+
+- `capabilities.yaml`: the Cowork cards for wiki and playbook-builder now rate
+  memory across sessions as degradable instead of required, quoting each
+  card's own wording for naming the folder as the fallback. On a harness where
+  probe P2 fails they compute "runs on a fallback" rather than "cannot run".
+
+### Fixed
+
+- Harness probe P2 (memory across sessions) now tells the agent to write its
+  token file where the harness keeps the user's files between sessions (on
+  Copilot Cowork, the Cowork Output folder in OneDrive) instead of "the
+  workspace root". Its steps no longer tell the agent to record a fail merely
+  because the run folder is out of reach in a new session; the check itself is
+  unchanged.
+
 ## [0.3.0] - 2026-10-05
 
 This release adds `harness-probe`, a skill that tests what a harness can
