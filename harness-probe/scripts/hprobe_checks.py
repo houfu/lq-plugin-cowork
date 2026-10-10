@@ -317,7 +317,7 @@ def check_persist(run: Run, args: Any) -> Check:
         print(f"P2 token: {token}")
         return Check(
             "pending",
-            "session one armed; write the token to lq-probe-persist.txt in the workspace root",
+            "session one armed; write the token to lq-probe-persist.txt where the harness keeps the user's files between sessions",
         )
     if not args.answer:
         return Check("fail", "no token found in the second session")

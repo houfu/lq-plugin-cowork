@@ -1,0 +1,306 @@
+{
+  "schema": "lq-harness-probe-results/1",
+  "harness": {
+    "name": "Copilot Cowork",
+    "profile": "upstream",
+    "client": "",
+    "version": "",
+    "model": "Microsoft Copilot",
+    "recorded_by": "houfu",
+    "posture": {}
+  },
+  "results": [
+    {
+      "probe": "P1",
+      "outcome": "pass",
+      "date": "2026-10-05T01:17:31+00:00",
+      "observer": "script",
+      "codes": {
+        "EXEC": "pass",
+        "BIN": "pass"
+      },
+      "facts": {
+        "python": "3.12.14",
+        "implementation": "CPython",
+        "platform": "Linux-6.1.158.2-microsoft-standard-x86_64-with-glibc2.38",
+        "executable": "/opt/venv/bin/python3",
+        "packages": {
+          "pypdf": true,
+          "pdfplumber": true,
+          "docx": true,
+          "openpyxl": true,
+          "PIL": true,
+          "fitz": false,
+          "playwright": false
+        },
+        "binaries": {
+          "pdftoppm": true,
+          "pdfinfo": true,
+          "pdftotext": true,
+          "soffice": true,
+          "libreoffice": false,
+          "tesseract": true,
+          "chromium": false,
+          "chromium-browser": false,
+          "google-chrome": false,
+          "rsvg-convert": false,
+          "magick": false,
+          "convert": false,
+          "inkscape": false,
+          "codex": false
+        },
+        "read_fixture": true,
+        "write_output": true
+      },
+      "evidence": "python 3.12.14 on Linux-6.1.158.2-microsoft-standard-x86_64-with-glibc2.38; packages pypdf,pdfplumber,docx,openpyxl,PIL; binaries pdftoppm,pdfinfo,pdftotext,soffice,tesseract; read=True write=True"
+    },
+    {
+      "probe": "P21",
+      "outcome": "pass",
+      "date": "2026-10-05T01:17:40+00:00",
+      "observer": "script",
+      "facts": {
+        "skill_dir": "/mnt/user-config/skills/harness-probe",
+        "sibling_skills": [
+          "harness-probe-invoke"
+        ]
+      },
+      "evidence": "script at /mnt/user-config/skills/harness-probe/scripts; sibling import ok; marker sha256 566d06993d7b9f7c; sibling skills: harness-probe-invoke and 17 others (names withheld)",
+      "notes": "names of the tenant's other installed skills withheld on filing"
+    },
+    {
+      "probe": "P25",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:00+00:00",
+      "observer": "script",
+      "evidence": "contents match the generated token"
+    },
+    {
+      "probe": "P27",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:01+00:00",
+      "observer": "script",
+      "evidence": "file written with exactly the token"
+    },
+    {
+      "probe": "P26",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:02+00:00",
+      "observer": "script",
+      "evidence": "all five codes right: docx, eml, pdf, txt, xlsx"
+    },
+    {
+      "probe": "P17",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:04+00:00",
+      "observer": "script",
+      "evidence": "digest matches"
+    },
+    {
+      "probe": "P16",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:05+00:00",
+      "observer": "script",
+      "evidence": "all 23 relative paths and the count right, in a sibling folder"
+    },
+    {
+      "probe": "P7",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:49+00:00",
+      "observer": "script",
+      "evidence": "packaged badge copied byte for byte and referenced by card.html"
+    },
+    {
+      "probe": "P8",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:50+00:00",
+      "observer": "script",
+      "evidence": "3 pages in the right order"
+    },
+    {
+      "probe": "P9",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:51+00:00",
+      "observer": "script",
+      "evidence": "header and six original rows intact, four new rows added, count still a formula (B12=COUNTA(A2:A11))"
+    },
+    {
+      "probe": "P10",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:52+00:00",
+      "observer": "script",
+      "evidence": "all three edits are tracked changes attributed to Review"
+    },
+    {
+      "probe": "P22",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:54+00:00",
+      "observer": "script",
+      "evidence": "a highlight and a comment carrying the token"
+    },
+    {
+      "probe": "P23",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:55+00:00",
+      "observer": "script",
+      "evidence": "packaged template copied, one cell changed, style and rows intact"
+    },
+    {
+      "probe": "P3",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:56+00:00",
+      "observer": "script",
+      "evidence": "insertion, deletion, both authors, comment and the clean nil all right"
+    },
+    {
+      "probe": "P4",
+      "outcome": "pass",
+      "date": "2026-10-05T01:18:57+00:00",
+      "observer": "script",
+      "evidence": "code and scribble corner both right"
+    },
+    {
+      "probe": "P19",
+      "outcome": "pass",
+      "date": "2026-10-05T01:19:47+00:00",
+      "observer": "script",
+      "facts": {
+        "worker_model": "anthropic/claude-sonnet-5-5"
+      },
+      "evidence": "the worker followed the packet and did not know the canary; model anthropic/claude-sonnet-5-5"
+    },
+    {
+      "probe": "P6",
+      "outcome": "pass",
+      "date": "2026-10-05T01:19:48+00:00",
+      "observer": "script",
+      "facts": {
+        "url": "https://www.legislation.gov.uk/ukpga/2010/23/section/1",
+        "bytes_reported": 0
+      },
+      "evidence": "quoted from https://www.legislation.gov.uk/ukpga/2010/23/section/1"
+    },
+    {
+      "probe": "P12",
+      "outcome": "pass",
+      "date": "2026-10-05T01:19:49+00:00",
+      "observer": "script",
+      "facts": {
+        "url": "example.com",
+        "bytes_reported": 0
+      },
+      "evidence": "heading of example.com quoted verbatim",
+      "notes": "first page allowed; rendered text only"
+    },
+    {
+      "probe": "P18",
+      "outcome": "fail",
+      "date": "2026-10-05T01:19:59+00:00",
+      "observer": "agent",
+      "evidence": "No shell network or download tool; name resolution fails, fetch tool returns rendered text only, no byte-for-byte file"
+    },
+    {
+      "probe": "P14",
+      "outcome": "not-run",
+      "date": "2026-10-05T01:20:00+00:00",
+      "observer": "agent"
+    },
+    {
+      "probe": "P2",
+      "outcome": "pending",
+      "date": "2026-10-05T01:20:01+00:00",
+      "observer": "script",
+      "evidence": "session one armed; write the token to lq-probe-persist.txt in the workspace root"
+    },
+    {
+      "probe": "P5",
+      "outcome": "pending",
+      "date": "2026-10-05T01:20:02+00:00",
+      "observer": "script",
+      "evidence": "token issued; resume this task later and ask for it, then try a new task"
+    },
+    {
+      "probe": "P20",
+      "outcome": "pass",
+      "date": "2026-10-05T01:28:28+00:00",
+      "observer": "script",
+      "facts": {
+        "browser_storage": true
+      },
+      "evidence": "page opened, choices saved by the browser and handed back"
+    },
+    {
+      "probe": "P24",
+      "outcome": "fail",
+      "date": "2026-10-05T01:28:29+00:00",
+      "observer": "user",
+      "evidence": "Implicit prompt: skill stayed quiet (as designed). Invoke-by-name token not supplied; the other session did not find the skill at all, so installation not confirmed."
+    },
+    {
+      "probe": "P24",
+      "outcome": "not-run",
+      "date": "2026-10-05T01:28:36+00:00",
+      "observer": "user",
+      "evidence": "Other session did not find harness-probe-invoke at all (not installed or not visible), so neither the implicit nor the by-name test could be run"
+    },
+    {
+      "probe": "P11",
+      "outcome": "pass",
+      "date": "2026-10-05T01:43:31+00:00",
+      "observer": "user",
+      "evidence": "Quoted user's sentence exactly; file/tool/skill list judged right; read vs reconstructed distinguished"
+    },
+    {
+      "probe": "P24",
+      "outcome": "fail",
+      "date": "2026-10-05T01:43:32+00:00",
+      "observer": "user",
+      "evidence": "Skill installed beside harness-probe but Cowork could not find or call it by name; one attempt re-ran the main harness-probe skill instead"
+    },
+    {
+      "probe": "P13",
+      "outcome": "pending",
+      "date": "2026-10-05T01:45:30+00:00",
+      "observer": "script",
+      "evidence": "armed; waiting for the scheduled run"
+    },
+    {
+      "probe": "P14",
+      "outcome": "pass",
+      "date": "2026-10-05T01:55:57+00:00",
+      "observer": "user",
+      "evidence": "People search returned real people with titles and departments; a direct-reports query gave a plausible team roster. Partial: directory results noisy (under half relevant) and a 'who worked on this topic' document search returned nothing.",
+      "notes": "partial"
+    },
+    {
+      "probe": "P15",
+      "outcome": "fail",
+      "date": "2026-10-05T01:57:08+00:00",
+      "observer": "user",
+      "evidence": "Cannot register or call a custom MCP server from a skill; per Cowork docs MCP servers must be installed by an admin. Built-in Microsoft 365 tools do not count."
+    },
+    {
+      "probe": "P13",
+      "outcome": "fail",
+      "date": "2026-10-05T02:25:16+00:00",
+      "observer": "script",
+      "evidence": "run fired only 0.5 minutes after arming (not a later run)"
+    },
+    {
+      "probe": "P13",
+      "outcome": "fail",
+      "date": "2026-10-05T02:31:26+00:00",
+      "observer": "user",
+      "evidence": "First scheduled one-off ran immediately on creation, in the same session, not at its set time. Second delivery at 02:26Z was triggered manually by the user, so it does not count as an unattended scheduled run.",
+      "notes": "scheduled prompt (one-off); no unattended later run observed"
+    },
+    {
+      "probe": "P2",
+      "outcome": "fail",
+      "date": "2026-10-06T02:35:36+00:00",
+      "observer": "user",
+      "evidence": "A brand-new session could not find lq-probe-persist.txt in uploaded materials or OneDrive (only related harness-probe files). The file is present when this same task is resumed, but is not shared with new tasks.",
+      "notes": "persists within the resumed task only"
+    }
+  ]
+}

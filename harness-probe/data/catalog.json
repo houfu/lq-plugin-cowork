@@ -232,7 +232,7 @@
       "harness": {
         "method": "two-session",
         "check": "persist",
-        "steps": "Session one: run `hprobe.py check P2 --run <run> --phase write`, then use your own file tool to write the printed token into `lq-probe-persist.txt` in the user's workspace root (not the run folder). Tell the user to come back in a new session on a later day. Session two, with nothing attached: find `lq-probe-persist.txt` yourself, then run `hprobe.py check P2 --run <run> --phase read --answer <token you found>`. If the run folder itself is gone, record P2 as fail."
+        "steps": "Session one: run `hprobe.py check P2 --run <run> --phase write`, then use your own file tool to write the printed token into `lq-probe-persist.txt` where this harness keeps the user's files between sessions: on Copilot Cowork the Cowork Output folder in OneDrive, on other harnesses the user's workspace root. Never the run folder, and never a temporary or per-task directory. Tell the user where you put it, and to come back in a new session on a later day. Session two, a brand-new session with nothing attached: find `lq-probe-persist.txt` yourself, then run `hprobe.py check P2 --run <run> --phase read --answer <token you found>`. If the run folder cannot be reached from the new session, that is not a fail: have the user resume the first session and give you the token the new session read out, then run the check there with it. In the resumed session never read `lq-probe-persist.txt` yourself: a token you already hold proves nothing. Record P2 as fail, by running the read check with no `--answer`, when the new session cannot find the file or asks for it to be attached."
       },
       "cowork": {
         "setup": "None beyond two sessions on different days.",
@@ -1544,13 +1544,17 @@
             "IN": "R",
             "OUT": "R",
             "FS": "R",
-            "PERSIST": "R",
+            "PERSIST": "D",
             "SUB": "D",
             "HTML": "D",
             "HASH": "D"
           },
           "evidence": {},
           "fallbacks": {
+            "PERSIST": {
+              "text": "Otherwise ask, and suggest `Documents/Cowork/wiki` as the default. If a named folder is not there, say so and ask; never create a replacement silently, and never scan for a folder that looks like a wiki.",
+              "ref": "dist/legalquants-litigation-cowork/skills/wiki/SKILL.md:50-52"
+            },
             "SUB": {
               "text": "All three layers fail closed. A gate that cannot reach a verdict returns a failure, not a pass. (Layer 3, the adversarial reader panel, is still specified as run in a fresh context.)",
               "ref": "dist/legalquants-litigation-cowork/skills/wiki/references/gate_prompts.md:19"
@@ -2693,12 +2697,16 @@
             "TOOLS": "R",
             "IN": "R",
             "OUT": "R",
-            "PERSIST": "R",
+            "PERSIST": "D",
             "VISION": "D",
             "DOCX": "D"
           },
           "evidence": {},
           "fallbacks": {
+            "PERSIST": {
+              "text": "Do not claim a hash or a registry entry: there is none, and the playbook is found by its file name in the folder the lawyer chose. Tell the lawyer that name and that folder when you finish, and tell them it is what to point a review at.",
+              "ref": "dist/legalquants-transactional-cowork/skills/playbook-builder/SKILL.md:268-271"
+            },
             "VISION": {
               "text": "Where a page cannot be read at all, keep it pending and do not claim complete coverage.",
               "ref": "dist/legalquants-transactional-cowork/skills/playbook-builder/references/pdf-intake.md:24"

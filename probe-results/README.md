@@ -14,3 +14,4 @@ outcomes about synthetic fixtures only: nothing confidential, no client material
 | File | Harness | Recorded |
 |---|---|---|
 | [claude-code-web.json](claude-code-web.json) | Claude Code on the web, in its cloud container, the agent probing itself | 1 October 2026 |
+| [copilot-cowork.json](copilot-cowork.json) | Microsoft 365 Copilot Cowork in one tenant, the agent probing itself and the user judging P2, P11, P13 to P15 and P24; the names of the tenant's other installed skills are withheld | 5 to 6 October 2026 |
