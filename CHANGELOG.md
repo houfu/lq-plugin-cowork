@@ -35,6 +35,12 @@ undocumented, so every published change gets its own version.
   says "unproven". A new session does not find the folder unless it is named.
 - `docs/TESTING.md` no longer says nothing has been run in a live tenant, and
   its `read-redline` entry follows the lifted gate.
+- The probe's companion skill is renamed from `harness-probe-invoke` to
+  `lq-invoke-canary`, so its name shares no stem with `harness-probe`. In the
+  Copilot Cowork run, calling the companion by name ran the main probe skill
+  instead, which leaves that run's P24 result in doubt. The download is now
+  `lq-invoke-canary.skill`; install it in place of the old one before
+  re-running P24.
 
 ### Fixed
 

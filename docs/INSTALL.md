@@ -108,7 +108,7 @@ and carries no manifest, and it shows in the **Sources & Skills** panel.
 The same route installs this repository's own probe skill,
 [`harness-probe.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe.skill),
 and its companion
-[`harness-probe-invoke.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe-invoke.skill):
+[`lq-invoke-canary.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/lq-invoke-canary.skill):
 upload each as above, then follow [docs/TESTING.md](TESTING.md) Part E. They
 are release assets from 0.3.0 onward.
 

@@ -115,7 +115,7 @@ The `release` workflow runs on any pushed tag matching `v*`:
    | `legalquants-companion-cowork.zip` | the companion package |
    | `<name>.skill` (31 files) | one skill's `SKILL.md`, companions, `LICENSE` and `NOTICE.md` — upload-ready via Cowork's Upload skill control (contract section 5b) |
    | `harness-probe.skill` | this repository's own probe skill: `SKILL.md`, its scripts, fixtures and references, and `LICENSE` (contract section 5c) |
-   | `harness-probe-invoke.skill` | its explicit-invocation companion, which probe P24 calls by name |
+   | `lq-invoke-canary.skill` | its explicit-invocation companion, which probe P24 calls by name |
    | `<bundle>-trigger-tests.md` | one per bundle: its routing checklist |
    | `build-report.md` | what went into the build: skills, buckets, files, bytes, warnings, suppressed warnings |
    | `SHA256SUMS` | checksums for all of the above |

@@ -68,7 +68,7 @@ HARNESS_PURPOSE: dict[str, str] = {
         "the probe skill: its scripts, its fixtures and the steps for every "
         "probe. It writes the report."
     ),
-    "harness-probe-invoke": (
+    "lq-invoke-canary": (
         "its companion for probe P24, a skill that answers only when it is "
         "called by name. Upload it beside the first."
     ),

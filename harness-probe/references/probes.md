@@ -270,7 +270,7 @@ Tests INVOKE. Method user; cost low; checked by `hprobe.py check P24`.
 
 Whether the harness honours `disable-model-invocation` (or `allow_implicit_invocation: false`): the skill must not fire on a matching prompt, but must fire when the user calls it by name. Nine upstream skills are explicit-only and are unreachable without this.
 
-**Steps.** Ask the user to install `harness-probe-invoke` beside this skill. Ask them to send "Check whether the invoke probe is wired up." and note whether that skill fired; then ask them to call it by name (for example `/harness-probe-invoke`). Run `hprobe.py check P24 --run <run> --answer <token it returned> --implicit <fired|quiet>`.
+**Steps.** Ask the user to install `lq-invoke-canary` beside this skill. Ask them to send "Check whether the invoke probe is wired up." and note whether that skill fired; then ask them to call it by name (for example `/lq-invoke-canary`). Run `hprobe.py check P24 --run <run> --answer <token it returned> --implicit <fired|quiet>`.
 
 **Worst outcome to watch for:** silent.
 

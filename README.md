@@ -132,7 +132,7 @@ depends on your tenant's custom-app policy. Read
 Each release carries the three bundle zips; one `<name>.skill` upload-ready
 archive per skill, thirty-one of them (contract section 5b), for the
 single-skill route above; `harness-probe.skill` and its companion
-`harness-probe-invoke.skill`, for [probing a
+`lq-invoke-canary.skill`, for [probing a
 harness](#probe-a-harness-get-a-verdict); `<bundle>-trigger-tests.md` for each
 bundle, the routing acceptance tests generated from the cards;
 `build-report.md` — skills, tiers, statuses, known issues, file counts,
@@ -167,7 +167,7 @@ worth more than that: several skills move a tier on one.
 `harness-probe` is an Agent Skill this repository ships (release asset
 [`harness-probe.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe.skill),
 with its companion
-[`harness-probe-invoke.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe-invoke.skill)
+[`lq-invoke-canary.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/lq-invoke-canary.skill)
 for probe P24; source in [harness-probe/](harness-probe/SKILL.md)). Load
 it on any harness — Cowork, Claude Code, Codex, anything with Agent Skills — and
 ask it to probe the harness. It runs the capability probes against fresh

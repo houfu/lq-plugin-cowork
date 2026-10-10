@@ -102,7 +102,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def install(repo: Path) -> Path:
     (repo / "probes.yaml").write_text(PROBES, encoding="utf-8")
     (repo / "capabilities.yaml").write_text(CAPABILITIES, encoding="utf-8")
-    for name in ("harness-probe", "harness-probe-invoke"):
+    for name in ("harness-probe", "lq-invoke-canary"):
         shutil.copytree(
             ROOT / name, repo / name, ignore=shutil.ignore_patterns("__pycache__")
         )
@@ -309,7 +309,7 @@ class TestPipeline:
         assert not any("__pycache__" in n for n in names)
         companions = [n for n in names if n not in ("SKILL.md", "LICENSE")]
         assert len(companions) <= 20, "Cowork's Upload skill takes 20 companion files"
-        assert (repo / "dist" / "harness" / "harness-probe-invoke.skill").is_file()
+        assert (repo / "dist" / "harness" / "lq-invoke-canary.skill").is_file()
         assert "## Harness verdicts" in (repo / "dist" / "build-report.md").read_text()
 
     def test_site_renders_verdicts(self, repo, monkeypatch):

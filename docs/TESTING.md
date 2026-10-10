@@ -1182,7 +1182,7 @@ and which are still **untested**. It generates fresh synthetic fixtures, has
 the agent do each task with its own tools, checks every answer against a
 hashed key rather than trusting it, and writes `report.md`, `report.html` and
 `report.json`. Install it (Route 0 works: upload the `.skill`), install
-[`harness-probe-invoke.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/harness-probe-invoke.skill)
+[`lq-invoke-canary.skill`](https://github.com/houfu/lq-plugin-cowork/releases/latest/download/lq-invoke-canary.skill)
 beside it for P24, start a new conversation and type:
 
 > Probe this harness with the harness-probe skill and give me the report.

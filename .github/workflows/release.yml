@@ -188,7 +188,7 @@ jobs:
           probes against synthetic files, checks each answer rather than trusting
           it, and reports which of the {len(skill_rows)} skills run as intended, run on a
           fallback, cannot run, or are still untested. Upload
-          `harness-probe-invoke.skill` beside it for probe P24 —
+          `lq-invoke-canary.skill` beside it for probe P24 —
           [Part E of docs/TESTING.md]({blob}/docs/TESTING.md#the-quick-way-run-the-harness-probe-skill).
 
           | Harness archive | Files | Size |

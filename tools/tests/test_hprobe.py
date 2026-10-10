@@ -550,7 +550,7 @@ class TestChecks:
         )
 
     def test_invoke_companion_carries_the_token(self):
-        text = (ROOT / "harness-probe-invoke" / "SKILL.md").read_text()
+        text = (ROOT / "lq-invoke-canary" / "SKILL.md").read_text()
         assert checks.INVOKE_TOKEN in text
         assert "disable-model-invocation: true" in text
 
