@@ -179,6 +179,9 @@ them) and which are still **untested**, with the probes to run next. Every
 verdict comes from [capabilities.yaml](capabilities.yaml), each skill's
 required, degradable and optional capabilities under two profiles, explained in
 the [harness capability chart](docs/research/harness-capability-chart.md).
+Under the `cowork` profile, which judges the adapted cards, the best verdict
+reads **runs as adapted**: the card's own requirements passed, which does not
+mean the original skill runs in full.
 Recorded runs live in [probe-results/](probe-results/README.md) and are judged on
 the site's Verdicts page; report one with the
 [Probe report form](https://github.com/houfu/lq-plugin-cowork/issues/new?template=probe-report.yml).

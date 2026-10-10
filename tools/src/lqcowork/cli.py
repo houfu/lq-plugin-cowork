@@ -346,10 +346,11 @@ def cmd_verdicts(args: argparse.Namespace) -> int:
     config = _load(args)
     for item in harness_reports(config, _capabilities(config)):
         s = item.report["summary"]
+        # The engine's own words for each count: "as adapted" under the cowork
+        # profile, where the best verdict is about the card, not the original.
+        counts = ", ".join(f"{label} {s[key]}" for key, label in item.short.items())
         _echo(
-            f"{item.report['harness'].get('name')} [{item.report['profile']}]: "
-            f"as intended {s['as-intended']}, fallback {s['fallback']}, "
-            f"cannot run {s['cannot-run']}, untested {s['untested']}"
+            f"{item.report['harness'].get('name')} [{item.report['profile']}]: {counts}"
         )
     return EXIT_OK
 

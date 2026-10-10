@@ -31,4 +31,5 @@ Each `check --static` compares the answer with the static key and records the
 verified outcome, replacing the pending one.
 
 A harness with no file tools and no scripts can still reach "Runs as intended"
-for the skills that need neither; the report will show which those are.
+(or "Runs as adapted" under the cowork profile) for the skills that need
+neither; the report will show which those are.

@@ -419,6 +419,13 @@ otherwise. Then:
 | cannot run | at least one R failed |
 | untested | no R failed; at least one R is unprobed |
 
+The first verdict's key is `as-intended` under both profiles, in the report
+JSON and in code. Its label depends on the profile: "Runs as intended" for
+upstream, and "Runs as adapted" for cowork, where it says every capability
+the adapted card asks for passed and does not say the upstream skill runs in
+full. The engine's `verdict_title`, `verdict_blurb` and `verdict_short` are
+the only source of that wording; the site and the CLI take it from them.
+
 O levels never change a verdict. The report also ranks each failed
 capability by the skills it would unblock (as their only blocker), help
 unblock and upgrade from a fallback - what to build next on that harness -

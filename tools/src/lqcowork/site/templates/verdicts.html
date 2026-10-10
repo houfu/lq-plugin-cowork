@@ -4,11 +4,22 @@
 <h1>Harness verdicts</h1>
 
 <p class="lede">
-  Which skills a harness can run as intended, which run on a documented
-  fallback, which cannot run, and which nobody has probed yet. Every verdict is
+  Which skills a harness can run as intended (or, for the adapted Cowork
+  cards, as adapted), which run on a documented fallback, which cannot run,
+  and which nobody has probed yet. Every verdict is
   computed from recorded probe results against the capability levels in
   <code>capabilities.yaml</code>, by the same engine the
   <code>harness-probe</code> skill runs.
+</p>
+
+<p>
+  <strong>The best verdict has two names.</strong> The <code>upstream</code>
+  profile judges the vendored skill as written, and its best verdict reads
+  “Runs as intended”. The <code>cowork</code> profile judges the adapted card,
+  which often asks less of a harness, and its best verdict reads
+  “Runs as adapted”: every capability the card asks for passed. That says the
+  adaptation works as written. It does not say the original skill runs in
+  full.
 </p>
 
 <p>
@@ -18,9 +29,9 @@
   harness, and attach
   the <code>results.json</code> it writes to a Probe report issue. The rule is
   in <code>harness-probe/references/verdict-rule.md</code>: a skill runs as
-  intended only when every required and every degradable capability has a
-  passing probe, cannot run when a required one failed, and is untested while a
-  required one has no result.
+  intended, or a card as adapted, only when every required and every
+  degradable capability has a passing probe, cannot run when a required one
+  failed, and is untested while a required one has no result.
 </p>
 
 <div class="tablewrap">
@@ -30,7 +41,7 @@
       <tr>
         <th scope="col">Harness</th>
         <th scope="col">Profile</th>
-        <th scope="col">As intended</th>
+        <th scope="col">As intended / as adapted</th>
         <th scope="col">Fallback</th>
         <th scope="col">Cannot run</th>
         <th scope="col">Untested</th>
@@ -76,7 +87,7 @@
 
 {% for verdict in ["as-intended", "fallback", "cannot-run", "untested"] %}
 {% set names = r.groups[verdict] %}
-<h3>{{ verdict_titles[verdict] }} ({{ names | length }})</h3>
+<h3>{{ r.verdict_titles[verdict] }} ({{ names | length }})</h3>
 {% if names %}
 <ul>
   {%- for s in r.skills if s.verdict == verdict %}
@@ -126,7 +137,7 @@
     <thead><tr><th scope="col">Skill</th><th scope="col">Card</th><th scope="col">Computed</th><th scope="col">Why</th></tr></thead>
     <tbody>
       {%- for flag in r.disagreements %}
-      <tr><th scope="row">{{ flag.skill }}</th><td>{{ flag.card }}</td><td>{{ verdict_titles[flag.computed] }}</td><td>{{ flag.note }}</td></tr>
+      <tr><th scope="row">{{ flag.skill }}</th><td>{{ flag.card }}</td><td>{{ r.verdict_titles[flag.computed] }}</td><td>{{ flag.note }}</td></tr>
       {%- endfor %}
     </tbody>
   </table>

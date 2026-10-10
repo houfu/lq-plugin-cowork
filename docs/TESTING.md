@@ -1192,7 +1192,10 @@ adapted cards, `upstream` for the vendored originals) and a sentence of your
 own for P11, then works through the probes and stops where it needs you: to
 open a page and hand back the file it saves (P20), to call the companion skill
 by name (P24), to judge a quotation (P11), and to come back in a later session
-for the two-session probes. Attach the `results.json` it writes to a Probe
+for the two-session probes. Under the `cowork` profile the best verdict reads
+**runs as adapted**, not runs as intended: every capability the adapted card
+asks for passed, which does not mean the original skill runs in full. Attach
+the `results.json` it writes to a Probe
 report; a maintainer adds it to `probe-results/`, and the site's Verdicts page
 judges it. If the harness cannot run scripts at all, the skill switches to its
 static fixtures and the answers are checked later on any machine

@@ -41,6 +41,12 @@ undocumented, so every published change gets its own version.
   instead, which leaves that run's P24 result in doubt. The download is now
   `lq-invoke-canary.skill`; install it in place of the old one before
   re-running P24.
+- Verdict reports name the best verdict by profile: "Runs as intended" for the
+  upstream skills and "Runs as adapted" for the Cowork cards, where it means
+  the card's own requirements passed and not that the original skill runs in
+  full. The key in the report JSON stays `as-intended`. The site, the
+  `verdicts` command and the build report now take the wording from the probe
+  engine instead of keeping their own copies.
 
 ### Fixed
 

@@ -27,7 +27,7 @@ skill whose scripts need 3.12.
 
 | Verdict | Rule |
 |---|---|
-| **Runs as intended** | Every R and every D capability passes. |
+| **Runs as intended** (upstream profile) or **Runs as adapted** (cowork profile) | Every R and every D capability passes. |
 | **Runs on a fallback** | Every R passes, and at least one D failed or is not yet probed. The report quotes the skill's own wording for each lost D. |
 | **Cannot run** | At least one R failed. The report names the capability and the probe. |
 | **Untested** | No R failed, but at least one R is not yet probed. |
@@ -35,9 +35,18 @@ skill whose scripts need 3.12.
 Optional capabilities never change a verdict; the report lists them as also
 available or also missing.
 
+The best verdict has two names because the two profiles judge different
+things. Under the upstream profile it reads "Runs as intended": the vendored
+skill, as written, has everything it asks for. Under the cowork profile it
+reads "Runs as adapted": the adapted card has everything it asks for. A card
+often asks for less than the skill it adapts, so more skills reach this
+verdict under the cowork profile, and that count does not say the original
+skills run in full. The rule and the key in the report's JSON, `as-intended`,
+are the same for both.
+
 A degradable capability that has not been probed counts against "as
-intended": nobody can claim a skill runs in full on evidence that does not
-exist. It is shown as "unprobed" rather than "failed".
+intended" and "as adapted" alike: nobody can claim a skill runs in full on
+evidence that does not exist. It is shown as "unprobed" rather than "failed".
 
 ## What to build next
 

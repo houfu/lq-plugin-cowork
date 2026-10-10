@@ -107,7 +107,9 @@ This writes `report-upstream` and `report-cowork` as `.md`, `.html` and
 in the chat, briefly:
 
 - the four counts for the profile they chose: runs as intended, runs on a
-  fallback, cannot run, untested;
+  fallback, cannot run, untested. Under the cowork profile the first reads
+  "runs as adapted": the adapted card's own requirements passed, which does
+  not say the original skill runs in full;
 - each skill that **cannot run**, with the capability and probe that block it;
 - each skill **on a fallback**, with the capability lost and the skill's own
   fallback wording from the report;

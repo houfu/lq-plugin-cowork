@@ -751,6 +751,82 @@ class TestEngine:
         assert "prefers-color-scheme:dark" in html and "<table" in html
         assert json.loads(paths[2].read_text())["schema"] == engine.REPORT_SCHEMA
 
+    def test_only_the_best_verdict_is_worded_by_profile(self):
+        key = "as-intended"
+        assert engine.VERDICTS[0] == key
+        assert engine.verdict_title(key, "upstream") == "Runs as intended"
+        assert engine.verdict_title(key, "cowork") == "Runs as adapted"
+        assert engine.verdict_short(key, "upstream") == "as intended"
+        assert engine.verdict_short(key, "cowork") == "as adapted"
+        assert engine.verdict_blurb(key, "cowork") == (
+            "Every capability the adapted card requires, and every one it can "
+            "degrade, has a passing probe. This says the adaptation works as "
+            "written; it does not say the original skill runs in full."
+        )
+        # The dicts stay importable and hold the upstream wording.
+        for verdict in engine.VERDICTS:
+            assert engine.verdict_title(verdict, "upstream") == (
+                engine.VERDICT_TITLE[verdict]
+            )
+            assert engine.verdict_blurb(verdict, "upstream") == (
+                engine.VERDICT_BLURB[verdict]
+            )
+        for verdict in engine.VERDICTS[1:]:
+            for word in (
+                engine.verdict_title,
+                engine.verdict_blurb,
+                engine.verdict_short,
+            ):
+                assert word(verdict, "cowork") == word(verdict, "upstream")
+
+    def test_a_cowork_report_reads_as_adapted(self, tmp_path):
+        catalog = tiny_catalog()
+        # A probe-gated card whose probes all pass is flagged, so the title
+        # is also rendered in the table of cards that disagree.
+        card = catalog["skills"][0]["profiles"]["cowork"]["card"]
+        card["status"] = "probe-gated"
+        doc = results(("P27", "pass"), ("P8", "pass"), profile="cowork")
+        report = engine.build_report(catalog, doc)
+        assert report["profile"] == "cowork"
+        # The key does not move: only the words a reader sees do.
+        assert report["summary"]["as-intended"] == 2
+        assert report["groups"]["as-intended"] == ["chatty", "scripted"]
+        assert verdict_of(report, "scripted")["verdict"] == "as-intended"
+        assert report["disagreements"][0]["computed"] == "as-intended"
+        paths = engine.write_report(report, tmp_path)
+        markdown, page = paths[0].read_text(), paths[1].read_text()
+        assert "| Runs as adapted | 2 |" in markdown
+        assert "## Runs as adapted (2)" in markdown
+        assert "| scripted | Runs as adapted |" in markdown
+        assert "| status probe-gated, tier 1 | Runs as adapted |" in markdown
+        assert "<h2>Runs as adapted (2)</h2>" in page
+        assert "<td>Runs as adapted</td>" in page
+        for text in (markdown, page):
+            assert "Runs as adapted" in text
+            assert "as intended" not in text.lower()
+            assert "it does not say the original skill runs in full" in text
+        written = paths[2].read_text()
+        assert json.loads(written)["summary"]["as-intended"] == 2
+        assert "adapted" not in written.replace("adapted Cowork", "")
+
+    def test_an_upstream_report_still_reads_as_intended(self, tmp_path):
+        new = {"facts": {"python": "3.12.0", "packages": {}}}
+        doc = results(("P25", "pass"), ("P1", "pass", new), ("P12", "pass"))
+        report = engine.build_report(tiny_catalog(), doc)
+        assert report["profile"] == "upstream"
+        assert report["summary"]["as-intended"] == 2
+        assert report["groups"]["as-intended"] == ["chatty", "scripted"]
+        paths = engine.write_report(report, tmp_path)
+        markdown, page = paths[0].read_text(), paths[1].read_text()
+        assert "| Runs as intended | 2 |" in markdown
+        assert "## Runs as intended (2)" in markdown
+        assert "| scripted | Runs as intended |" in markdown
+        assert "<h2>Runs as intended (2)</h2>" in page
+        for text in (markdown, page):
+            assert engine.VERDICT_BLURB["as-intended"] in text
+            assert "as adapted" not in text.lower()
+        assert json.loads(paths[2].read_text())["summary"]["as-intended"] == 2
+
     def test_results_validation(self):
         bad = {
             "schema": "nope",
@@ -813,12 +889,33 @@ class TestCli:
         call("posture", "--run", str(root), "web_search=off")
         out = call("report", "--run", str(root), "--both").stdout
         assert "cowork profile:" in out and "upstream profile:" in out
+        # The one-line summary words the best verdict by profile too.
+        summary = {
+            line.split(" profile:")[0]: line
+            for line in out.splitlines()
+            if " profile:" in line
+        }
+        assert "runs as adapted" in summary["cowork"]
+        assert "as intended" not in summary["cowork"]
+        assert "runs as intended" in summary["upstream"]
+        assert "as adapted" not in summary["upstream"]
         assert (root / "report/report-cowork.html").is_file()
+        for profile in engine.PROFILES:
+            written = json.loads((root / f"report/report-{profile}.json").read_text())
+            assert list(written["summary"]) == list(engine.VERDICTS)
         data = json.loads((root / "results.json").read_text())
         assert [r["probe"] for r in data["results"]] == ["P17", "P25", "P11"]
         assert data["harness"]["posture"] == {"web_search": "off"}
+        # The run was started under the cowork profile, so that is the default.
         verdict = call("verdict", "--results", str(root / "results.json")).stdout
         assert verdict.startswith("# Harness probe report: cli")
+        assert "## Runs as adapted (" in verdict
+        assert "Runs as intended" not in verdict
+        upstream = call(
+            "verdict", "--results", str(root / "results.json"), "--profile", "upstream"
+        ).stdout
+        assert "## Runs as intended (" in upstream
+        assert "Runs as adapted" not in upstream
 
     def test_static_check_needs_no_run(self, tmp_path):
         with zipfile.ZipFile(SKILL / "assets/fixtures/static.zip") as archive:

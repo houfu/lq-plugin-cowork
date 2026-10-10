@@ -176,6 +176,14 @@ class TestPages:
         text = (site / "verdicts.html").read_text(encoding="utf-8")
         assert 'href="downloads.html#probe-a-harness"' in text
 
+    def test_the_verdicts_page_says_what_a_cowork_count_means(self, site):
+        """A cowork row must not read as "the upstream skill runs as intended"."""
+        text = (site / "verdicts.html").read_text(encoding="utf-8")
+        assert '<th scope="col">As intended / as adapted</th>' in text
+        assert '<th scope="col">As intended</th>' not in text
+        assert "“Runs as intended”" in text and "“Runs as adapted”" in text
+        assert "It does not say the original skill runs in" in text
+
     def test_every_page_offers_the_downloads_page(self, site):
         for page in sorted(site.rglob("*.html")):
             assert "downloads.html" in page.read_text(encoding="utf-8"), page
