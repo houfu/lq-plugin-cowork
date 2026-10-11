@@ -495,15 +495,17 @@ cowork:
         reconstruct what happened.
       failure: silent
     - id: KI-wiki-3
-      title: "Finding your wiki again next session, without pointing at it, is unproven"
+      title: "A new session does not find your wiki unless you name the folder"
       detail: >-
-        Your wiki lives in an ordinary folder you name. Whether the skill
-        can find that folder again in a later session without you naming or
-        attaching it is not yet settled, and it may simply come back empty
-        and carry on as though the wiki were new, which would look like a
-        normal first use rather than a failure. Until this is confirmed,
-        name the wiki folder, or attach something from it, at the start of
-        each session rather than assuming it will be found on its own.
+        Your wiki lives in an ordinary folder you name. A later session does
+        not find that folder on its own: this was tested on Copilot Cowork in
+        October 2026, and a new session did not find a file an earlier
+        session had saved until it was pointed at it. If the wiki is not
+        named, the skill is instructed to ask rather than guess, but a
+        session that starts from the wrong folder or an empty one would carry
+        on as though the wiki were new, which looks like a normal first use
+        rather than a failure. Name the wiki folder, or attach something from
+        it, at the start of each session.
       failure: silent
       probe: P2
   workarounds:

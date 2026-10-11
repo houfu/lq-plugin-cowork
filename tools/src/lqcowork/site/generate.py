@@ -68,7 +68,7 @@ HARNESS_PURPOSE: dict[str, str] = {
         "the probe skill: its scripts, its fixtures and the steps for every "
         "probe. It writes the report."
     ),
-    "harness-probe-invoke": (
+    "lq-invoke-canary": (
         "its companion for probe P24, a skill that answers only when it is "
         "called by name. Upload it beside the first."
     ),
@@ -867,6 +867,9 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
 
     from ..harness import harness_reports, load_capabilities
 
+    # Each report carries the engine's own titles for its profile, so a cowork
+    # report's best verdict reads "Runs as adapted" here exactly as it does in
+    # the skill's report. This module keeps no wording of its own.
     verdict_reports = [
         {
             "slug": item.slug,
@@ -876,6 +879,7 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
                 if item.slug.startswith("baseline-")
                 else item.source.relative_to(config.root).as_posix()
             ),
+            "verdict_titles": item.titles,
             **item.report,
         }
         for item in harness_reports(config, load_capabilities(config.root))
@@ -913,12 +917,6 @@ def gather(config: Config, out: Path) -> dict[str, Any]:
         "probe_ids": set(config.probe_ids),
         "probe_span": _probe_span(probe_views),
         "verdict_reports": verdict_reports,
-        "verdict_titles": {
-            "as-intended": "Runs as intended",
-            "fallback": "Runs on a fallback",
-            "cannot-run": "Cannot run",
-            "untested": "Untested",
-        },
         "tiers": tier_rows,
         "transforms": config.transforms,
         "archives_built": any(skill.archive.built for skill in ordered_skills),

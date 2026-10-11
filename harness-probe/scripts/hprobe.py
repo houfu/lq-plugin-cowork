@@ -308,7 +308,7 @@ def cmd_report(args: argparse.Namespace) -> int:
 def _write_named(report: Dict[str, Any], out: Path, stem: str) -> None:
     paths = engine.write_report(report, out, stem)
     summary = ", ".join(
-        f"{engine.VERDICT_TITLE[v].lower()} {report['summary'][v]}"
+        f"{engine.verdict_title(v, report['profile']).lower()} {report['summary'][v]}"
         for v in engine.VERDICTS
     )
     print(f"{report['profile']} profile: {summary}")

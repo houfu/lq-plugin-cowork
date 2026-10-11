@@ -1,0 +1,7 @@
+interface:
+  display_name: "LQ invoke canary"
+  short_description: "Answers a fixed token when called by name; used by the harness probe (P24)"
+  default_prompt: "Use $lq-invoke-canary"
+
+policy:
+  allow_implicit_invocation: false

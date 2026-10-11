@@ -41,7 +41,7 @@ def skill_archive_path(config: Config, name: str, out_dir: Path | None = None) -
 
 
 # The repository's own skills, packaged beside the bundles (contract 5c).
-HARNESS_SKILLS = ("harness-probe", "harness-probe-invoke")
+HARNESS_SKILLS = ("harness-probe", "lq-invoke-canary")
 
 
 def harness_archive_dir(config: Config, out_dir: Path | None = None) -> Path:

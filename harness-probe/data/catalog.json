@@ -703,11 +703,11 @@
       "harness": {
         "method": "user",
         "check": "invoke",
-        "steps": "Ask the user to install `harness-probe-invoke` beside this skill. Ask them to send \"Check whether the invoke probe is wired up.\" and note whether that skill fired; then ask them to call it by name (for example `/harness-probe-invoke`). Run `hprobe.py check P24 --run <run> --answer <token it returned> --implicit <fired|quiet>`."
+        "steps": "Ask the user to install `lq-invoke-canary` beside this skill. Ask them to send \"Check whether the invoke probe is wired up.\" and note whether that skill fired; then ask them to call it by name (for example `/lq-invoke-canary`). Run `hprobe.py check P24 --run <run> --answer <token it returned> --implicit <fired|quiet>`."
       },
       "cowork": {
-        "setup": "The companion skill harness-probe-invoke installed beside harness-probe. It is explicit-only and answers with a fixed token when called.",
-        "prompt": "First: \"Check whether the invoke probe is wired up.\" Then, in a new message, call the harness-probe-invoke skill by name.",
+        "setup": "The companion skill lq-invoke-canary installed beside harness-probe. It is explicit-only and answers with a fixed token when called. Its name deliberately shares no stem with `harness-probe`, because a harness that matches skills by name prefix would otherwise run the wrong one.",
+        "prompt": "First: \"Check whether the invoke probe is wired up.\" Then, in a new message, call the lq-invoke-canary skill by name.",
         "pass": "The first message does not run the skill; the second does and returns its token.",
         "fail": "The skill fires on the first message, or cannot be called by name at all.",
         "bad_outcome": "silent"
@@ -2082,7 +2082,7 @@
             "IN": "R",
             "OUT": "D",
             "FS": "R",
-            "PERSIST": "R",
+            "PERSIST": "D",
             "HASH": "R"
           },
           "evidence": {},
@@ -2090,13 +2090,19 @@
             "OUT": {
               "text": "Before writing anything, confirm the intended destination and whether the user wants only a proposed layout or an actual workspace.",
               "ref": "dist/legalquants-litigation-cowork/skills/organize-case-docs/SKILL.md:84"
+            },
+            "PERSIST": {
+              "text": "A later session does not find an earlier workspace on its own: if the lawyer has not named the workspace folder or attached its source manifest, say so before anything else, name what you expected to find, and ask for the folder.",
+              "ref": "dist/legalquants-litigation-cowork/skills/organize-case-docs/SKILL.md:84"
             }
           },
-          "notes": "Tool cascade now just reads supplied or Input-folder documents and marks unreadable ones; the docreview sibling link became a stand-alone handoff template. The sha256 manifest column, 'hashes reconcile' gate and exhibit hash fields were kept unchanged with no fallback, so a hash-capable host tool is still needed (no script ships).",
+          "notes": "Tool cascade now just reads supplied or Input-folder documents and marks unreadable ones; the docreview sibling link became a stand-alone handoff template. The sha256 manifest column, 'hashes reconcile' gate and exhibit hash fields were kept unchanged with no fallback, so a hash-capable host tool is still needed (no script ships). A sentence was added to the workspace step for a later session that is not pointed at the earlier workspace, which is the PERSIST fallback.",
           "card": {
             "tier": 0,
             "status": "shipped",
-            "probes": []
+            "probes": [
+              "P2"
+            ]
           }
         }
       }
@@ -2903,7 +2909,7 @@
           "notes": "The seven scripts (parsers, calibration gate, annotators, issues-list builder) were removed; the document is read directly, the calibration gate is a self-applied rule recorded in redline-calibration.md, and the annotated PDF is replaced by a self-contained Marked Passages HTML page plus a Word issues list through the host Word skill. DOCX is rated R because the Word path depends on seeing tracked-change tags and the only documented outcome when they cannot be seen is to report 'could not tell' (SKILL.md:84-87).",
           "card": {
             "tier": 2,
-            "status": "probe-gated",
+            "status": "shipped",
             "probes": [
               "P3",
               "P4",

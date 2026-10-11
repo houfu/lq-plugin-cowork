@@ -47,7 +47,7 @@ lq-cowork/
   probe-results/*.json         # recorded harness-probe runs, judged by the build and the site
   harness-probe/               # the repository's own Agent Skill: runs the probes, writes the report
     SKILL.md, references/, scripts/, assets/fixtures/, data/catalog.json (generated)
-  harness-probe-invoke/        # its explicit-invocation companion, for probe P24
+  lq-invoke-canary/            # its explicit-invocation companion, for probe P24
   skills/README.md             # says these folders are build inputs, not skills (section 5b)
   skills/<name>/               # one adaptation folder per shipped skill
     skill.yaml                 #   the card (required)
@@ -393,7 +393,9 @@ each result against a salted answer key with `scripts/hprobe.py check`, and
 writes the report. Its scripts are standard library only and Python 3.8
 compatible. Static fixtures in `assets/fixtures/static.zip` serve harnesses that
 cannot run scripts, and their answers can be checked later anywhere.
-`harness-probe-invoke/` is its explicit-invocation companion for P24.
+`lq-invoke-canary/` is its explicit-invocation companion for P24. Its name
+deliberately shares no stem with `harness-probe`, so that a harness matching
+skills by name prefix cannot run the wrong one.
 
 `harness-probe/data/catalog.json` and `harness-probe/references/probes.md`
 are **generated** from `probes.yaml`, `capabilities.yaml` and the cards by
@@ -416,6 +418,13 @@ otherwise. Then:
 | runs on a fallback | every R passes; at least one D failed or is unprobed (the report quotes its fallback wording) |
 | cannot run | at least one R failed |
 | untested | no R failed; at least one R is unprobed |
+
+The first verdict's key is `as-intended` under both profiles, in the report
+JSON and in code. Its label depends on the profile: "Runs as intended" for
+upstream, and "Runs as adapted" for cowork, where it says every capability
+the adapted card asks for passed and does not say the upstream skill runs in
+full. The engine's `verdict_title`, `verdict_blurb` and `verdict_short` are
+the only source of that wording; the site and the CLI take it from them.
 
 O levels never change a verdict. The report also ranks each failed
 capability by the skills it would unblock (as their only blocker), help
@@ -544,7 +553,7 @@ RELEASING.md).
 ## 5c. Harness-probe archives: `dist/harness/<name>.skill`
 
 `package` also writes `dist/harness/harness-probe.skill` and
-`dist/harness/harness-probe-invoke.skill`: the skill folder at the archive
+`dist/harness/lq-invoke-canary.skill`: the skill folder at the archive
 root plus `LICENSE`, no `__pycache__` and no dotfiles, through the same
 reproducible zip writer as section 5b. They are release assets, covered by
 `SHA256SUMS` and the reproducibility check, and listed under **Probe a
@@ -946,7 +955,7 @@ says which file it would have rendered and where to read it instead.
   which GitHub resolves to that asset on the most recent release that is not a
   pre-release. The assets are `<bundle.id>.zip` and
   `<bundle.id>-trigger-tests.md` per bundle, `<name>.skill` per skill,
-  `harness-probe.skill` and `harness-probe-invoke.skill`, `build-report.md`
+  `harness-probe.skill` and `lq-invoke-canary.skill`, `build-report.md`
   and `SHA256SUMS`. A release asset is uploaded under its base name, so no
   URL carries the `skills/` or `harness/` folder of the build, and the two
   folders share one namespace of asset names. No page names a version in a

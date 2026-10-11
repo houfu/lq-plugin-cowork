@@ -82,7 +82,7 @@ this order, which puts the cheapest and most decisive first:
 2. **Your own tools:** P25, P27, P26, P17, P16, P3, P4, P7, P8, P9, P10, P22,
    P23, P12, P18, P6, P19.
 3. **The user's part:** P20 (they open a page and hand back a file), P24 (they
-   call the companion skill `harness-probe-invoke` by name), P11 (they judge
+   call the companion skill `lq-invoke-canary` by name), P11 (they judge
    your quotation), and P15 if an MCP server can be connected
    ([references/mcp-setup.md](references/mcp-setup.md)).
 4. **Two sessions:** arm P2, P5 and P13 now and tell the user exactly what to
@@ -107,7 +107,9 @@ This writes `report-upstream` and `report-cowork` as `.md`, `.html` and
 in the chat, briefly:
 
 - the four counts for the profile they chose: runs as intended, runs on a
-  fallback, cannot run, untested;
+  fallback, cannot run, untested. Under the cowork profile the first reads
+  "runs as adapted": the adapted card's own requirements passed, which does
+  not say the original skill runs in full;
 - each skill that **cannot run**, with the capability and probe that block it;
 - each skill **on a fallback**, with the capability lost and the skill's own
   fallback wording from the report;

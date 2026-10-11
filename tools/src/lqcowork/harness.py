@@ -681,14 +681,36 @@ def load_engine(root: Path) -> ModuleType:
 
 @dataclass(frozen=True)
 class HarnessReport:
+    """One report, with the engine's wording for the profile it was judged under.
+
+    ``titles`` and ``short`` map each verdict key to the words a reader sees
+    ("Runs as adapted", "as adapted"). They come from the engine, so the site,
+    the CLI and the skill's own report cannot word a verdict differently.
+    """
+
     source: Path
     slug: str
     report: dict[str, Any]
+    titles: dict[str, str]
+    short: dict[str, str]
 
 
 def results_files(root: Path) -> list[Path]:
     folder = root / RESULTS_DIR
     return sorted(folder.glob("*.json")) if folder.is_dir() else []
+
+
+def _harness_report(
+    engine: ModuleType, source: Path, slug: str, report: dict[str, Any]
+) -> HarnessReport:
+    profile = report["profile"]
+    return HarnessReport(
+        source=source,
+        slug=slug,
+        report=report,
+        titles={v: engine.verdict_title(v, profile) for v in engine.VERDICTS},
+        short={v: engine.verdict_short(v, profile) for v in engine.VERDICTS},
+    )
 
 
 def harness_reports(config: Config, caps: Capabilities | None) -> list[HarnessReport]:
@@ -701,10 +723,11 @@ def harness_reports(config: Config, caps: Capabilities | None) -> list[HarnessRe
     for profile in PROFILES:
         empty = engine.new_results(f"no results ({profile})", profile)
         reports.append(
-            HarnessReport(
-                source=Path(""),
-                slug=f"baseline-{profile}",
-                report=engine.build_report(
+            _harness_report(
+                engine,
+                Path(""),
+                f"baseline-{profile}",
+                engine.build_report(
                     catalog, empty, profile, generated="(no probe results recorded)"
                 ),
             )
@@ -718,7 +741,7 @@ def harness_reports(config: Config, caps: Capabilities | None) -> list[HarnessRe
         report = engine.build_report(
             catalog, results, profile, generated=_latest_date(results)
         )
-        reports.append(HarnessReport(source=path, slug=path.stem, report=report))
+        reports.append(_harness_report(engine, path, path.stem, report))
     return reports
 
 
@@ -762,9 +785,12 @@ def build_report_lines(reports: list[HarnessReport]) -> list[str]:
         "",
         "Computed from `probe-results/` against `capabilities.yaml` by the "
         "harness-probe engine. The baselines show what is settled before any probe "
-        "has run.",
+        "has run. Read the first count by its row's profile: an upstream row counts "
+        "vendored skills that run as intended, and a cowork row counts adapted cards "
+        "that run as adapted, which says each card's own requirements passed and "
+        "does not say the original skill runs in full.",
         "",
-        "| Harness | Profile | As intended | Fallback | Cannot run | Untested |",
+        "| Harness | Profile | As intended / as adapted | Fallback | Cannot run | Untested |",
         "| --- | --- | ---: | ---: | ---: | ---: |",
     ]
     for item in reports:
@@ -788,9 +814,11 @@ def build_report_lines(reports: list[HarnessReport]) -> list[str]:
             "| --- | --- | --- | --- | --- |",
         ]
         for item, flag in flagged:
+            # The engine's title for the report's profile, not the bare key:
+            # only cowork reports are flagged, and "as-intended" would misread.
             lines.append(
                 f"| {item.report['harness'].get('name')} | {flag['skill']} | {flag['card']} | "
-                f"{flag['computed']} | {flag['note']} |"
+                f"{item.titles[flag['computed']]} | {flag['note']} |"
             )
         lines.append("")
     return lines

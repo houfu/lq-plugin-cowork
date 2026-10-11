@@ -33,6 +33,10 @@ OBSERVERS = ("script", "agent", "user", "maintainer")
 COST_ORDER = {"free": 0, "low": 1, "setup": 2, "two-session": 3, "admin": 4}
 
 VERDICTS = ("as-intended", "fallback", "cannot-run", "untested")
+# The wording below is the upstream profile's, and the default for any other.
+# Nothing should print these dicts directly: verdict_title(), verdict_blurb()
+# and verdict_short() take the profile and are the only source of the words a
+# reader sees. The keys in VERDICTS never change with the profile.
 VERDICT_TITLE = {
     "as-intended": "Runs as intended",
     "fallback": "Runs on a fallback",
@@ -51,8 +55,53 @@ VERDICT_BLURB = {
         "the skill cannot be confirmed either way."
     ),
 }
+# The same verdicts as a count reads them in a summary line or a column heading.
+VERDICT_SHORT = {
+    "as-intended": "as intended",
+    "fallback": "fallback",
+    "cannot-run": "cannot run",
+    "untested": "untested",
+}
 
 PROFILES = ("upstream", "cowork")
+
+# Where a profile words a verdict differently. An adapted card often asks less
+# of a harness than the skill it adapts (it has dropped scripts, a live corpus
+# and so on), so under the cowork profile the best verdict is a statement about
+# the card and must not read as one about the original skill.
+PROFILE_WORDING: Dict[str, Dict[str, Dict[str, str]]] = {
+    "cowork": {
+        "title": {"as-intended": "Runs as adapted"},
+        "blurb": {
+            "as-intended": (
+                "Every capability the adapted card requires, and every one it can "
+                "degrade, has a passing probe. This says the adaptation works as "
+                "written; it does not say the original skill runs in full."
+            )
+        },
+        "short": {"as-intended": "as adapted"},
+    },
+}
+
+
+def _wording(kind: str, default: Dict[str, str], verdict: str, profile: str) -> str:
+    override = PROFILE_WORDING.get(profile, {}).get(kind, {})
+    return override.get(verdict, default[verdict])
+
+
+def verdict_title(verdict: str, profile: str) -> str:
+    """The heading for a verdict key, as the given profile words it."""
+    return _wording("title", VERDICT_TITLE, verdict, profile)
+
+
+def verdict_blurb(verdict: str, profile: str) -> str:
+    """The sentence saying what a verdict means under the given profile."""
+    return _wording("blurb", VERDICT_BLURB, verdict, profile)
+
+
+def verdict_short(verdict: str, profile: str) -> str:
+    """The few words that label a verdict's count under the given profile."""
+    return _wording("short", VERDICT_SHORT, verdict, profile)
 
 
 class EngineError(Exception):
@@ -784,6 +833,7 @@ def _status_word(status: str) -> str:
 
 def render_markdown(report: Dict[str, Any]) -> str:
     h = report["harness"]
+    profile = report["profile"]
     lines = [
         f"# Harness probe report: {h.get('name', 'unnamed harness')}",
         "",
@@ -816,11 +866,16 @@ def render_markdown(report: Dict[str, Any]) -> str:
         )
     lines += ["", "## Summary", "", "| Verdict | Skills |", "| --- | ---: |"]
     for v in VERDICTS:
-        lines.append(f"| {VERDICT_TITLE[v]} | {report['summary'][v]} |")
+        lines.append(f"| {verdict_title(v, profile)} | {report['summary'][v]} |")
     lines.append("")
     for v in VERDICTS:
         names = report["groups"][v]
-        lines += [f"## {VERDICT_TITLE[v]} ({len(names)})", "", VERDICT_BLURB[v], ""]
+        lines += [
+            f"## {verdict_title(v, profile)} ({len(names)})",
+            "",
+            verdict_blurb(v, profile),
+            "",
+        ]
         if not names:
             lines += ["None.", ""]
             continue
@@ -842,7 +897,7 @@ def render_markdown(report: Dict[str, Any]) -> str:
             mark = {"pass": "", "fail": " ✗", "untested": " ?"}.get(cap["status"], "")
             cells[cap["level"]].append(cap["code"] + mark)
         lines.append(
-            f"| {verdict['skill']} | {VERDICT_TITLE[verdict['verdict']]} | "
+            f"| {verdict['skill']} | {verdict_title(verdict['verdict'], profile)} | "
             f"{', '.join(cells['R']) or '—'} | {', '.join(cells['D']) or '—'} | "
             f"{', '.join(cells['O']) or '—'} |"
         )
@@ -937,7 +992,8 @@ def render_markdown(report: Dict[str, Any]) -> str:
         ]
         for flag in report["disagreements"]:
             lines.append(
-                f"| {flag['skill']} | {flag['card']} | {VERDICT_TITLE[flag['computed']]} "
+                f"| {flag['skill']} | {flag['card']} "
+                f"| {verdict_title(flag['computed'], profile)} "
                 f"| {_md_escape(flag['note'])} |"
             )
         lines.append("")
@@ -1049,6 +1105,7 @@ def _e(text: Any) -> str:
 
 def render_html(report: Dict[str, Any]) -> str:
     h = report["harness"]
+    profile = report["profile"]
     title = f"Harness probe report: {h.get('name', 'harness')}"
     out = [
         "<!doctype html><html lang='en'><head><meta charset='utf-8'>",
@@ -1080,14 +1137,14 @@ def render_html(report: Dict[str, Any]) -> str:
     for v in VERDICTS:
         out.append(
             f"<div class='tile'><b class='{v}'>{report['summary'][v]}</b>"
-            f"{_e(VERDICT_TITLE[v])}</div>"
+            f"{_e(verdict_title(v, profile))}</div>"
         )
     out.append("</div>")
 
     for v in VERDICTS:
         items = [s for s in report["skills"] if s["verdict"] == v]
-        out.append(f"<h2>{_e(VERDICT_TITLE[v])} ({len(items)})</h2>")
-        out.append(f"<p class='muted'>{_e(VERDICT_BLURB[v])}</p>")
+        out.append(f"<h2>{_e(verdict_title(v, profile))} ({len(items)})</h2>")
+        out.append(f"<p class='muted'>{_e(verdict_blurb(v, profile))}</p>")
         if not items:
             out.append("<p>None.</p>")
             continue
@@ -1115,7 +1172,7 @@ def render_html(report: Dict[str, Any]) -> str:
             )
         out.append(
             f"<tr><td>{_e(s['skill'])}</td><td><span class='pill p-{s['verdict']}'>"
-            f"{_e(VERDICT_TITLE[s['verdict']])}</span></td>"
+            f"{_e(verdict_title(s['verdict'], profile))}</span></td>"
             f"<td>{''.join(cells['R']) or '—'}</td><td>{''.join(cells['D']) or '—'}</td>"
             f"<td>{''.join(cells['O']) or '—'}</td></tr>"
         )
@@ -1207,7 +1264,8 @@ def render_html(report: Dict[str, Any]) -> str:
         for flag in report["disagreements"]:
             out.append(
                 f"<tr><td>{_e(flag['skill'])}</td><td>{_e(flag['card'])}</td>"
-                f"<td>{_e(VERDICT_TITLE[flag['computed']])}</td><td>{_e(flag['note'])}</td></tr>"
+                f"<td>{_e(verdict_title(flag['computed'], profile))}</td>"
+                f"<td>{_e(flag['note'])}</td></tr>"
             )
         out.append("</tbody></table></div>")
 

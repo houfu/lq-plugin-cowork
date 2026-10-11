@@ -22,6 +22,31 @@ undocumented, so every published change gets its own version.
   memory across sessions as degradable instead of required, quoting each
   card's own wording for naming the folder as the fallback. On a harness where
   probe P2 fails they compute "runs on a fallback" rather than "cannot run".
+- `organize-case-docs`: the workspace step now says what to do when a later
+  session is not pointed at the earlier workspace (say so first, ask for the
+  folder, and never lay out a fresh one as though it were the first). The card
+  gains a known issue for it, and memory across sessions is rated degradable,
+  so the card no longer computes "cannot run" where probe P2 fails.
+- `read-redline` no longer ships probe-gated. Its three probes (P3 tracked
+  changes read, P4 page images, P10 tracked changes written) passed on one
+  Copilot Cowork tenant in October 2026. Its known issues say so and keep
+  every safeguard; the skill's instructions are unchanged.
+- `wiki`: the known issue about finding the wiki again next session no longer
+  says "unproven". A new session does not find the folder unless it is named.
+- `docs/TESTING.md` no longer says nothing has been run in a live tenant, and
+  its `read-redline` entry follows the lifted gate.
+- The probe's companion skill is renamed from `harness-probe-invoke` to
+  `lq-invoke-canary`, so its name shares no stem with `harness-probe`. In the
+  Copilot Cowork run, calling the companion by name ran the main probe skill
+  instead, which leaves that run's P24 result in doubt. The download is now
+  `lq-invoke-canary.skill`; install it in place of the old one before
+  re-running P24.
+- Verdict reports name the best verdict by profile: "Runs as intended" for the
+  upstream skills and "Runs as adapted" for the Cowork cards, where it means
+  the card's own requirements passed and not that the original skill runs in
+  full. The key in the report JSON stays `as-intended`. The site, the
+  `verdicts` command and the build report now take the wording from the probe
+  engine instead of keeping their own copies.
 
 ### Fixed
 
